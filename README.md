@@ -1,6 +1,6 @@
 # Silero TTS Server
 
-A simple, robust, and performant REST API that wraps the Silero TTS engine, enabling any client (web, mobile, desktop, embedded) to generate speech audio over HTTP/HTTPS with minimal latency and operational overhead.
+A simple, robust, and performant Mary-TTS compatible REST API that wraps the Silero TTS engine, enabling any client (web, mobile, desktop, embedded) to generate speech audio over HTTP/HTTPS with minimal latency and operational overhead.
 
 ## Quick Start
 
