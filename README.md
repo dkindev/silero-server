@@ -63,7 +63,6 @@ A simple, robust, and performant Mary-TTS compatible REST API that wraps the Sil
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `TTS_DEVICE` | `cpu` | Device to run TTS model on: `cpu` or `cuda` |
-| `TTS_MODEL_PATH` | `./models` | Path to cache Silero TTS models |
 
 ## Development
 

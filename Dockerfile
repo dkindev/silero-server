@@ -36,9 +36,6 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy application code
 COPY src/ src/
 
-# Create models directory
-RUN mkdir -p models
-
 # Expose port
 EXPOSE 8000
 
