@@ -13,7 +13,7 @@ Target users: any client (web, mobile, desktop, embedded) that needs TTS via a w
 The underlying engine is **Silero TTS** (`silero` Python package). Silero provides neural TTS models per language with multiple speaker voices per model.
 
 Key Silero concepts:
-- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded via Torch Hub to `~/.cache/torch/hub/`.
+- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded via Torch Hub to `~/.cache/torch/hub/`. The models are stored in: ` ~/.cache/torch/hub/snakers4_silero-models_master/src/silero/model/*.pt`
 - **Speaker**: A named voice within a model (e.g., `aidar`, `baya`, `eugene`, `kseniya`, `xenia` for Russian). Speakers are model-specific.
 - **Sample rate**: Audio output frequency in Hz. Silero produces 48000 Hz by default; torchaudio can resample.
 
@@ -45,7 +45,7 @@ Speaker gender is hardcoded per known speaker name in a mapping. Unrecognized sp
 
 ### `/locales` Endpoint
 
-Returns available locales as plain text, one per line. Derived from loaded Silero models at startup. Returns `200 OK` with empty body if no models are loaded.
+Returns available locales as plain text, one per line. Derived from Silero model files cached in the torch hub directory on startup. Returns `200 OK` with empty body if no models are loaded.
 
 ### `/voices` Endpoint
 
