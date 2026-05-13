@@ -5,10 +5,6 @@ labels:
 created: 2026-05-12
 ---
 
-## Parent
-
-docs/stages/1.md
-
 ## What to build
 
 Extend Pydantic Settings in `src/config.py` with new TTS_* configuration fields:
@@ -24,11 +20,11 @@ Update `.env.example` with all five new variables.
 
 ## Acceptance criteria
 
-- [ ] Settings class accepts TTS_SAMPLE_RATE, TTS_MAX_TEXT_LENGTH, TTS_ALLOWED_ORIGINS, TTS_SHUTDOWN_TIMEOUT
-- [ ] TTS_DEVICE renamed from tts_device
-- [ ] Invalid TTS_SAMPLE_RATE values (e.g., 44100) cause startup failure with clear error
-- [ ] Invalid TTS_SHUTDOWN_TIMEOUT values (e.g., 0, negative) cause startup failure with clear error
-- [ ] .env.example contains all five TTS_* variables with example values
+- [x] Settings class accepts TTS_SAMPLE_RATE, TTS_MAX_TEXT_LENGTH, TTS_ALLOWED_ORIGINS, TTS_SHUTDOWN_TIMEOUT
+- [x] TTS_DEVICE renamed from tts_device
+- [x] Invalid TTS_SAMPLE_RATE values (e.g., 44100) cause startup failure with clear error
+- [x] Invalid TTS_SHUTDOWN_TIMEOUT values (e.g., 0, negative) cause startup failure with clear error
+- [x] .env.example contains all five TTS_* variables with example values
 
 ## Blocked by
 
