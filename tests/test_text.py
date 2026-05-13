@@ -21,8 +21,8 @@ def test_text_input_passthrough(text, input_type, expected):
     ("text", "input_type", "expected"),
     [
         ("<speak>hello</speak>", "SSML", "hello"),
-        ("hello <break/> world", "SSML", "hello world"),
-        ("<speak>hello <break/> world</speak>", "SSML", "hello world"),
+        ("hello <break/> world", "SSML", "hello   world"),
+        ("<speak>hello <break/> world</speak>", "SSML", "hello   world"),
         ("<a><b>text</b></a>", "SSML", "text"),
         ("hello", "SSML", "hello"),
         ("", "SSML", ""),

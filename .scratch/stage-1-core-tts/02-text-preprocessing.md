@@ -17,12 +17,12 @@ Handle common SSML edge cases: nested tags, self-closing tags, text with `<>` ch
 
 ## Acceptance criteria
 
-- [ ] `preprocess_text("hello", "TEXT")` returns `"hello"`
-- [ ] `preprocess_text("<speak>hello</speak>", "SSML")` returns `"hello"`
-- [ ] `preprocess_text("hello <break/> world", "SSML")` returns `"hello  world"`
-- [ ] `preprocess_text("< mary>", "TEXT")` returns `"< mary>"` (no stripping for TEXT)
-- [ ] `preprocess_text("anything", "RAWMARYXML")` returns None
-- [ ] Parametric unit tests cover all branches
+- [x] `preprocess_text("hello", "TEXT")` returns `"hello"`
+- [x] `preprocess_text("<speak>hello</speak>", "SSML")` returns `"hello"`
+- [x] `preprocess_text("hello <break/> world", "SSML")` returns `"hello   world"`
+- [x] `preprocess_text("< mary>", "TEXT")` returns `"< mary>"` (no stripping for TEXT)
+- [x] `preprocess_text("anything", "RAWMARYXML")` returns None
+- [x] Parametric unit tests cover all branches
 
 ## Blocked by
 
