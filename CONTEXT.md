@@ -38,10 +38,11 @@ This naming scheme:
 - Speaker names are Silero's native speaker identifiers.
 
 Voice validation at request time:
-1. Look up voice in config → get model and locale
-2. Verify requested locale matches config locale (400 if mismatch)
-3. Get model's supported sample_rates from config
-4. If `TTS_SAMPLE_RATE` exceeds max supported, clamp to highest available
+1. Look up locale in config → get voices → get model
+2. Verify requested locale matches config locale
+3. Verify requested voice is contained in locale
+4. Get model's supported sample_rates from config
+5. If `TTS_SAMPLE_RATE` exceeds max supported, clamp to highest available
 
 Gender is sourced from config.
 
