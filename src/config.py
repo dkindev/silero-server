@@ -1,6 +1,7 @@
+from pathlib import Path
 from typing import Literal
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -23,6 +24,19 @@ class Settings(BaseSettings):
 
     TTS_SHUTDOWN_TIMEOUT: int = Field(10, ge=1)
     """Timeout in seconds for graceful shutdown."""
+
+    TTS_CONFIG_PATH: str = "silero-to-mary-config.yml"
+    """Path to voice/locale mapping config file."""
+
+    TTS_MAX_CONCURRENT_PER_LOCALE: int = Field(2, ge=1, le=10)
+    """Maximum concurrent TTS requests per locale."""
+
+    @field_validator("TTS_CONFIG_PATH")
+    @classmethod
+    def config_path_must_exist(cls, v: str) -> str:
+        if not Path(v).exists():
+            raise ValueError(f"Config file not found: {v}")
+        return v
 
 
 settings = Settings()

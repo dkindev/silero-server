@@ -80,3 +80,59 @@ def test_valid_shutdown_timeout():
     for timeout in [1, 5, 10, 30, 60]:
         settings = Settings.model_validate({"TTS_SHUTDOWN_TIMEOUT": timeout})
         assert settings.TTS_SHUTDOWN_TIMEOUT == timeout
+
+
+def test_settings_has_all_seven_tts_fields():
+    """Test that Settings has all 7 required TTS_* fields with correct defaults."""
+    settings = Settings.model_validate({})
+    assert hasattr(settings, "TTS_DEVICE")
+    assert hasattr(settings, "TTS_SAMPLE_RATE")
+    assert hasattr(settings, "TTS_MAX_TEXT_LENGTH")
+    assert hasattr(settings, "TTS_ALLOWED_ORIGINS")
+    assert hasattr(settings, "TTS_SHUTDOWN_TIMEOUT")
+    assert hasattr(settings, "TTS_CONFIG_PATH")
+    assert hasattr(settings, "TTS_MAX_CONCURRENT_PER_LOCALE")
+
+
+def test_settings_config_path_default():
+    """Test that TTS_CONFIG_PATH defaults to 'silero-to-mary-config.yml'."""
+    settings = Settings.model_validate({})
+    assert settings.TTS_CONFIG_PATH == "silero-to-mary-config.yml"
+
+
+def test_settings_max_concurrent_default():
+    """Test that TTS_MAX_CONCURRENT_PER_LOCALE defaults to 2."""
+    settings = Settings.model_validate({})
+    assert settings.TTS_MAX_CONCURRENT_PER_LOCALE == 2
+
+
+def test_valid_max_concurrent_values():
+    """Test that all valid TTS_MAX_CONCURRENT_PER_LOCALE values are accepted."""
+    for val in [1, 5, 10]:
+        settings = Settings.model_validate({"TTS_MAX_CONCURRENT_PER_LOCALE": val})
+        assert settings.TTS_MAX_CONCURRENT_PER_LOCALE == val
+
+
+def test_invalid_max_concurrent_zero_fails():
+    """Test that TTS_MAX_CONCURRENT_PER_LOCALE=0 raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_MAX_CONCURRENT_PER_LOCALE": 0})
+
+
+def test_invalid_max_concurrent_negative_fails():
+    """Test that negative TTS_MAX_CONCURRENT_PER_LOCALE raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_MAX_CONCURRENT_PER_LOCALE": -1})
+
+
+def test_invalid_max_concurrent_above_range_fails():
+    """Test that TTS_MAX_CONCURRENT_PER_LOCALE > 10 raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_MAX_CONCURRENT_PER_LOCALE": 11})
+
+
+def test_invalid_config_path_nonexistent_fails(tmp_path):
+    """Test that non-existent TTS_CONFIG_PATH raises ValidationError."""
+    nonexistent = str(tmp_path / "nonexistent.yml")
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_CONFIG_PATH": nonexistent})
