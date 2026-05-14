@@ -1,409 +1,286 @@
 models:
   v5_5_ru:
+    language: ru
     sample_rate:
     - 8000
     - 24000
     - 48000
   v5_cis_base:
+    language: ru
     sample_rate:
     - 8000
     - 24000
     - 48000
   v5_cis_base_nostress:
+    language: ru
     sample_rate:
     - 8000
     - 24000
     - 48000
   v3_en:
+    language: en
     sample_rate:
     - 8000
     - 24000
     - 48000
 locales:
-- ru_RU
-- en_US
-voices:
-  silero-v5_5_ru-aidar:
-    speaker: "aidar"
-    model: "v5_5_ru"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_5_ru-eugene:
-    speaker: "eugene"
-    model: "v5_5_ru"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_5_ru-baya:
-    speaker: "baya"
-    model: "v5_5_ru"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_5_ru-kseniya:
-    speaker: "kseniya"
-    model: "v5_5_ru"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_5_ru-xenia:
-    speaker: "xenia"
-    model: "v5_5_ru"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v3_en-en_0:
-    speaker: "en_0"
-    model: "v3_en"
-    locale: "en_US"
-    language: "en"
-    gender: "male"
-  silero-v5_cis_base-aigul:
-    speaker: "aigul"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-albina:
-    speaker: "albina"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-alexandr:
-    speaker: "alexandr"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-alfia:
-    speaker: "alfia"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-alfia2:
-    speaker: "alfia2"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-bogdan:
-    speaker: "bogdan"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-dmitriy:
-    speaker: "dmitriy"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-eduard:
-    speaker: "eduard"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-ekaterina:
-    speaker: "ekaterina"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-gamat:
-    speaker: "gamat"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-igor:
-    speaker: "igor"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-karina:
-    speaker: "karina"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-kejilgan:
-    speaker: "kejilgan"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-kermen:
-    speaker: "kermen"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-marat:
-    speaker: "marat"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-miyau:
-    speaker: "miyau"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-nurgul:
-    speaker: "nurgul"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-oksana:
-    speaker: "oksana"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-onaoy:
-    speaker: "onaoy"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-ramilia:
-    speaker: "ramilia"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-roman:
-    speaker: "roman"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-safarhuja:
-    speaker: "safarhuja"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-saida:
-    speaker: "saida"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-sibday:
-    speaker: "sibday"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base-vika:
-    speaker: "vika"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-zara:
-    speaker: "zara"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-zhadyra:
-    speaker: "zhadyra"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-zhazira:
-    speaker: "zhazira"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base-zinaida:
-    speaker: "zinaida"
-    model: "v5_cis_base"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-aigul:
-    speaker: "aigul"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-albina:
-    speaker: "albina"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-alexandr:
-    speaker: "alexandr"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-alfia:
-    speaker: "alfia"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-alfia2:
-    speaker: "alfia2"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-bogdan:
-    speaker: "bogdan"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-dmitriy:
-    speaker: "dmitriy"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-eduard:
-    speaker: "eduard"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-ekaterina:
-    speaker: "ekaterina"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-gamat:
-    speaker: "gamat"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-igor:
-    speaker: "igor"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-karina:
-    speaker: "karina"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-kejilgan:
-    speaker: "kejilgan"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-kermen:
-    speaker: "kermen"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-marat:
-    speaker: "marat"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-miyau:
-    speaker: "miyau"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-nurgul:
-    speaker: "nurgul"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-oksana:
-    speaker: "oksana"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-onaoy:
-    speaker: "onaoy"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-ramilia:
-    speaker: "ramilia"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-roman:
-    speaker: "roman"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-safarhuja:
-    speaker: "safarhuja"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-saida:
-    speaker: "saida"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-sibday:
-    speaker: "sibday"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "male"
-  silero-v5_cis_base_nostress-vika:
-    speaker: "vika"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-zara:
-    speaker: "zara"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-zhadyra:
-    speaker: "zhadyra"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-zhazira:
-    speaker: "zhazira"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
-  silero-v5_cis_base_nostress-zinaida:
-    speaker: "zinaida"
-    model: "v5_cis_base_nostress"
-    locale: "ru_RU"
-    language: "ru"
-    gender: "female"
+  ru_RU:
+    voices:
+      silero-v5_5_ru-aidar:
+        speaker: "aidar"
+        model: "v5_5_ru"
+        gender: "male"
+      silero-v5_5_ru-eugene:
+        speaker: "eugene"
+        model: "v5_5_ru"
+        gender: "male"
+      silero-v5_5_ru-baya:
+        speaker: "baya"
+        model: "v5_5_ru"
+        gender: "female"
+      silero-v5_5_ru-kseniya:
+        speaker: "kseniya"
+        model: "v5_5_ru"
+        gender: "female"
+      silero-v5_5_ru-xenia:
+        speaker: "xenia"
+        model: "v5_5_ru"
+        gender: "female"
+      silero-v5_cis_base-ru_aigul:
+        speaker: "ru_aigul"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_albina:
+        speaker: "ru_albina"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_alexandr:
+        speaker: "ru_alexandr"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_alfia:
+        speaker: "ru_alfia"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_alfia2:
+        speaker: "ru_alfia2"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_bogdan:
+        speaker: "ru_bogdan"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_dmitriy:
+        speaker: "ru_dmitriy"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_eduard:
+        speaker: "ru_eduard"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_ekaterina:
+        speaker: "ru_ekaterina"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_gamat:
+        speaker: "ru_gamat"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_igor:
+        speaker: "ru_igor"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_karina:
+        speaker: "ru_karina"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_kejilgan:
+        speaker: "ru_kejilgan"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_kermen:
+        speaker: "ru_kermen"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_marat:
+        speaker: "ru_marat"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_miyau:
+        speaker: "ru_miyau"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_nurgul:
+        speaker: "ru_nurgul"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_oksana:
+        speaker: "ru_oksana"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_onaoy:
+        speaker: "ru_onaoy"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_ramilia:
+        speaker: "ru_ramilia"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_roman:
+        speaker: "ru_roman"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_safarhuja:
+        speaker: "ru_safarhuja"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_saida:
+        speaker: "ru_saida"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_sibday:
+        speaker: "ru_sibday"
+        model: "v5_cis_base"
+        gender: "male"
+      silero-v5_cis_base-ru_vika:
+        speaker: "ru_vika"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_zara:
+        speaker: "ru_zara"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_zhadyra:
+        speaker: "ru_zhadyra"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_zhazira:
+        speaker: "ru_zhazira"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base-ru_zinaida:
+        speaker: "ru_zinaida"
+        model: "v5_cis_base"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_aigul:
+        speaker: "ru_aigul"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_albina:
+        speaker: "ru_albina"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_alexandr:
+        speaker: "ru_alexandr"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_alfia:
+        speaker: "ru_alfia"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_alfia2:
+        speaker: "ru_alfia2"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_bogdan:
+        speaker: "ru_bogdan"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_dmitriy:
+        speaker: "ru_dmitriy"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_eduard:
+        speaker: "ru_eduard"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_ekaterina:
+        speaker: "ru_ekaterina"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_gamat:
+        speaker: "ru_gamat"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_igor:
+        speaker: "ru_igor"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_karina:
+        speaker: "ru_karina"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_kejilgan:
+        speaker: "ru_kejilgan"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_kermen:
+        speaker: "ru_kermen"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_marat:
+        speaker: "ru_marat"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_miyau:
+        speaker: "ru_miyau"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_nurgul:
+        speaker: "ru_nurgul"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_oksana:
+        speaker: "ru_oksana"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_onaoy:
+        speaker: "ru_onaoy"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_ramilia:
+        speaker: "ru_ramilia"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_roman:
+        speaker: "ru_roman"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_safarhuja:
+        speaker: "ru_safarhuja"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_saida:
+        speaker: "ru_saida"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_sibday:
+        speaker: "ru_sibday"
+        model: "v5_cis_base_nostress"
+        gender: "male"
+      silero-v5_cis_base_nostress-ru_vika:
+        speaker: "ru_vika"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_zara:
+        speaker: "ru_zara"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_zhadyra:
+        speaker: "ru_zhadyra"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_zhazira:
+        speaker: "ru_zhazira"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+      silero-v5_cis_base_nostress-ru_zinaida:
+        speaker: "ru_zinaida"
+        model: "v5_cis_base_nostress"
+        gender: "female"
+  en_US:
+    voices:
+      silero-v3_en-en_0:
+        speaker: "en_0"
+        model: "v3_en"
+        gender: "male"
