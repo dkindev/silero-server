@@ -13,7 +13,7 @@ Target users: any client (web, mobile, desktop, embedded) that needs TTS via a w
 The underlying engine is **Silero TTS** (`silero` Python package). Silero provides neural TTS models per language with multiple speaker voices per model.
 
 Key Silero concepts:
-- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded via Torch Hub to `~/.cache/torch/hub/`.
+- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded via Torch Hub to `~/.cache/torch/hub/`. Each model has a `language` field used by `torch.hub.load()`.
 - **Speaker**: A named voice within a model (e.g., `aidar`, `baya`, `eugene`, `kseniya`, `xenia` for Russian). Speakers are model-specific.
 - **Sample rate**: Audio output frequency in Hz. Silero produces 48000 Hz by default; torchaudio can resample.
 
@@ -51,7 +51,7 @@ Low-level TTS engine wrapping Silero. Lives in `src/services/silero_tts_engine.p
 
 **Methods:**
 - `get_locales()` → `list[str]` — returns cached list from config (e.g., `["ru_RU", "de_DE"]`)
-- `get_voices()` → `list[str]` — returns cached list (e.g., `["silero-v5_5_ru-aidar", "silero-v5_5_ru-baya"]`)
+- `get_voices()` → `list[str]` — returns cached list in Mary-TTS format: `"{name} {locale} {gender}"` per voice (e.g., `["silero-v5_5_ru-aidar ru_RU male", "silero-v5_5_ru-baya ru_RU female"]`)
 - `process(text, locale, voice, input_type, output_type)` → `bytes` — returns raw WAV audio
 
 **Initialization:**
