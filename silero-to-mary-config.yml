@@ -1,24 +1,24 @@
 models:
   v5_5_ru:
-    language: ru
+    language: "ru"
     sample_rate:
     - 8000
     - 24000
     - 48000
   v5_cis_base:
-    language: ru
+    language: "ru"
     sample_rate:
     - 8000
     - 24000
     - 48000
   v5_cis_base_nostress:
-    language: ru
+    language: "ru"
     sample_rate:
     - 8000
     - 24000
     - 48000
   v3_en:
-    language: en
+    language: "en"
     sample_rate:
     - 8000
     - 24000
