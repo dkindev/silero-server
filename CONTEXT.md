@@ -19,13 +19,9 @@ Key Silero concepts:
 
 ### Locale
 
-The API exposes **Mary-TTS locale format** (`ru_RU`, `de_DE`) on the public API surface. Internally, Silero uses short language codes (`ru`, `de`).
+The API exposes **Mary-TTS locale format** (`ru_RU`, `de_DE`) on the public API surface. Locales are derived from `SileroTTSEngine.get_locales()`.
 
-Mapping:
-- Public API: `ru_RU`, `en_US`, `de_DE` — Mary-TTS compatible format.
-- Internal Silero: `ru`, `en`, `de` — Torch Hub language codes.
-
-A locale is **supported** when the corresponding Silero model (`.pt` file) is cached. A request for an unsupported locale returns **400 Bad Request**.
+A locale is **supported** if it appears in `SileroTTSEngine.get_locales()`. A request for an unsupported locale returns **400 Bad Request**.
 
 ### Voice
 
@@ -41,42 +37,61 @@ This naming scheme:
 - Embeds the model name (e.g., `v5_5_ru`) to disambiguate speakers that may not exist in other model versions.
 - Speaker names are Silero's native speaker identifiers.
 
-Speaker gender is hardcoded per known speaker name in a mapping. Unrecognized speakers default to `unknown`.
+Voice validation at request time:
+1. Look up voice in config → get model and locale
+2. Verify requested locale matches config locale (400 if mismatch)
+3. Get model's supported sample_rates from config
+4. If `TTS_SAMPLE_RATE` exceeds max supported, clamp to highest available
+
+Gender is sourced from config.
+
+### SileroTTSEngine
+
+Low-level TTS engine wrapping Silero. Lives in `src/services/silero_tts_engine.py`.
+
+**Methods:**
+- `get_locales()` → `list[str]` — returns cached list from config (e.g., `["ru_RU", "de_DE"]`)
+- `get_voices()` → `list[str]` — returns cached list (e.g., `["silero-v5_5_ru-aidar", "silero-v5_5_ru-baya"]`)
+- `process(text, locale, voice, input_type, output_type)` → `bytes` — returns raw WAV audio
+
+**Initialization:**
+- Config loaded from `TTS_CONFIG_PATH` at init, cached for app lifetime
+- Settings read: `TTS_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_CONFIG_PATH`, `TTS_MAX_CONCURRENT_PER_LOCALE`
+
+**Validation rules (in engine):**
+- Locale must exist in config → 400 if not
+- Voice must exist for locale → 400 if not
+- `INPUT_TYPE` must be TEXT or SSML → 400 if not
+- `OUTPUT_TYPE` must be AUDIO → 400 for invalid, 406 for non-AUDIO
+
+**Concurrency:**
+- Per-locale `asyncio.Semaphore` with configurable limit via `TTS_MAX_CONCURRENT_PER_LOCALE`
+- Models lazy-loaded on first `process()` call per locale, cached thereafter
 
 ### `/locales` Endpoint
 
-Returns available locales as plain text, one per line. Derived from Silero model files cached in the torch hub directory on startup. Returns `200 OK` with empty body if no models are loaded.
+Returns available locales from `SileroTTSEngine.get_locales()` as plain text, one per line.
 
 ### `/voices` Endpoint
 
-Returns available voices as Mary-TTS-style lines: `{voice} {locale} {gender}\n`.
-
-Voices are discovered by loading cached models at startup and reading `model.speakers`. Only voices for loaded models are listed.
+Returns available voices from `SileroTTSEngine.get_voices()` as plain text, one per line.
 
 ### `/process` Endpoint
 
-Converts text to speech audio. Supports GET and POST.
+Converts text to speech audio. Uses `SileroTTSEngine.process()` for synthesis. Supports GET and POST.
 
 **Parameters:**
 - `INPUT_TEXT` — text to synthesize (required).
 - `LOCALE` — Mary-TTS locale (e.g., `ru_RU`). Must have a cached model.
 - `VOICE` — voice name (e.g., `silero-v5_5_ru-aidar`). Must exist for the locale.
-- `INPUT_TYPE` — input format: `TEXT` (default), `SSML` (tags stripped), `RAWMARYXML` (rejected).
+- `INPUT_TYPE` — input format: `TEXT` (default), `SSML`, `RAWMARYXML` (rejected).
 - `OUTPUT_TYPE` — output format: `AUDIO` (default, WAV), `PHONEMES`/`TOKENS` (rejected with 406).
 
 **Validation rules:**
-- Locale must be supported (400 if not).
-- Voice must exist for the locale (400 if not).
-- Text language must match declared locale (400 if mismatch).
-- Text length ≤ `TTS_MAX_TEXT_LENGTH` (default 1000 chars, 400 if exceeded).
-- `INPUT_TYPE` must be `TEXT` or `SSML` (400 for others).
-- `OUTPUT_TYPE` must be `AUDIO` (406 for others).
+- Text length ≤ `TTS_MAX_TEXT_LENGTH` (default 1000 chars, 400 if exceeded) — checked in endpoint
+- Engine handles: locale existence, voice existence, `INPUT_TYPE`, `OUTPUT_TYPE`
 
 **Response:** Raw WAV audio bytes. `Content-Type: audio/wav`, `Content-Disposition: inline`.
-
-### Concurrency
-
-Per-language semaphore with a default limit of **2 concurrent requests** to prevent CUDA OOM. Different languages can run in parallel. Requests for the same language are serialized beyond the limit.
 
 ### Configuration
 
@@ -89,6 +104,8 @@ All configuration via environment variables with `TTS_` prefix:
 | `TTS_MAX_TEXT_LENGTH` | `1000` | Max input characters |
 | `TTS_ALLOWED_ORIGINS` | `*` | CORS allowed origins |
 | `TTS_SHUTDOWN_TIMEOUT` | `10` | Graceful shutdown timeout (seconds) |
+| `TTS_CONFIG_PATH` | `silero-to-mary-config.yml` | Path to voice/locale mapping config |
+| `TTS_MAX_CONCURRENT_PER_LOCALE` | `2` | Max concurrent requests per locale |
 
 Validated at startup via Pydantic Settings — app exits with a clear error on invalid values.
 
@@ -105,8 +122,6 @@ All errors return JSON `{"detail": "..."}`. HTTP status codes:
 - `status`: always `"ok"`
 - `device`: `"cpu"` or `"cuda"`
 - `sample_rate`: configured output sample rate
-- `cached_locales`: list of available locales from loaded models
-- `loaded_models`: list of loaded models with their speakers
 
 ### Docker Strategy
 
