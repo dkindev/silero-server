@@ -1,8 +1,9 @@
 ---
 title: "03: process() with lazy model loading"
 labels:
-  - ready-for-agent
+  - completed
 created: 2026-05-14
+completed: 2026-05-15
 ---
 
 ## Parent
@@ -15,15 +16,15 @@ Implement process() method with validation, per-model semaphores, lazy model loa
 
 ## Acceptance criteria
 
-- [ ] process() validates locale exists → InvalidLocaleError
-- [ ] process() validates voice exists for locale → InvalidVoiceError
-- [ ] process() validates input_type TEXT/SSML → InvalidInputTypeError
-- [ ] process() validates output_type AUDIO → InvalidOutputTypeError
-- [ ] Per-model semaphores created lazily, limit from config
-- [ ] torch.hub.load() called on first request per model
-- [ ] Synthesis runs in asyncio.to_thread()
-- [ ] Sample rate clamped to model's max if exceeded
-- [ ] Returns TTSResult with audio bytes, sample_rate, model
+- [x] process() validates locale exists → InvalidLocaleError
+- [x] process() validates voice exists for locale → InvalidVoiceError
+- [x] process() validates input_type TEXT/SSML → InvalidInputTypeError
+- [x] process() validates output_type AUDIO → InvalidOutputTypeError
+- [x] Per-model semaphores created lazily, limit from config
+- [x] torch.hub.load() called on first request per model
+- [x] Synthesis runs in asyncio.to_thread()
+- [x] Sample rate clamped to model's max if exceeded
+- [x] Returns TTSResult with audio bytes, sample_rate, model
 
 ## Blocked by
 
