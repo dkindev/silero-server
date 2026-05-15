@@ -41,15 +41,6 @@ Voice validation at request time:
 1. Look up locale in config → get voices → get model
 2. Verify requested locale matches config locale
 3. Verify requested voice is contained in locale
-4. Get model's supported sample_rates from config
-5. Sample rate selection logic (already sorted and deduplicated):
-   a. Empty list → use TTS_SAMPLE_RATE
-   b. None → use TTS_SAMPLE_RATE
-   c. Single element → use that element
-   d. TTS_SAMPLE_RATE > max → use max
-   e. TTS_SAMPLE_RATE < min → use min
-   f. Exact match → use that value
-   g. Not in list → use highest value less than TTS_SAMPLE_RATE
 
 Gender is sourced from config.
 
@@ -65,6 +56,18 @@ Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 **Initialization:**
 - Config loaded from `TTS_CONFIG_PATH` at init, cached for app lifetime
 - Settings read: `TTS_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_CONCURRENT_PER_LOCALE`
+
+Sample rate selection logic:
+1. Get voice model (after receiving a voice from the config)
+2. Get model's supported sample_rates from config
+3. Sample rate selection logic (already sorted and deduplicated):
+   a. Empty list → use TTS_SAMPLE_RATE
+   b. None → use TTS_SAMPLE_RATE
+   c. Single element → use that element
+   d. TTS_SAMPLE_RATE > max → use max
+   e. TTS_SAMPLE_RATE < min → use min
+   f. Exact match → use that value
+   g. Not in list → use highest value less than TTS_SAMPLE_RATE
 
 **Validation rules (in engine):**
 - Locale must exist in config → 400 if not
