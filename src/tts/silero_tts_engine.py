@@ -8,6 +8,7 @@ from src.tts.exceptions import (
     InvalidLocaleError,
     InvalidOutputTypeError,
     InvalidVoiceError,
+    TTSProcessingError,
 )
 from src.tts.models import TTSConfig, TTSConfigModel
 from src.tts.result import TTSResult
@@ -46,6 +47,9 @@ class SileroTTSEngine:
         model_info = self._config_model.models[model_name]
 
         if model_name not in self._models:
+            if not model_info.language:
+                raise TTSProcessingError(f"Language for {model_name} is not specified")
+
             model = torch.hub.load(
                 repo_or_dir="snakers4/silero-v4",
                 model="silero_tts",
