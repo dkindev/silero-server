@@ -55,7 +55,7 @@ Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 
 **Initialization:**
 - Config loaded from `TTS_CONFIG_PATH` at init, cached for app lifetime
-- Settings read: `TTS_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_CONCURRENT_PER_LOCALE`
+- Settings read: `TTS_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_CONCURRENT_PER_MODEL`
 
 Sample rate selection logic:
 1. Get voice model (after receiving a voice from the config)
@@ -76,7 +76,7 @@ Sample rate selection logic:
 - `OUTPUT_TYPE` must be AUDIO → 400 for invalid, 406 for non-AUDIO
 
 **Concurrency:**
-- Per-locale `asyncio.Semaphore` with configurable limit via `TTS_MAX_CONCURRENT_PER_LOCALE`
+- Per-model `asyncio.Semaphore` with configurable limit via `TTS_MAX_CONCURRENT_PER_MODEL`
 - Models lazy-loaded on first `process()` call per language and speaker, cached thereafter
 
 ### `/locales` Endpoint
@@ -116,7 +116,7 @@ All configuration via environment variables with `TTS_` prefix:
 | `TTS_ALLOWED_ORIGINS` | `*` | CORS allowed origins |
 | `TTS_SHUTDOWN_TIMEOUT` | `10` | Graceful shutdown timeout (seconds) |
 | `TTS_CONFIG_PATH` | `silero-to-mary-config.yml` | Path to voice/locale mapping config |
-| `TTS_MAX_CONCURRENT_PER_LOCALE` | `2` | Max concurrent requests per locale |
+| `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent requests per model |
 
 Validated at startup via Pydantic Settings — app exits with a clear error on invalid values.
 

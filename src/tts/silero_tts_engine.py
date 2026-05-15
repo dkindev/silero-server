@@ -58,7 +58,7 @@ class SileroTTSEngine:
             )
             self._models[model_name] = model
             self._model_semaphores[model_name] = asyncio.Semaphore(
-                self._config.max_concurrent_per_locale
+                self._config.max_concurrent_per_model
             )
 
         model = self._models[model_name]

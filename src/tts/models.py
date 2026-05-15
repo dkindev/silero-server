@@ -29,4 +29,4 @@ class TTSConfigModel:
 class TTSConfig:
     device: str
     sample_rate: int
-    max_concurrent_per_locale: int
+    max_concurrent_per_model: int

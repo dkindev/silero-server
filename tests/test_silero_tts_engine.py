@@ -12,7 +12,7 @@ class TestSileroTTSEngineInit:
         """Engine should accept TTSConfig and TTSConfigModel."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         config_model = TTSConfigModel(models={}, locales={})
 
         engine = SileroTTSEngine(config, config_model)
@@ -23,7 +23,7 @@ class TestSileroTTSEngineInit:
         """Engine should cache locales at init time."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -41,7 +41,7 @@ class TestSileroTTSEngineInit:
         """Engine should cache voices at init time."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -63,7 +63,7 @@ class TestGetLocales:
         """get_locales should return a tuple."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         config_model = TTSConfigModel(models={}, locales={})
 
         engine = SileroTTSEngine(config, config_model)
@@ -75,7 +75,7 @@ class TestGetLocales:
         """get_locales should return locale strings from config."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(voices={})
         locale_en = Locale(voices={})
         config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru, "en_US": locale_en})
@@ -95,7 +95,7 @@ class TestGetVoices:
         """get_voices should return a tuple."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         config_model = TTSConfigModel(models={}, locales={})
 
         engine = SileroTTSEngine(config, config_model)
@@ -107,7 +107,7 @@ class TestGetVoices:
         """get_voices should return '{voice} {locale} {gender}' format."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(
             voices={"aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")}
         )
@@ -122,7 +122,7 @@ class TestGetVoices:
         """get_voices should include voices from all locales."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(
             voices={"aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")}
         )
@@ -148,7 +148,7 @@ class TestProcessValidation:
         from src.tts.exceptions import InvalidLocaleError
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -175,7 +175,7 @@ class TestProcessValidation:
         from src.tts.exceptions import InvalidVoiceError
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -202,7 +202,7 @@ class TestProcessValidation:
         from src.tts.exceptions import InvalidInputTypeError
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -227,7 +227,7 @@ class TestProcessValidation:
         from src.tts.exceptions import InvalidOutputTypeError
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -252,7 +252,7 @@ class TestProcessValidation:
         from src.tts.result import TTSResult
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=[8000, 24000, 48000])
         locale_ru = Locale(
             voices={
@@ -291,7 +291,7 @@ class TestProcessValidation:
         """process() should clamp sample rate to model's max if configured rate exceeds it."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=[8000, 24000])
         locale_ru = Locale(
             voices={
@@ -333,7 +333,7 @@ class TestProcessValidation:
         """process() should use min available rate if configured rate is below min."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=8000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=8000, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=[24000, 48000])
         locale_ru = Locale(
             voices={
@@ -375,7 +375,7 @@ class TestProcessValidation:
         """process() should use config rate if it exactly matches available rate."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=24000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=24000, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=[16000, 24000, 48000])
         locale_ru = Locale(
             voices={
@@ -417,7 +417,7 @@ class TestProcessValidation:
         """process() should use highest available rate below config if config not in list."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=44100, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=44100, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=[16000, 24000, 48000])
         locale_ru = Locale(
             voices={
@@ -459,7 +459,7 @@ class TestProcessValidation:
         """process() should use single available rate regardless of config value."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=[24000])
         locale_ru = Locale(
             voices={
@@ -501,7 +501,7 @@ class TestProcessValidation:
         """process() should use config rate if model has no sample rates."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=[])
         locale_ru = Locale(
             voices={
@@ -543,7 +543,7 @@ class TestProcessValidation:
         """process() should use config rate if model sample rates is None."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=None)
         locale_ru = Locale(
             voices={
@@ -585,7 +585,7 @@ class TestProcessValidation:
         """process() should load model on first request and cache it."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=[48000])
         locale_ru = Locale(
             voices={
@@ -632,7 +632,7 @@ class TestProcessValidation:
         """process() should use per-model semaphores to limit concurrent requests."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         model_config = Model(language="ru", sample_rates=[48000])
         locale_ru = Locale(
             voices={
@@ -671,7 +671,7 @@ class TestCaching:
         """Repeated get_locales calls should return same object."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(voices={})
         config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru})
 
@@ -686,7 +686,7 @@ class TestCaching:
         """Repeated get_voices calls should return same object."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
         locale_ru = Locale(voices={})
         config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru})
 

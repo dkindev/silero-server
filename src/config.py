@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     TTS_CONFIG_PATH: str = "silero-to-mary-config.yml"
     """Path to voice/locale mapping config file."""
 
-    TTS_MAX_CONCURRENT_PER_LOCALE: int = Field(2, ge=1, le=10)
-    """Maximum concurrent TTS requests per locale."""
+    TTS_MAX_CONCURRENT_PER_MODEL: int = Field(2, ge=1, le=10)
+    """Maximum concurrent TTS requests per model."""
 
     @field_validator("TTS_CONFIG_PATH")
     @classmethod
