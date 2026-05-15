@@ -48,7 +48,7 @@ Gender is sourced from config.
 
 ### SileroTTSEngine
 
-Low-level TTS engine wrapping Silero. Lives in `src/services/silero_tts_engine.py`.
+Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 
 **Methods:**
 - `get_locales()` → `list[str]` — returns cached list from config (e.g., `["ru_RU", "de_DE"]`)
@@ -67,7 +67,7 @@ Low-level TTS engine wrapping Silero. Lives in `src/services/silero_tts_engine.p
 
 **Concurrency:**
 - Per-locale `asyncio.Semaphore` with configurable limit via `TTS_MAX_CONCURRENT_PER_LOCALE`
-- Models lazy-loaded on first `process()` call per locale, cached thereafter
+- Models lazy-loaded on first `process()` call per language and speaker, cached thereafter
 
 ### `/locales` Endpoint
 
