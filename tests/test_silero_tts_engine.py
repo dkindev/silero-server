@@ -329,6 +329,258 @@ class TestProcessValidation:
         assert result.sample_rate == 24000
 
     @pytest.mark.asyncio
+    async def test_process_sample_rate_below_min_uses_min(self):
+        """process() should use min available rate if configured rate is below min."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=8000, max_concurrent_per_locale=2)
+        model_config = Model(language="ru", sample_rates=[24000, 48000])
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        calls = []
+
+        def capture_apply_tts(text, speaker, sample_rate):
+            calls.append(sample_rate)
+            return mock_audio
+
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts = capture_apply_tts
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.hub.load", return_value=mock_model
+        ):
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+                output_type="AUDIO",
+            )
+
+        assert calls[0] == 24000
+        assert result.sample_rate == 24000
+
+    @pytest.mark.asyncio
+    async def test_process_sample_rate_exact_match_uses_config(self):
+        """process() should use config rate if it exactly matches available rate."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=24000, max_concurrent_per_locale=2)
+        model_config = Model(language="ru", sample_rates=[16000, 24000, 48000])
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        calls = []
+
+        def capture_apply_tts(text, speaker, sample_rate):
+            calls.append(sample_rate)
+            return mock_audio
+
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts = capture_apply_tts
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.hub.load", return_value=mock_model
+        ):
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+                output_type="AUDIO",
+            )
+
+        assert calls[0] == 24000
+        assert result.sample_rate == 24000
+
+    @pytest.mark.asyncio
+    async def test_process_sample_rate_not_in_list_uses_highest_below(self):
+        """process() should use highest available rate below config if config not in list."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=44100, max_concurrent_per_locale=2)
+        model_config = Model(language="ru", sample_rates=[16000, 24000, 48000])
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        calls = []
+
+        def capture_apply_tts(text, speaker, sample_rate):
+            calls.append(sample_rate)
+            return mock_audio
+
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts = capture_apply_tts
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.hub.load", return_value=mock_model
+        ):
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+                output_type="AUDIO",
+            )
+
+        assert calls[0] == 24000
+        assert result.sample_rate == 24000
+
+    @pytest.mark.asyncio
+    async def test_process_sample_rate_single_element_uses_that_element(self):
+        """process() should use single available rate regardless of config value."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        model_config = Model(language="ru", sample_rates=[24000])
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        calls = []
+
+        def capture_apply_tts(text, speaker, sample_rate):
+            calls.append(sample_rate)
+            return mock_audio
+
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts = capture_apply_tts
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.hub.load", return_value=mock_model
+        ):
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+                output_type="AUDIO",
+            )
+
+        assert calls[0] == 24000
+        assert result.sample_rate == 24000
+
+    @pytest.mark.asyncio
+    async def test_process_sample_rate_empty_list_uses_config(self):
+        """process() should use config rate if model has no sample rates."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        model_config = Model(language="ru", sample_rates=[])
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        calls = []
+
+        def capture_apply_tts(text, speaker, sample_rate):
+            calls.append(sample_rate)
+            return mock_audio
+
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts = capture_apply_tts
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.hub.load", return_value=mock_model
+        ):
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+                output_type="AUDIO",
+            )
+
+        assert calls[0] == 48000
+        assert result.sample_rate == 48000
+
+    @pytest.mark.asyncio
+    async def test_process_sample_rate_none_uses_config(self):
+        """process() should use config rate if model sample rates is None."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_locale=2)
+        model_config = Model(language="ru", sample_rates=None)
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        calls = []
+
+        def capture_apply_tts(text, speaker, sample_rate):
+            calls.append(sample_rate)
+            return mock_audio
+
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts = capture_apply_tts
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.hub.load", return_value=mock_model
+        ):
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+                output_type="AUDIO",
+            )
+
+        assert calls[0] == 48000
+        assert result.sample_rate == 48000
+
+    @pytest.mark.asyncio
     async def test_process_lazy_model_loading(self):
         """process() should load model on first request and cache it."""
         from src.tts.silero_tts_engine import SileroTTSEngine

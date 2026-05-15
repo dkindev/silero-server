@@ -60,9 +60,7 @@ class SileroTTSEngine:
         model = self._models[model_name]
         speaker = voice_config.speaker
 
-        sample_rate = self._config.sample_rate
-        if sample_rate > max(model_info.sample_rates):
-            sample_rate = max(model_info.sample_rates)
+        sample_rate = self._select_sample_rate(self._config.sample_rate, model_info.sample_rates)
 
         semaphore = self._model_semaphores[model_name]
 
@@ -77,6 +75,30 @@ class SileroTTSEngine:
             for voice_name, voice_config in locale_data.voices.items():
                 voices.append(f"{voice_name} {locale} {voice_config.gender}")
         return tuple(voices)
+
+    def _select_sample_rate(self, config_rate: int, supported_rates: list[int]) -> int:
+        if not supported_rates:
+            return config_rate
+        if supported_rates is None:
+            return config_rate
+        if len(supported_rates) == 1:
+            return supported_rates[0]
+
+        max_rate = supported_rates[-1]
+        if config_rate > max_rate:
+            return max_rate
+        min_rate = supported_rates[0]
+        if config_rate < min_rate:
+            return min_rate
+
+        if config_rate in supported_rates:
+            return config_rate
+
+        candidates = [r for r in supported_rates if r < config_rate]
+        if candidates:
+            return candidates[-1]
+
+        return max_rate
 
     def get_locales(self) -> tuple[str, ...]:
         """Return available locales."""
