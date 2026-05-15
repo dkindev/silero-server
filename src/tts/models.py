@@ -23,3 +23,10 @@ class Locale:
 class TTSConfigModel:
     models: dict[str, Model]
     locales: dict[str, Locale]
+
+
+@dataclass(frozen=True)
+class TTSConfig:
+    device: str
+    sample_rate: int
+    max_concurrent_per_locale: int

@@ -52,12 +52,12 @@ Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 
 **Methods:**
 - `get_locales()` → `list[str]` — returns cached list from config (e.g., `["ru_RU", "de_DE"]`)
-- `get_voices()` → `list[str]` — returns cached list in Mary-TTS format: `"{name} {locale} {gender}"` per voice (e.g., `["silero-v5_5_ru-aidar ru_RU male", "silero-v5_5_ru-baya ru_RU female"]`)
+- `get_voices()` → `list[str]` — returns cached list in Mary-TTS format: `"{voice_name} {locale} {gender}"` per voice (e.g., `["silero-v5_5_ru-aidar ru_RU male", "silero-v5_5_ru-baya ru_RU female"]`)
 - `process(text, locale, voice, input_type, output_type)` → `bytes` — returns raw WAV audio
 
 **Initialization:**
 - Config loaded from `TTS_CONFIG_PATH` at init, cached for app lifetime
-- Settings read: `TTS_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_CONFIG_PATH`, `TTS_MAX_CONCURRENT_PER_LOCALE`
+- Settings read: `TTS_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_CONCURRENT_PER_LOCALE`
 
 **Validation rules (in engine):**
 - Locale must exist in config → 400 if not

@@ -15,10 +15,10 @@ Implement SileroTTSEngine class init, get_locales() returning tuple, get_voices(
 
 ## Acceptance criteria
 
-- [ ] SileroTTSEngine.__init__() accepts TTSConfig and TTSConfigModel
-- [ ] get_locales() returns tuple of locale strings from config
-- [ ] get_voices() returns tuple of "{voice} {locale} {gender}" strings
-- [ ] Locales and voices are cached at init time
+- [x] SileroTTSEngine.__init__() accepts TTSConfig and TTSConfigModel
+- [x] get_locales() returns tuple of locale strings from config
+- [x] get_voices() returns tuple of "{voice} {locale} {gender}" strings
+- [x] Locales and voices are cached at init time
 
 ## Blocked by
 
