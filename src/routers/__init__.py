@@ -1,9 +1,11 @@
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from starlette.middleware.cors import CORSMiddleware
 
+from src.config import Settings
 from src.tts.exceptions import TTSEngineError
 from src.tts.silero_tts_engine import SileroTTSEngine
 
@@ -17,6 +19,14 @@ def get_engine(request: Request) -> SileroTTSEngine:
 
 
 EngineDep = Annotated[SileroTTSEngine, Depends(get_engine)]
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
 async def tts_exception_handler(request: Request, exc: TTSEngineError) -> JSONResponse:
@@ -42,8 +52,9 @@ def setup_routers(app: FastAPI, engine: SileroTTSEngine, allowed_origins: str) -
 
     app.add_exception_handler(TTSEngineError, tts_exception_handler)
 
-    from src.routers import locales, process, voices
+    from src.routers import health, locales, process, voices
 
+    app.include_router(health.router)
     app.include_router(locales.router)
     app.include_router(voices.router)
     app.include_router(process.router)

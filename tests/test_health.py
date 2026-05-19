@@ -1,12 +1,18 @@
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from src.main import app
 
 
 @pytest.fixture
 def client():
     """Create an HTTP client for testing."""
+
+    app = FastAPI()
+
+    from src.routers import health
+
+    app.include_router(health.router)
+
     return TestClient(app)
 
 

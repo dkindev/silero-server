@@ -47,6 +47,3 @@ class Settings(BaseSettings):
         if not Path(v).exists():
             raise ValueError(f"Config file not found: {v}")
         return v
-
-
-settings = Settings()
