@@ -661,8 +661,8 @@ class TestProcessValidation:
                 output_type="AUDIO",
             )
 
-        assert "v5_5_ru" in engine._model_semaphores
-        assert engine._model_semaphores["v5_5_ru"]._value == 2
+        assert "v5_5_ru" in engine._cached_models
+        assert engine._cached_models["v5_5_ru"].semaphore._value == 2
 
 
 class TestCaching:
@@ -770,6 +770,119 @@ class TestLoadModel:
         with unittest.mock.patch("torch.hub.load", return_value=mock_model):
             engine._load_model("v5_5_ru", Model(language="ru", sample_rates=[48000]))
 
-        assert "v5_5_ru" in engine._models
-        assert engine._models["v5_5_ru"] is mock_model
+        assert "v5_5_ru" in engine._cached_models
+        assert engine._cached_models["v5_5_ru"].model is mock_model
         mock_model.to.assert_called_once_with(engine._device)
+
+
+class TestCachedModel:
+    """Tests for CachedModel dataclass."""
+
+    def test_cached_model_dataclass_exists(self):
+        """CachedModel should be a dataclass in silero_tts_engine module."""
+        from src.tts.silero_tts_engine import CachedModel
+
+        cached = CachedModel(model="mock", sample_rate=48000, semaphore=None)
+        assert cached.model == "mock"
+        assert cached.sample_rate == 48000
+        assert cached.semaphore is None
+
+    @pytest.mark.asyncio
+    async def test_cached_model_bundles_sample_rate_at_load_time(self):
+        """CachedModel should store sample_rate computed at model load time."""
+        from src.tts.silero_tts_engine import CachedModel, SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+        model_config = Model(language="ru", sample_rates=[24000, 48000])
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_model = unittest.mock.MagicMock()
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.hub.load", return_value=mock_model
+        ):
+            cached = engine._load_model("v5_5_ru", model_config)
+
+        assert isinstance(cached, CachedModel)
+        assert cached.model is mock_model
+        assert cached.sample_rate == 48000
+        assert cached.semaphore is not None
+
+    @pytest.mark.asyncio
+    async def test_engine_uses_cached_model_for_processing(self):
+        """process() should use CachedModel from cache."""
+        from src.tts.silero_tts_engine import CachedModel, SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+        model_config = Model(language="ru", sample_rates=[48000])
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts.return_value = mock_audio
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.hub.load", return_value=mock_model
+        ):
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+                output_type="AUDIO",
+            )
+
+        assert "v5_5_ru" in engine._cached_models
+        cached = engine._cached_models["v5_5_ru"]
+        assert isinstance(cached, CachedModel)
+        assert cached.semaphore is not None
+
+
+class TestSelectSampleRate:
+    """Tests for select_sample_rate module-level function."""
+
+    def test_select_sample_rate_importable_from_models(self):
+        """select_sample_rate should be importable from src.tts.models."""
+        from src.tts.models import select_sample_rate
+
+        result = select_sample_rate(48000, [24000, 48000])
+        assert result == 48000
+
+    def test_select_sample_rate_sorts_and_deduplicates_supported_rates(self):
+        """select_sample_rate should handle unsorted or duplicate supported_rates."""
+        from src.tts.models import select_sample_rate
+
+        result = select_sample_rate(48000, [48000, 24000, 48000, 24000])
+        assert result == 48000
+
+    def test_select_sample_rate_sorts_descending_input(self):
+        """select_sample_rate should work with descending order input."""
+        from src.tts.models import select_sample_rate
+
+        result = select_sample_rate(16000, [48000, 24000, 16000])
+        assert result == 16000
+
+    def test_select_sample_rate_finds_closest_below_from_unsorted(self):
+        """select_sample_rate should find closest rate below config from unsorted."""
+        from src.tts.models import select_sample_rate
+
+        result = select_sample_rate(30000, [48000, 16000, 24000])
+        assert result == 24000
