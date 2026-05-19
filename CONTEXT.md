@@ -60,7 +60,7 @@ Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 Sample rate selection logic:
 1. Get voice model (after receiving a voice from the config)
 2. Get model's supported sample_rates from config
-3. Sample rate selection logic (already sorted and deduplicated):
+3. Sample rate selection logic (sort and deduplicate):
    a. Empty list → use TTS_SAMPLE_RATE
    b. None → use TTS_SAMPLE_RATE
    c. Single element → use that element
@@ -131,8 +131,6 @@ All errors return JSON `{"detail": "..."}`. HTTP status codes:
 
 `GET /api/v1/health` returns extended status:
 - `status`: always `"ok"`
-- `device`: `"cpu"` or `"cuda"`
-- `sample_rate`: configured output sample rate
 
 ### Docker Strategy
 
