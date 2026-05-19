@@ -10,7 +10,7 @@ from src.tts.exceptions import (
     InvalidVoiceError,
     TTSProcessingError,
 )
-from src.tts.models import TTSConfig, TTSConfigModel
+from src.tts.models import Model, TTSConfig, TTSConfigModel
 from src.tts.result import TTSResult
 
 
@@ -24,6 +24,7 @@ class SileroTTSEngine:
         self._voices = self._build_voices()
         self._model_semaphores: dict[str, asyncio.Semaphore] = {}
         self._models: dict[str, Any] = {}
+        self._device = self._resolve_device(config.device)
 
     async def process(
         self,
@@ -46,22 +47,7 @@ class SileroTTSEngine:
         model_name = voice_config.model
         model_info = self._config_model.models[model_name]
 
-        if model_name not in self._models:
-            if not model_info.language:
-                raise TTSProcessingError(f"Language for {model_name} is not specified")
-
-            model = torch.hub.load(
-                repo_or_dir="snakers4/silero-v4",
-                model="silero_tts",
-                language=model_info.language,
-                speaker=model_name,
-            )
-            self._models[model_name] = model
-            self._model_semaphores[model_name] = asyncio.Semaphore(
-                self._config.max_concurrent_per_model
-            )
-
-        model = self._models[model_name]
+        model = self._models.get(model_name) or self._load_model(model_name, model_info)
         speaker = voice_config.speaker
 
         sample_rate = self._select_sample_rate(self._config.sample_rate, model_info.sample_rates)
@@ -72,6 +58,37 @@ class SileroTTSEngine:
             audio = await asyncio.to_thread(model.apply_tts, text, speaker, sample_rate)
 
         return TTSResult(audio=audio, sample_rate=sample_rate, model=model_name)
+
+    def _resolve_device(self, device_str: str) -> torch.device:
+        if device_str == "cuda" and not torch.cuda.is_available():
+            device_str = "cpu"
+        elif device_str == "xpu" and (not hasattr(torch, "xpu") or not torch.xpu.is_available()):
+            device_str = "cpu"
+        return torch.device(device_str)
+
+    def _load_model(self, model_name: str, model_info: Model) -> Any:
+        if not model_info.language:
+            raise TTSProcessingError(f"Language isn't specified for model: {model_name}")
+
+        model = torch.hub.load(
+            repo_or_dir="snakers4/silero-v4",
+            model="silero_tts",
+            language=model_info.language,
+            speaker=model_name,
+        )
+
+        try:
+            model.to(self._device)
+        except Exception as e:
+            raise TTSProcessingError(
+                f"Failed to move model '{model_name}' to device '{self._device}': {e}"
+            ) from e
+
+        self._models[model_name] = model
+        self._model_semaphores[model_name] = asyncio.Semaphore(
+            self._config.max_concurrent_per_model
+        )
+        return model
 
     def _build_voices(self) -> tuple[str, ...]:
         voices = []

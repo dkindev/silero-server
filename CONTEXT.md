@@ -110,7 +110,7 @@ All configuration via environment variables with `TTS_` prefix:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `TTS_DEVICE` | `cpu` | `cpu` or `cuda` |
+| `TTS_DEVICE` | `cpu` | `cpu`, `cuda`, or `xpu`. Falls back to `cpu` at runtime if requested device is unavailable. |
 | `TTS_SAMPLE_RATE` | `48000` | Output audio sample rate (Hz). Supported: 8000, 16000, 22050, 24000, 48000 |
 | `TTS_MAX_TEXT_LENGTH` | `1000` | Max input characters |
 | `TTS_ALLOWED_ORIGINS` | `*` | CORS allowed origins |

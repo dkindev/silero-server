@@ -11,7 +11,17 @@ class Settings(BaseSettings):
     model_config = ConfigDict(env_file=".env", case_sensitive=False)
 
     TTS_DEVICE: str = "cpu"
-    """Device to run TTS model on: 'cpu' or 'cuda'."""
+    """Device to run TTS model on: 'cpu', 'cuda', or 'xpu'. Falls back to 'cpu' at runtime if unavailable."""
+
+    @field_validator("TTS_DEVICE")
+    @classmethod
+    def device_must_be_valid(cls, v: str) -> str:
+        valid = {"cpu", "cuda", "xpu"}
+        if v.lower() not in valid:
+            raise ValueError(
+                f"Invalid TTS_DEVICE '{v}', must be one of: {', '.join(sorted(valid))}"
+            )
+        return v.lower()
 
     TTS_SAMPLE_RATE: Literal[8000, 16000, 22050, 24000, 48000] = 48000
     """Audio sample rate in Hz for TTS output."""

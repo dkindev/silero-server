@@ -136,3 +136,23 @@ def test_invalid_config_path_nonexistent_fails(tmp_path):
     nonexistent = str(tmp_path / "nonexistent.yml")
     with pytest.raises(ValidationError):
         Settings.model_validate({"TTS_CONFIG_PATH": nonexistent})
+
+
+def test_valid_device_values():
+    """Test that all valid TTS_DEVICE values are accepted."""
+    for device in ["cpu", "cuda", "xpu"]:
+        settings = Settings.model_validate({"TTS_DEVICE": device})
+        assert settings.TTS_DEVICE == device
+
+
+def test_valid_device_case_insensitive():
+    """Test that TTS_DEVICE is case-insensitive."""
+    for device, expected in [("CPU", "cpu"), ("CUDA", "cuda"), ("XPU", "xpu")]:
+        settings = Settings.model_validate({"TTS_DEVICE": device})
+        assert settings.TTS_DEVICE == expected
+
+
+def test_invalid_device_value_fails():
+    """Test that invalid TTS_DEVICE value raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_DEVICE": "vulkan"})

@@ -1,6 +1,7 @@
 import unittest.mock
 
 import pytest
+import torch
 
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
 
@@ -696,3 +697,79 @@ class TestCaching:
         result2 = engine.get_voices()
 
         assert result1 is result2
+
+
+class TestResolveDevice:
+    """Tests for _resolve_device method."""
+
+    def test_resolve_device_cuda_unavailable_falls_back_to_cpu(self):
+        """Should return cpu device when cuda is unavailable."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="cuda", sample_rate=48000, max_concurrent_per_model=2)
+        config_model = TTSConfigModel(models={}, locales={})
+
+        engine = SileroTTSEngine(config, config_model)
+
+        with unittest.mock.patch("torch.cuda.is_available", return_value=False):
+            device = engine._resolve_device("cuda")
+
+        assert str(device) == "cpu"
+
+    def test_resolve_device_xpu_unavailable_falls_back_to_cpu(self):
+        """Should return cpu device when xpu is unavailable."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="xpu", sample_rate=48000, max_concurrent_per_model=2)
+        config_model = TTSConfigModel(models={}, locales={})
+
+        engine = SileroTTSEngine(config, config_model)
+
+        class FakeXpuModule:
+            @staticmethod
+            def is_available():
+                return False
+
+        with unittest.mock.patch.object(torch, "xpu", FakeXpuModule(), create=True):
+            device = engine._resolve_device("xpu")
+
+        assert str(device) == "cpu"
+
+
+class TestLoadModel:
+    """Tests for _load_model method."""
+
+    def test_load_model_to_raises_raises_tts_processing_error(self):
+        """Should raise TTSProcessingError when model.to() fails."""
+        from src.tts.exceptions import TTSProcessingError
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+        config_model = TTSConfigModel(models={}, locales={})
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_model = unittest.mock.MagicMock()
+        mock_model.to.side_effect = RuntimeError("device error")
+
+        with unittest.mock.patch("torch.hub.load", return_value=mock_model):
+            with pytest.raises(TTSProcessingError, match="Failed to move model"):
+                engine._load_model("v5_5_ru", Model(language="ru", sample_rates=[48000]))
+
+    def test_load_model_success_caches_model(self):
+        """Should cache model on successful load."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+        config_model = TTSConfigModel(models={}, locales={})
+
+        engine = SileroTTSEngine(config, config_model)
+
+        mock_model = unittest.mock.MagicMock()
+
+        with unittest.mock.patch("torch.hub.load", return_value=mock_model):
+            engine._load_model("v5_5_ru", Model(language="ru", sample_rates=[48000]))
+
+        assert "v5_5_ru" in engine._models
+        assert engine._models["v5_5_ru"] is mock_model
+        mock_model.to.assert_called_once_with(engine._device)
