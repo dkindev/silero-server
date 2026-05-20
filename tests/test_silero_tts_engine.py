@@ -168,7 +168,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 with pytest.raises(InvalidLocaleError) as exc_info:
                     await engine.process(
@@ -206,7 +206,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 with pytest.raises(InvalidVoiceError) as exc_info:
                     await engine.process(
@@ -244,7 +244,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 with pytest.raises(InvalidInputTypeError):
                     await engine.process(
@@ -280,7 +280,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 with pytest.raises(InvalidOutputTypeError):
                     await engine.process(
@@ -298,7 +298,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[8000, 24000, 48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -322,7 +322,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 result = await engine.process(
                     text="hello",
@@ -343,7 +343,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[8000, 24000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -372,7 +372,9 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider,
+                "get_model",
+                return_value=(str(tmp_path / "model.pt"), [8000, 24000]),
             ):
                 result = await engine.process(
                     text="hello",
@@ -391,7 +393,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=8000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[24000, 48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -420,7 +422,9 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider,
+                "get_model",
+                return_value=(str(tmp_path / "model.pt"), [24000, 48000]),
             ):
                 result = await engine.process(
                     text="hello",
@@ -439,7 +443,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=24000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[16000, 24000, 48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -468,7 +472,9 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider,
+                "get_model",
+                return_value=(str(tmp_path / "model.pt"), [16000, 24000, 48000]),
             ):
                 result = await engine.process(
                     text="hello",
@@ -487,7 +493,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=44100, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[16000, 24000, 48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -516,7 +522,9 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider,
+                "get_model",
+                return_value=(str(tmp_path / "model.pt"), [16000, 24000, 48000]),
             ):
                 result = await engine.process(
                     text="hello",
@@ -535,7 +543,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[24000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -564,7 +572,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [24000])
             ):
                 result = await engine.process(
                     text="hello",
@@ -583,7 +591,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -612,7 +620,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 result = await engine.process(
                     text="hello",
@@ -631,7 +639,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=None)
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -660,7 +668,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 result = await engine.process(
                     text="hello",
@@ -679,7 +687,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -709,7 +717,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 await engine.process(
                     text="hello",
@@ -734,7 +742,7 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -757,7 +765,7 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 await engine.process(
                     text="hello",
@@ -865,10 +873,10 @@ class TestLoadModel:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 with pytest.raises(TTSProcessingError, match="Failed to move model"):
-                    engine._load_model("v5_5_ru", Model(language="ru", sample_rates=[48000]))
+                    engine._load_model("v5_5_ru", Model(language="ru"))
 
     def test_load_model_success_caches_model(self, tmp_path):
         """Should cache model on successful load."""
@@ -888,9 +896,9 @@ class TestLoadModel:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
-                engine._load_model("v5_5_ru", Model(language="ru", sample_rates=[48000]))
+                engine._load_model("v5_5_ru", Model(language="ru"))
 
         assert "v5_5_ru" in engine._cached_models
         assert engine._cached_models["v5_5_ru"].model is mock_model
@@ -915,7 +923,7 @@ class TestCachedModel:
         from src.tts.silero_tts_engine import CachedModel, create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[24000, 48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -936,7 +944,7 @@ class TestCachedModel:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 cached = engine._load_model("v5_5_ru", model_config)
 
@@ -951,7 +959,7 @@ class TestCachedModel:
         from src.tts.silero_tts_engine import CachedModel, create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -974,7 +982,7 @@ class TestCachedModel:
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 await engine.process(
                     text="hello",

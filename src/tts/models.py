@@ -10,10 +10,8 @@ def load_config_model(config_path: str) -> "TTSConfigModel":
 
     models = {}
     for name, m in data.get("models", {}).items():
-        rates = m.get("sample_rate") or m.get("sample_rates") or []
         models[name] = Model(
             language=m["language"],
-            sample_rates=list(rates) if rates else [],
         )
 
     locales = {}
@@ -33,7 +31,6 @@ def load_config_model(config_path: str) -> "TTSConfigModel":
 @dataclass(frozen=True)
 class Model:
     language: str
-    sample_rates: list[int]
 
 
 @dataclass(frozen=True)

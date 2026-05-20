@@ -2,6 +2,7 @@ import unittest.mock
 
 import pytest
 
+from src.tts.exceptions import TTSProcessingError
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
 from src.tts.result import TTSResult
 
@@ -42,7 +43,7 @@ class TestLoadModelWithPackageImporter:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -64,7 +65,7 @@ class TestLoadModelWithPackageImporter:
             mock_pkg_class.return_value = mock_importer
 
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(tmp_path / "model.pt")
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
                 cached = engine._load_model("v5_5_ru", model_config)
 
@@ -73,12 +74,12 @@ class TestLoadModelWithPackageImporter:
         assert cached.model is mock_model
         assert cached.sample_rate == 48000
 
-    def test_load_model_deletes_corrupt_file_and_raises(self, tmp_path):
-        """Corrupt .pt file should be deleted before re-raising."""
+    def test_load_model_raises_tts_processing_error_on_corrupt_file(self, tmp_path):
+        """Corrupt .pt file should raise TTSProcessingError on load."""
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -99,12 +100,12 @@ class TestLoadModelWithPackageImporter:
             mock_pkg_class.side_effect = RuntimeError("Invalid package")
 
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", return_value=str(model_path)
+                engine._provider, "get_model", return_value=(str(model_path), [48000])
             ):
-                with pytest.raises(RuntimeError):
+                with pytest.raises(TTSProcessingError):
                     engine._load_model("v5_5_ru", model_config)
 
-        assert not model_path.exists()
+        assert model_path.exists()
 
 
 class TestProcessWithProvider:
@@ -112,11 +113,11 @@ class TestProcessWithProvider:
 
     @pytest.mark.asyncio
     async def test_process_uses_provider_for_model_path(self, tmp_path):
-        """process() should call provider.get_model_path to resolve model path."""
+        """process() should call provider.get_model to resolve model path."""
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        model_config = Model(language="ru", sample_rates=[48000])
+        model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
                 "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
@@ -136,16 +137,16 @@ class TestProcessWithProvider:
 
         provider_calls = []
 
-        def capture_get_model_path(language, model_name):
+        def capture_get_model(language, model_name):
             provider_calls.append((language, model_name))
-            return str(tmp_path / "model.pt")
+            return (str(tmp_path / "model.pt"), [48000])
 
         with unittest.mock.patch(
             "src.tts.silero_tts_engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             with unittest.mock.patch.object(
-                engine._provider, "get_model_path", side_effect=capture_get_model_path
+                engine._provider, "get_model", side_effect=capture_get_model
             ):
                 result = await engine.process(
                     text="hello",

@@ -85,7 +85,7 @@ class SileroTTSEngine:
         if not language:
             raise TTSProcessingError(f"Language isn't specified for Silero model: {model_name}")
 
-        local_path = self._provider.get_model_path(language, model_name)
+        local_path, sample_rates = self._provider.get_model(language, model_name)
 
         try:
             importer = torch.package.PackageImporter(local_path)
@@ -103,7 +103,7 @@ class SileroTTSEngine:
                 f"Failed to move model to device: '{self._device.type}'"
             ) from e
 
-        sample_rate = select_sample_rate(self._config.sample_rate, model_info.sample_rates)
+        sample_rate = select_sample_rate(self._config.sample_rate, sample_rates)
         semaphore = asyncio.Semaphore(self._config.max_concurrent_per_model)
 
         cached = CachedModel(model=model, sample_rate=sample_rate, semaphore=semaphore)
@@ -131,7 +131,6 @@ def create_silero_engine(
     config_model: TTSConfigModel,
 ) -> SileroTTSEngine:
     """Create a SileroTTSEngine with a SileroTTSModelProvider."""
-    from src.tts.provider import SileroTTSModelProvider
 
     provider = SileroTTSModelProvider()
     return SileroTTSEngine(config=config, config_model=config_model, provider=provider)

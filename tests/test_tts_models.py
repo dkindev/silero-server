@@ -15,15 +15,14 @@ from src.tts.result import TTSResult
 
 
 class TestModel:
-    def test_model_has_language_and_sample_rates(self):
-        """Model dataclass has language and sample_rates fields."""
-        model = Model(language="en", sample_rates=[24000, 48000])
+    def test_model_has_language_field(self):
+        """Model dataclass has language field."""
+        model = Model(language="en")
         assert model.language == "en"
-        assert model.sample_rates == [24000, 48000]
 
     def test_model_is_frozen(self):
         """Model dataclass is immutable (frozen)."""
-        model = Model(language="en", sample_rates=[24000])
+        model = Model(language="en")
         with pytest.raises(FrozenInstanceError):
             model.language = "fr"
 
@@ -60,7 +59,7 @@ class TestLocale:
 class TestTTSConfigModel:
     def test_tts_config_model_has_models_and_locales(self):
         """TTSConfigModel dataclass has models and locales dicts."""
-        models = {"v3_en": Model(language="en", sample_rates=[24000, 48000])}
+        models = {"v3_en": Model(language="en")}
         locales = {"en_US": Locale(voices={})}
         config = TTSConfigModel(models=models, locales=locales)
         assert config.models == models

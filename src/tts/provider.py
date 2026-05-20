@@ -14,8 +14,8 @@ class SileroTTSModelProvider:
     def __init__(self, models_dir: str = ".models/silero"):
         self._models_dir = models_dir
 
-    def get_model_path(self, language: str, model_name: str) -> str:
-        """Return the local path to a model .pt file.
+    def get_model(self, language: str, model_name: str) -> tuple[str, list[int]]:
+        """Return the local path to a model .pt file and its supported sample rates.
 
         Downloads the file if it does not exist locally.
         Raises TTSProcessingError on failure.
@@ -24,10 +24,6 @@ class SileroTTSModelProvider:
 
         lang_dir = os.path.join(self._models_dir, language)
         os.makedirs(lang_dir, exist_ok=True)
-        model_path = os.path.join(lang_dir, f"{model_name}.pt")
-
-        if os.path.isfile(model_path):
-            return model_path
 
         yml_path = os.path.join(self._models_dir, "models.yml")
         if not os.path.isfile(yml_path):
@@ -38,19 +34,23 @@ class SileroTTSModelProvider:
                 registry = yaml.safe_load(f)
         except yaml.YAMLError as e:
             raise TTSProcessingError(
-                f"Failed to parse models.yml: {e}. "
-                "Delete .models/silero/models.yml to force a fresh download."
+                f"Failed to parse models.yml: {e}. Delete '{yml_path}' to force a fresh download."
             ) from e
 
         tts_models = registry.get("tts_models", {})
         lang_models = tts_models.get(language, {})
         model_entry = lang_models.get(model_name, {})
-        package_url = model_entry.get("latest", {}).get("package")
+        sample_rates = model_entry.get("latest", {}).get("sample_rate", [])
 
+        model_path = os.path.join(lang_dir, f"{model_name}.pt")
+        if os.path.isfile(model_path):
+            return model_path, sample_rates
+
+        package_url = model_entry.get("latest", {}).get("package")
         if not package_url:
             raise TTSProcessingError(
-                f"Model '{model_name}' for language '{language}' not found in models.yml. "
-                "Delete .models/silero/models.yml to force a fresh download."
+                f"Model '{model_name}' for language '{language}' not found in configuration file. "
+                f"Delete '{yml_path}' to force a fresh download."
             )
 
         try:
@@ -62,4 +62,4 @@ class SileroTTSModelProvider:
                 f"Failed to download model '{model_name}' for language '{language}'."
             ) from e
 
-        return model_path
+        return model_path, sample_rates
