@@ -5,7 +5,9 @@ import yaml
 
 from src.tts.exceptions import TTSProcessingError
 
-YML_URL = "https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml"
+MODELS_YML_URL = (
+    "https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml"
+)
 
 
 class SileroTTSModelProvider:
@@ -27,7 +29,7 @@ class SileroTTSModelProvider:
 
         yml_path = os.path.join(self._models_dir, "models.yml")
         if not os.path.isfile(yml_path):
-            urllib.request.urlretrieve(YML_URL, yml_path)
+            urllib.request.urlretrieve(MODELS_YML_URL, yml_path)
 
         try:
             with open(yml_path) as f:

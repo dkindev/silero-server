@@ -1,12 +1,11 @@
 from contextlib import asynccontextmanager
-from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from src.config import Settings
+from src.config import Settings, get_settings
 from src.routers import setup_routers
 from src.tts.exceptions import TTSEngineError
 from src.tts.models import TTSConfig, load_config_model
@@ -22,11 +21,6 @@ def get_engine(request: Request) -> SileroTTSEngine:
 
 
 EngineDep = Annotated[SileroTTSEngine, Depends(get_engine)]
-
-
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]

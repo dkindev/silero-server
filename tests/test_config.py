@@ -156,3 +156,20 @@ def test_invalid_device_value_fails():
     """Test that invalid TTS_DEVICE value raises ValidationError."""
     with pytest.raises(ValidationError):
         Settings.model_validate({"TTS_DEVICE": "vulkan"})
+
+
+def test_get_settings_importable_from_config():
+    """Test that get_settings can be imported from src.config."""
+    from src.config import get_settings
+
+    settings = get_settings()
+    assert isinstance(settings, Settings)
+
+
+def test_get_settings_is_cached():
+    """Test that get_settings returns the same cached instance."""
+    from src.config import get_settings
+
+    settings1 = get_settings()
+    settings2 = get_settings()
+    assert settings1 is settings2
