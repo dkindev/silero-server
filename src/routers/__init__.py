@@ -1,56 +1,8 @@
-from functools import lru_cache
-from typing import Annotated
-
-from fastapi import Depends, FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-
-from src.config import Settings
-from src.tts.exceptions import TTSEngineError
-from src.tts.silero_tts_engine import SileroTTSEngine
+from fastapi import FastAPI
 
 
-def get_engine(request: Request) -> SileroTTSEngine:
-    """Dependency to get the TTS engine from app state."""
-    engine = request.app.state.engine
-    if engine is None:
-        raise RuntimeError("TTS engine not initialized")
-    return engine
-
-
-EngineDep = Annotated[SileroTTSEngine, Depends(get_engine)]
-
-
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
-
-
-SettingsDep = Annotated[Settings, Depends(get_settings)]
-
-
-async def tts_exception_handler(request: Request, exc: TTSEngineError) -> JSONResponse:
-    """Global exception handler for TTS engine errors."""
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.message},
-    )
-
-
-def setup_routers(app: FastAPI, engine: SileroTTSEngine, allowed_origins: str) -> None:
-    """Configure routers and middleware for the application."""
-    app.state.engine = engine
-
-    origins = ["*"] if allowed_origins == "*" else allowed_origins.split(",")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    app.add_exception_handler(TTSEngineError, tts_exception_handler)
+def setup_routers(app: FastAPI) -> None:
+    """Configure routers for the application."""
 
     from src.routers import health, locales, process, voices
 

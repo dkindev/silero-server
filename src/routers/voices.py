@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
 
-from src.routers import EngineDep
+from src.main import EngineDep
 
 router = APIRouter(tags=["voices"])
 
