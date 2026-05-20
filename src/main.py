@@ -7,8 +7,7 @@ from fastapi.responses import JSONResponse
 
 from src.config import Settings, get_settings
 from src.routers import setup_routers
-from src.tts.exceptions import TTSEngineError
-from src.tts.models import TTSConfig, load_config_model
+from src.tts.models import TTSConfig
 from src.tts.silero_tts_engine import SileroTTSEngine, create_silero_engine
 
 
@@ -21,17 +20,11 @@ def get_engine(request: Request) -> SileroTTSEngine:
 
 
 EngineDep = Annotated[SileroTTSEngine, Depends(get_engine)]
-
-
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
-async def tts_exception_handler(request: Request, exc: TTSEngineError) -> JSONResponse:
-    """Global exception handler for TTS engine errors."""
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.message},
-    )
+async def global_exception_handler(request, exc):
+    return JSONResponse(status_code=500, content={"message": "Internal Server Error"})
 
 
 @asynccontextmanager
@@ -39,13 +32,12 @@ async def lifespan(app: FastAPI):
     """Manage application lifespan."""
 
     app_settings = get_settings()
-    config_model = load_config_model(app_settings.TTS_CONFIG_PATH)
     config = TTSConfig(
         device=app_settings.TTS_DEVICE,
         sample_rate=app_settings.TTS_SAMPLE_RATE,
         max_concurrent_per_model=app_settings.TTS_MAX_CONCURRENT_PER_MODEL,
     )
-    app.state.engine = create_silero_engine(config, config_model)
+    app.state.engine = create_silero_engine(config, app_settings.TTS_CONFIG_PATH)
 
     yield
 
@@ -68,6 +60,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_exception_handler(TTSEngineError, tts_exception_handler)
+app.add_exception_handler(Exception, global_exception_handler)
 
 setup_routers(app)

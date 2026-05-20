@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import torch
+import yaml
 
 from src.tts.exceptions import (
     InvalidInputTypeError,
@@ -11,9 +12,32 @@ from src.tts.exceptions import (
     InvalidVoiceError,
     TTSProcessingError,
 )
-from src.tts.models import Model, TTSConfig, TTSConfigModel
+from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
 from src.tts.provider import SileroTTSModelProvider
 from src.tts.result import TTSResult
+
+
+def _load_config_model(config_path: str) -> TTSConfigModel:
+    """Load TTS configuration from YAML file."""
+    with open(config_path) as f:
+        data = yaml.safe_load(f)
+
+    models = {}
+    for name, m in data.get("models", {}).items():
+        models[name] = Model(language=m["language"])
+
+    locales = {}
+    for name, loc in data.get("locales", {}).items():
+        voices = {}
+        for voice_name, v in loc.get("voices", {}).items():
+            voices[voice_name] = VoiceConfig(
+                speaker=v["speaker"],
+                model=v["model"],
+                gender=v["gender"],
+            )
+        locales[name] = Locale(voices=voices)
+
+    return TTSConfigModel(models=models, locales=locales)
 
 
 def select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
@@ -156,9 +180,12 @@ class SileroTTSEngine:
 
 def create_silero_engine(
     config: TTSConfig,
-    config_model: TTSConfigModel,
+    config_path_or_model: str | TTSConfigModel,
 ) -> SileroTTSEngine:
     """Create a SileroTTSEngine with a SileroTTSModelProvider."""
-
+    if isinstance(config_path_or_model, str):
+        config_model = _load_config_model(config_path_or_model)
+    else:
+        config_model = config_path_or_model
     provider = SileroTTSModelProvider()
     return SileroTTSEngine(config=config, config_model=config_model, provider=provider)

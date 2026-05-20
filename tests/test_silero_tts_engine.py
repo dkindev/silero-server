@@ -6,51 +6,95 @@ import torch
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
 
 
+def make_config_file(tmp_path, models=None, locales=None):
+    """Helper to create a temp config file."""
+    config_yml = tmp_path / "config.yml"
+    config_data = {"models": models or {}, "locales": locales or {}}
+    import yaml
+
+    config_yml.write_text(yaml.dump(config_data))
+    return str(config_yml)
+
+
 class TestSileroTTSEngineInit:
     """Tests for SileroTTSEngine initialization."""
 
-    def test_init_accepts_tts_config_and_config_model(self):
-        """Engine should accept TTSConfig and TTSConfigModel."""
+    def test_init_accepts_config_path_and_loads_config(self, tmp_path):
+        """Engine should accept config_path string and load config internally."""
         from src.tts.silero_tts_engine import create_silero_engine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        config_model = TTSConfigModel(models={}, locales={})
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+locales:
+  ru_RU:
+    voices:
+      silero-v5_5_ru-aidar:
+        speaker: aidar
+        model: v5_5_ru
+        gender: male
+"""
+        )
 
-        engine = create_silero_engine(config, config_model)
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+
+        engine = create_silero_engine(config, str(config_yml))
 
         assert engine is not None
+        assert "ru_RU" in engine.get_locales()
 
-    def test_init_caches_locales(self):
+    def test_init_caches_locales(self, tmp_path):
         """Engine should cache locales at init time."""
         from src.tts.silero_tts_engine import create_silero_engine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        locale_ru = Locale(
-            voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
-            }
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={
+                "ru_RU": {
+                    "voices": {
+                        "silero-v5_5_ru-aidar": {
+                            "speaker": "aidar",
+                            "model": "v5_5_ru",
+                            "gender": "male",
+                        }
+                    }
+                }
+            },
         )
-        config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru})
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         locales = engine.get_locales()
         assert isinstance(locales, tuple)
         assert "ru_RU" in locales
 
-    def test_init_caches_voices(self):
+    def test_init_caches_voices(self, tmp_path):
         """Engine should cache voices at init time."""
         from src.tts.silero_tts_engine import create_silero_engine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        locale_ru = Locale(
-            voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
-            }
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={
+                "ru_RU": {
+                    "voices": {
+                        "silero-v5_5_ru-aidar": {
+                            "speaker": "aidar",
+                            "model": "v5_5_ru",
+                            "gender": "male",
+                        }
+                    }
+                }
+            },
         )
-        config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru})
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         voices = engine.get_voices()
         assert isinstance(voices, tuple)
@@ -60,28 +104,30 @@ class TestSileroTTSEngineInit:
 class TestGetLocales:
     """Tests for get_locales() method."""
 
-    def test_get_locales_returns_tuple(self):
+    def test_get_locales_returns_tuple(self, tmp_path):
         """get_locales should return a tuple."""
         from src.tts.silero_tts_engine import create_silero_engine
 
+        config_path = make_config_file(tmp_path, models={}, locales={})
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        config_model = TTSConfigModel(models={}, locales={})
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         result = engine.get_locales()
         assert isinstance(result, tuple)
 
-    def test_get_locales_returns_locale_strings_from_config(self):
+    def test_get_locales_returns_locale_strings_from_config(self, tmp_path):
         """get_locales should return locale strings from config."""
         from src.tts.silero_tts_engine import create_silero_engine
 
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={"ru_RU": {"voices": {}}, "en_US": {"voices": {}}},
+        )
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        locale_ru = Locale(voices={})
-        locale_en = Locale(voices={})
-        config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru, "en_US": locale_en})
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         result = engine.get_locales()
         assert "ru_RU" in result
@@ -92,47 +138,57 @@ class TestGetLocales:
 class TestGetVoices:
     """Tests for get_voices() method."""
 
-    def test_get_voices_returns_tuple(self):
+    def test_get_voices_returns_tuple(self, tmp_path):
         """get_voices should return a tuple."""
         from src.tts.silero_tts_engine import create_silero_engine
 
+        config_path = make_config_file(tmp_path, models={}, locales={})
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        config_model = TTSConfigModel(models={}, locales={})
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         result = engine.get_voices()
         assert isinstance(result, tuple)
 
-    def test_get_voices_returns_mary_tts_format(self):
+    def test_get_voices_returns_mary_tts_format(self, tmp_path):
         """get_voices should return '{voice} {locale} {gender}' format."""
         from src.tts.silero_tts_engine import create_silero_engine
 
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        locale_ru = Locale(
-            voices={"aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")}
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={
+                "ru_RU": {
+                    "voices": {"aidar": {"speaker": "aidar", "model": "v5_5_ru", "gender": "male"}}
+                }
+            },
         )
-        config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru})
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         result = engine.get_voices()
         assert "aidar ru_RU male" in result
 
-    def test_get_voices_returns_all_voices_from_all_locales(self):
+    def test_get_voices_returns_all_voices_from_all_locales(self, tmp_path):
         """get_voices should include voices from all locales."""
         from src.tts.silero_tts_engine import create_silero_engine
 
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={
+                "ru_RU": {
+                    "voices": {"aidar": {"speaker": "aidar", "model": "v5_5_ru", "gender": "male"}}
+                },
+                "en_US": {
+                    "voices": {"en_0": {"speaker": "en_0", "model": "v3_en", "gender": "male"}}
+                },
+            },
+        )
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        locale_ru = Locale(
-            voices={"aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")}
-        )
-        locale_en = Locale(
-            voices={"en_0": VoiceConfig(speaker="en_0", model="v3_en", gender="male")}
-        )
-        config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru, "en_US": locale_en})
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         result = engine.get_voices()
         assert len(result) == 2
@@ -150,14 +206,23 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        locale_ru = Locale(
-            voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
-            }
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={
+                "ru_RU": {
+                    "voices": {
+                        "silero-v5_5_ru-aidar": {
+                            "speaker": "aidar",
+                            "model": "v5_5_ru",
+                            "gender": "male",
+                        }
+                    }
+                }
+            },
         )
-        config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru})
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         mock_model = unittest.mock.MagicMock()
         mock_importer = unittest.mock.MagicMock()
@@ -188,14 +253,23 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        locale_ru = Locale(
-            voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
-            }
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={
+                "ru_RU": {
+                    "voices": {
+                        "silero-v5_5_ru-aidar": {
+                            "speaker": "aidar",
+                            "model": "v5_5_ru",
+                            "gender": "male",
+                        }
+                    }
+                }
+            },
         )
-        config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru})
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         mock_model = unittest.mock.MagicMock()
         mock_importer = unittest.mock.MagicMock()
@@ -226,14 +300,23 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        locale_ru = Locale(
-            voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
-            }
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={
+                "ru_RU": {
+                    "voices": {
+                        "silero-v5_5_ru-aidar": {
+                            "speaker": "aidar",
+                            "model": "v5_5_ru",
+                            "gender": "male",
+                        }
+                    }
+                }
+            },
         )
-        config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru})
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         mock_model = unittest.mock.MagicMock()
         mock_importer = unittest.mock.MagicMock()
@@ -262,14 +345,23 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        locale_ru = Locale(
-            voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
-            }
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={
+                "ru_RU": {
+                    "voices": {
+                        "silero-v5_5_ru-aidar": {
+                            "speaker": "aidar",
+                            "model": "v5_5_ru",
+                            "gender": "male",
+                        }
+                    }
+                }
+            },
         )
-        config_model = TTSConfigModel(models={}, locales={"ru_RU": locale_ru})
 
-        engine = create_silero_engine(config, config_model)
+        engine = create_silero_engine(config, config_path)
 
         mock_model = unittest.mock.MagicMock()
         mock_importer = unittest.mock.MagicMock()
