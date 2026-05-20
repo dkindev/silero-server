@@ -11,7 +11,7 @@ Remove `sample_rate` key from all model entries in `silero-to-mary-config.yml`.
 
 ## Acceptance criteria
 
-- [ ] No model entry in config has sample_rate field
+- [x] No model entry in config has sample_rate field
 
 ## Blocked by
 

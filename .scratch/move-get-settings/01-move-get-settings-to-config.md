@@ -11,11 +11,11 @@ Move the `get_settings()` function from `src/main.py` to `src/config.py`, keepin
 
 ## Acceptance criteria
 
-- [ ] `get_settings()` defined in `src/config.py` with `@lru_cache`
-- [ ] `src/main.py` imports `get_settings` from `src.config`
-- [ ] `SettingsDep` remains in `main.py` (re-export for backward compatibility)
-- [ ] `routers/process.py` continues to work (imports `SettingsDep` from `main.py`)
-- [ ] App starts and runs correctly
+- [x] `get_settings()` defined in `src/config.py` with `@lru_cache`
+- [x] `src/main.py` imports `get_settings` from `src.config`
+- [x] `SettingsDep` remains in `main.py` (re-export for backward compatibility)
+- [x] `routers/process.py` continues to work (imports `SettingsDep` from `main.py`)
+- [x] App starts and runs correctly
 
 ## Blocked by
 

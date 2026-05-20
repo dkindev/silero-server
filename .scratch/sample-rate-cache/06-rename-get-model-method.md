@@ -11,10 +11,10 @@ Rename `get_model_path(language, model_name)` → `get_model(language, model_nam
 
 ## Acceptance criteria
 
-- [ ] Method renamed to `get_model` in provider.py
-- [ ] Returns tuple(path: str, sample_rates: list[int])
-- [ ] Reads sample_rate from models.yml (tts_models -> language -> model_name -> latest -> sample_rate)
-- [ ] Returns [] if sample_rate not present in models.yml
+- [x] Method renamed to `get_model` in provider.py
+- [x] Returns tuple(path: str, sample_rates: list[int])
+- [x] Reads sample_rate from models.yml (tts_models -> language -> model_name -> latest -> sample_rate)
+- [x] Returns [] if sample_rate not present in models.yml
 
 ## Blocked by
 

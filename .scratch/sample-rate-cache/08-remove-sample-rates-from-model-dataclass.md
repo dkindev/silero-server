@@ -11,8 +11,8 @@ Remove `sample_rates` field from `Model` dataclass in `models.py` and remove the
 
 ## Acceptance criteria
 
-- [ ] Model dataclass no longer has sample_rates field
-- [ ] load_config_model() no longer reads sample_rate/sample_rates from config
+- [x] Model dataclass no longer has sample_rates field
+- [x] load_config_model() no longer reads sample_rate/sample_rates from config
 
 ## Blocked by
 

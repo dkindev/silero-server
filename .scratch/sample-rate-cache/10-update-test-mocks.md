@@ -11,8 +11,8 @@ Update all 48+ test references: rename `get_model_path` → `get_model`, adjust 
 
 ## Acceptance criteria
 
-- [ ] All test files updated
-- [ ] All mocks return correct tuple type
+- [x] All test files updated
+- [x] All mocks return correct tuple type
 
 ## Blocked by
 

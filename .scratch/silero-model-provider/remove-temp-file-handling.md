@@ -19,10 +19,10 @@ Remove unnecessary temp file handling in `src/tts/provider.py`. The `torch.hub.d
 
 ## Acceptance criteria
 
-- [ ] Downloads directly to `model_path` instead of via temp file
-- [ ] Failed downloads still clean up partial file before raising `TTSProcessingError`
-- [ ] Engine's existing load-failure cleanup unchanged
-- [ ] Existing tests pass
+- [x] Downloads directly to `model_path` instead of via temp file
+- [x] Failed downloads still clean up partial file before raising `TTSProcessingError`
+- [x] Engine's existing load-failure cleanup unchanged
+- [x] Existing tests pass
 
 ## Blocked by
 

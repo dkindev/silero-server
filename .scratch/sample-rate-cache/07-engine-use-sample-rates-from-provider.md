@@ -11,9 +11,9 @@ Update `silero_tts_engine.py` to call `get_model` and use the returned sample_ra
 
 ## Acceptance criteria
 
-- [ ] Engine calls `get_model(language, model_name)` instead of `get_model_path`
-- [ ] Unpacks tuple: `local_path, sample_rates = self._provider.get_model(...)`
-- [ ] Passes sample_rates from provider to `select_sample_rate()`
+- [x] Engine calls `get_model(language, model_name)` instead of `get_model_path`
+- [x] Unpacks tuple: `local_path, sample_rates = self._provider.get_model(...)`
+- [x] Passes sample_rates from provider to `select_sample_rate()`
 
 ## Blocked by
 

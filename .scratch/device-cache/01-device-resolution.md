@@ -34,8 +34,8 @@ Add device resolution and `_load_model()` helper to `SileroTTSEngine`.
 
 ## Acceptance criteria
 
-- [ ] `TTS_DEVICE=cuda` falls back to `cpu` when GPU unavailable
-- [ ] `TTS_DEVICE=xpu` falls back to `cpu` when XPU unavailable
-- [ ] `model.to(device)` raises → `TTSProcessingError`, model not cached
-- [ ] Model cached and moved to correct device on success
-- [ ] `TTS_DEVICE` validator rejects invalid values
+- [x] `TTS_DEVICE=cuda` falls back to `cpu` when GPU unavailable
+- [x] `TTS_DEVICE=xpu` falls back to `cpu` when XPU unavailable
+- [x] `model.to(device)` raises → `TTSProcessingError`, model not cached
+- [x] Model cached and moved to correct device on success
+- [x] `TTS_DEVICE` validator rejects invalid values
