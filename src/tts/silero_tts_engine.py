@@ -40,7 +40,7 @@ def _load_config_model(config_path: str) -> TTSConfigModel:
     return TTSConfigModel(models=models, locales=locales)
 
 
-def select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
+def _select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
     if not supported_rates:
         return config_rate
     if supported_rates is None:
@@ -155,7 +155,7 @@ class SileroTTSEngine:
                 f"Failed to move model to device: '{self._device.type}'"
             ) from e
 
-        sample_rate = select_sample_rate(self._config.sample_rate, sample_rates)
+        sample_rate = _select_sample_rate(self._config.sample_rate, sample_rates)
         semaphore = asyncio.Semaphore(self._config.max_concurrent_per_model)
 
         cached = CachedModel(model=model, sample_rate=sample_rate, semaphore=semaphore)

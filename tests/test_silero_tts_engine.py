@@ -1088,35 +1088,3 @@ class TestCachedModel:
         cached = engine._cached_models["v5_5_ru"]
         assert isinstance(cached, CachedModel)
         assert cached.semaphore is not None
-
-
-class TestSelectSampleRate:
-    """Tests for select_sample_rate module-level function."""
-
-    def test_select_sample_rate_importable_from_models(self):
-        """select_sample_rate should be importable from src.tts.models."""
-        from src.tts.silero_tts_engine import select_sample_rate
-
-        result = select_sample_rate(48000, [24000, 48000])
-        assert result == 48000
-
-    def test_select_sample_rate_sorts_and_deduplicates_supported_rates(self):
-        """select_sample_rate should handle unsorted or duplicate supported_rates."""
-        from src.tts.silero_tts_engine import select_sample_rate
-
-        result = select_sample_rate(48000, [48000, 24000, 48000, 24000])
-        assert result == 48000
-
-    def test_select_sample_rate_sorts_descending_input(self):
-        """select_sample_rate should work with descending order input."""
-        from src.tts.silero_tts_engine import select_sample_rate
-
-        result = select_sample_rate(16000, [48000, 24000, 16000])
-        assert result == 16000
-
-    def test_select_sample_rate_finds_closest_below_from_unsorted(self):
-        """select_sample_rate should find closest rate below config from unsorted."""
-        from src.tts.silero_tts_engine import select_sample_rate
-
-        result = select_sample_rate(30000, [48000, 16000, 24000])
-        assert result == 24000
