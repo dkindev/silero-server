@@ -12,6 +12,7 @@ from src.tts.exceptions import (
     TTSProcessingError,
 )
 from src.tts.models import Model, TTSConfig, TTSConfigModel, select_sample_rate
+from src.tts.provider import SileroTTSModelProvider
 from src.tts.result import TTSResult
 
 
@@ -27,13 +28,19 @@ class CachedModel:
 class SileroTTSEngine:
     """TTS engine wrapping Silero TTS library."""
 
-    def __init__(self, config: TTSConfig, config_model: TTSConfigModel):
+    def __init__(
+        self,
+        config: TTSConfig,
+        config_model: TTSConfigModel,
+        provider: "SileroTTSModelProvider",
+    ):
         self._config = config
         self._config_model = config_model
         self._locales = tuple(config_model.locales.keys())
         self._voices = self._build_voices()
         self._cached_models: dict[str, CachedModel] = {}
         self._device = self._resolve_device(config.device)
+        self._provider = provider
 
     async def process(
         self,
@@ -74,21 +81,26 @@ class SileroTTSEngine:
         return torch.device(device_str)
 
     def _load_model(self, model_name: str, model_info: Model) -> CachedModel:
-        if not model_info.language:
-            raise TTSProcessingError(f"Language isn't specified for model: {model_name}")
+        language = model_info.language
+        if not language:
+            raise TTSProcessingError(f"Language isn't specified for Silero model: {model_name}")
 
-        model = torch.hub.load(
-            repo_or_dir="snakers4/silero-v4",
-            model="silero_tts",
-            language=model_info.language,
-            speaker=model_name,
-        )
+        local_path = self._provider.get_model_path(language, model_name)
+
+        try:
+            importer = torch.package.PackageImporter(local_path)
+            model = importer.load_pickle("tts_models", "model")
+        except Exception as e:
+            raise TTSProcessingError(
+                f"Failed to load model '{model_name}' for language '{language}' with path: {local_path}. "
+                f"Delete model to force a fresh download."
+            ) from e
 
         try:
             model.to(self._device)
         except Exception as e:
             raise TTSProcessingError(
-                f"Failed to move model '{model_name}' to device '{self._device}': {e}"
+                f"Failed to move model to device: '{self._device.type}'"
             ) from e
 
         sample_rate = select_sample_rate(self._config.sample_rate, model_info.sample_rates)
@@ -112,3 +124,14 @@ class SileroTTSEngine:
     def get_voices(self) -> tuple[str, ...]:
         """Return available voices in Mary-TTS format."""
         return self._voices
+
+
+def create_silero_engine(
+    config: TTSConfig,
+    config_model: TTSConfigModel,
+) -> SileroTTSEngine:
+    """Create a SileroTTSEngine with a SileroTTSModelProvider."""
+    from src.tts.provider import SileroTTSModelProvider
+
+    provider = SileroTTSModelProvider()
+    return SileroTTSEngine(config=config, config_model=config_model, provider=provider)

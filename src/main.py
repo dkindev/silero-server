@@ -10,7 +10,7 @@ from src.config import Settings
 from src.routers import setup_routers
 from src.tts.exceptions import TTSEngineError
 from src.tts.models import TTSConfig, load_config_model
-from src.tts.silero_tts_engine import SileroTTSEngine
+from src.tts.silero_tts_engine import SileroTTSEngine, create_silero_engine
 
 
 def get_engine(request: Request) -> SileroTTSEngine:
@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
         sample_rate=app_settings.TTS_SAMPLE_RATE,
         max_concurrent_per_model=app_settings.TTS_MAX_CONCURRENT_PER_MODEL,
     )
-    app.state.engine = SileroTTSEngine(config, config_model)
+    app.state.engine = create_silero_engine(config, config_model)
 
     yield
 
