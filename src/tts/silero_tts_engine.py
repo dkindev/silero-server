@@ -65,6 +65,14 @@ def _select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
     return max_rate
 
 
+def _resolve_device(device_str: str) -> torch.device:
+    if device_str == "cuda" and not torch.cuda.is_available():
+        device_str = "cpu"
+    elif device_str == "xpu" and (not hasattr(torch, "xpu") or not torch.xpu.is_available()):
+        device_str = "cpu"
+    return torch.device(device_str)
+
+
 def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int, device: torch.device) -> bytes:
     try:
         if device.type == "cpu":
@@ -111,7 +119,7 @@ class SileroTTSEngine:
         self._locales = tuple(config_model.locales.keys())
         self._voices = self._build_voices()
         self._cached_models: dict[str, CachedModel] = {}
-        self._device = self._resolve_device(config.device)
+        self._device = _resolve_device(config.device)
         self._provider = provider
 
     async def process(
@@ -142,13 +150,6 @@ class SileroTTSEngine:
 
         wav_bytes = _tensor_to_wav_bytes(audio_tensor, cached.sample_rate, self._device)
         return TTSResult(audio=wav_bytes, sample_rate=cached.sample_rate, model=model_name)
-
-    def _resolve_device(self, device_str: str) -> torch.device:
-        if device_str == "cuda" and not torch.cuda.is_available():
-            device_str = "cpu"
-        elif device_str == "xpu" and (not hasattr(torch, "xpu") or not torch.xpu.is_available()):
-            device_str = "cpu"
-        return torch.device(device_str)
 
     def _load_model(self, model_name: str, model_info: Model) -> CachedModel:
         language = model_info.language

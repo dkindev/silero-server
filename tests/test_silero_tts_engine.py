@@ -973,6 +973,118 @@ class TestProcessValidation:
         assert "v5_5_ru" in engine._cached_models
         assert engine._cached_models["v5_5_ru"].semaphore._value == 2
 
+    @pytest.mark.asyncio
+    async def test_process_cuda_unavailable_falls_back_to_cpu(self, tmp_path):
+        """Should fall back to CPU when CUDA is requested but unavailable."""
+        from src.tts.result import TTSResult
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config = TTSConfig(device="cuda", sample_rate=48000, max_concurrent_per_model=2)
+        model_config = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        class FakeModule:
+            @staticmethod
+            def is_available():
+                return False
+
+            @staticmethod
+            def to(device):
+                assert device.type == "cpu"
+
+        mock_audio = torch.zeros(1, 48000)
+        mock_model = unittest.mock.MagicMock()
+        mock_model.to = FakeModule.to
+        mock_model.apply_tts.return_value = mock_audio
+        mock_importer = unittest.mock.MagicMock()
+        mock_importer.load_pickle.return_value = mock_model
+
+        with unittest.mock.patch.object(torch, "cuda", FakeModule(), create=True):
+            engine = create_silero_engine(config, config_model)
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
+        ):
+            with unittest.mock.patch.object(
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
+            ):
+                result = await engine.process(
+                    text="hello",
+                    locale="ru_RU",
+                    voice="silero-v5_5_ru-aidar",
+                    input_type="TEXT",
+                )
+
+        assert isinstance(result, TTSResult)
+        assert isinstance(result.audio, bytes)
+        assert result.audio.startswith(b"RIFF")
+        assert result.sample_rate == 48000
+        assert result.model == "v5_5_ru"
+
+    @pytest.mark.asyncio
+    async def test_process_xpu_unavailable_falls_back_to_cpu(self, tmp_path):
+        """Should fall back to CPU when XPU is requested but unavailable."""
+        from src.tts.result import TTSResult
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config = TTSConfig(device="xpu", sample_rate=48000, max_concurrent_per_model=2)
+        model_config = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        class FakeModule:
+            @staticmethod
+            def is_available():
+                return False
+
+            @staticmethod
+            def to(device):
+                assert device.type == "cpu"
+
+        mock_audio = torch.zeros(1, 48000)
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts.return_value = mock_audio
+        mock_model.to = FakeModule.to
+        mock_importer = unittest.mock.MagicMock()
+        mock_importer.load_pickle.return_value = mock_model
+
+        with unittest.mock.patch.object(torch, "xpu", FakeModule(), create=True):
+            engine = create_silero_engine(config, config_model)
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
+        ):
+            with unittest.mock.patch.object(
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
+            ):
+                result = await engine.process(
+                    text="hello",
+                    locale="ru_RU",
+                    voice="silero-v5_5_ru-aidar",
+                    input_type="TEXT",
+                )
+
+        assert isinstance(result, TTSResult)
+        assert isinstance(result.audio, bytes)
+        assert result.audio.startswith(b"RIFF")
+        assert result.sample_rate == 48000
+        assert result.model == "v5_5_ru"
+
 
 class TestCaching:
     """Tests for caching behavior."""
@@ -1006,43 +1118,6 @@ class TestCaching:
         result2 = engine.get_voices()
 
         assert result1 is result2
-
-
-class TestResolveDevice:
-    """Tests for _resolve_device method."""
-
-    def test_resolve_device_cuda_unavailable_falls_back_to_cpu(self):
-        """Should return cpu device when cuda is unavailable."""
-        from src.tts.silero_tts_engine import create_silero_engine
-
-        config = TTSConfig(device="cuda", sample_rate=48000, max_concurrent_per_model=2)
-        config_model = TTSConfigModel(models={}, locales={})
-
-        engine = create_silero_engine(config, config_model)
-
-        with unittest.mock.patch("torch.cuda.is_available", return_value=False):
-            device = engine._resolve_device("cuda")
-
-        assert str(device) == "cpu"
-
-    def test_resolve_device_xpu_unavailable_falls_back_to_cpu(self):
-        """Should return cpu device when xpu is unavailable."""
-        from src.tts.silero_tts_engine import create_silero_engine
-
-        config = TTSConfig(device="xpu", sample_rate=48000, max_concurrent_per_model=2)
-        config_model = TTSConfigModel(models={}, locales={})
-
-        engine = create_silero_engine(config, config_model)
-
-        class FakeXpuModule:
-            @staticmethod
-            def is_available():
-                return False
-
-        with unittest.mock.patch.object(torch, "xpu", FakeXpuModule(), create=True):
-            device = engine._resolve_device("xpu")
-
-        assert str(device) == "cpu"
 
 
 class TestLoadModel:
