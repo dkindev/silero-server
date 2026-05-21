@@ -2,7 +2,7 @@ import unittest.mock
 
 import pytest
 
-from src.tts.exceptions import TTSProcessingError
+from src.tts.exceptions import TTSEngineError
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
 from src.tts.result import TTSResult
 
@@ -75,7 +75,7 @@ class TestLoadModelWithPackageImporter:
         assert cached.sample_rate == 48000
 
     def test_load_model_raises_tts_processing_error_on_corrupt_file(self, tmp_path):
-        """Corrupt .pt file should raise TTSProcessingError on load."""
+        """Corrupt .pt file should raise TTSEngineError on load."""
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
@@ -102,7 +102,7 @@ class TestLoadModelWithPackageImporter:
             with unittest.mock.patch.object(
                 engine._provider, "get_model", return_value=(str(model_path), [48000])
             ):
-                with pytest.raises(TTSProcessingError):
+                with pytest.raises(TTSEngineError):
                     engine._load_model("v5_5_ru", model_config)
 
         assert model_path.exists()

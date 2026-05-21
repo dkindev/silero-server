@@ -5,13 +5,7 @@ from typing import Any
 import torch
 import yaml
 
-from src.tts.exceptions import (
-    InvalidInputTypeError,
-    InvalidLocaleError,
-    InvalidOutputTypeError,
-    InvalidVoiceError,
-    TTSProcessingError,
-)
+from src.tts.exceptions import TTSEngineError
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
 from src.tts.provider import SileroTTSModelProvider
 from src.tts.result import TTSResult
@@ -100,16 +94,13 @@ class SileroTTSEngine:
         locale: str,
         voice: str,
         input_type: str,
-        output_type: str,
     ) -> TTSResult:
-        if locale not in self._locales:
-            raise InvalidLocaleError(f"Unsupported locale: {locale}", locale=locale)
-        if voice not in self._config_model.locales[locale].voices:
-            raise InvalidVoiceError(f"Invalid voice: {voice}", locale=locale, voice=voice)
-        if input_type not in ("TEXT", "SSML"):
-            raise InvalidInputTypeError(f"Invalid input type: {input_type}")
-        if output_type != "AUDIO":
-            raise InvalidOutputTypeError(f"Invalid output type: {output_type}")
+        if not self.has_locale(locale):
+            raise TTSEngineError(f"Unsupported locale: {locale}")
+        if not self.has_voice(locale, voice):
+            raise TTSEngineError(f"Invalid voice: {voice}")
+        if input_type not in self.get_input_types():
+            raise TTSEngineError(f"Invalid input type: {input_type}")
 
         voice_config = self._config_model.locales[locale].voices[voice]
         model_name = voice_config.model
@@ -120,7 +111,7 @@ class SileroTTSEngine:
 
         async with cached.semaphore:
             audio = await asyncio.to_thread(
-                cached.model.apply_tts, text, speaker, cached.sample_rate
+                cached.model.apply_tts, text, speaker=speaker, sample_rate=cached.sample_rate
             )
 
         return TTSResult(audio=audio, sample_rate=cached.sample_rate, model=model_name)
@@ -135,7 +126,7 @@ class SileroTTSEngine:
     def _load_model(self, model_name: str, model_info: Model) -> CachedModel:
         language = model_info.language
         if not language:
-            raise TTSProcessingError(f"Language isn't specified for Silero model: {model_name}")
+            raise TTSEngineError(f"Language isn't specified for Silero model: {model_name}")
 
         local_path, sample_rates = self._provider.get_model(language, model_name)
 
@@ -143,7 +134,7 @@ class SileroTTSEngine:
             importer = torch.package.PackageImporter(local_path)
             model = importer.load_pickle("tts_models", "model")
         except Exception as e:
-            raise TTSProcessingError(
+            raise TTSEngineError(
                 f"Failed to load model '{model_name}' for language '{language}' with path: {local_path}. "
                 f"Delete model to force a fresh download."
             ) from e
@@ -151,9 +142,7 @@ class SileroTTSEngine:
         try:
             model.to(self._device)
         except Exception as e:
-            raise TTSProcessingError(
-                f"Failed to move model to device: '{self._device.type}'"
-            ) from e
+            raise TTSEngineError(f"Failed to move model to device: '{self._device.type}'") from e
 
         sample_rate = _select_sample_rate(self._config.sample_rate, sample_rates)
         semaphore = asyncio.Semaphore(self._config.max_concurrent_per_model)
@@ -168,6 +157,21 @@ class SileroTTSEngine:
             for voice_name, voice_config in locale_data.voices.items():
                 voices.append(f"{voice_name} {locale} {voice_config.gender}")
         return tuple(voices)
+
+    def has_locale(self, locale: str) -> bool:
+        """Return True if the locale is configured."""
+        return locale in self._locales
+
+    def has_voice(self, locale: str, voice_name: str) -> bool:
+        """Return True if the voice exists for the given locale."""
+        return (
+            locale in self._config_model.locales
+            and voice_name in self._config_model.locales[locale].voices
+        )
+
+    def get_input_types(self) -> tuple[str, ...]:
+        """Return supported input types."""
+        return ("TEXT", "SSML")
 
     def get_locales(self) -> tuple[str, ...]:
         """Return available locales."""

@@ -3,25 +3,18 @@ from unittest.mock import AsyncMock, MagicMock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.main import EngineDep, get_engine, tts_exception_handler
-from src.tts.exceptions import (
-    InvalidInputTypeError,
-    InvalidLocaleError,
-    InvalidOutputTypeError,
-    InvalidVoiceError,
-    TTSProcessingError,
-)
+from src.handlers import global_exception_handler
+from src.main import EngineDep, get_engine
+from src.tts.exceptions import TTSEngineError
 
 
 class TestExceptionHandler:
     """Test global exception handler for TTS engine errors."""
 
-    def test_invalid_locale_returns_400(self):
-        """InvalidLocaleError should return 400 status code."""
+    def test_tts_engine_error_returns_500(self):
+        """TTSEngineError should return 500 status code."""
         mock_engine = MagicMock()
-        mock_engine.process.side_effect = InvalidLocaleError(
-            "Unsupported locale: xx_XX", locale="xx_XX"
-        )
+        mock_engine.process.side_effect = TTSEngineError("Model failed")
 
         app = FastAPI()
 
@@ -29,107 +22,17 @@ class TestExceptionHandler:
             return mock_engine
 
         app.dependency_overrides[get_engine] = get_engine_override
-        app.add_exception_handler(InvalidLocaleError, tts_exception_handler)
-
-        @app.get("/test-locale")
-        async def test_locale(engine: EngineDep):
-            return engine.process("test", "xx_XX", "voice", "TEXT", "AUDIO")
-
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/test-locale")
-
-        assert response.status_code == 400
-        assert response.json() == {"detail": "Unsupported locale: xx_XX"}
-
-    def test_invalid_voice_returns_400(self):
-        """InvalidVoiceError should return 400 status code."""
-        mock_engine = MagicMock()
-        mock_engine.process.side_effect = InvalidVoiceError(
-            "Invalid voice: bad", locale="ru_RU", voice="bad"
-        )
-
-        app = FastAPI()
-
-        async def get_engine_override():
-            return mock_engine
-
-        app.dependency_overrides[get_engine] = get_engine_override
-        app.add_exception_handler(InvalidVoiceError, tts_exception_handler)
-
-        @app.get("/test-voice")
-        async def test_voice(engine: EngineDep):
-            return engine.process("test", "ru_RU", "bad", "TEXT", "AUDIO")
-
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/test-voice")
-
-        assert response.status_code == 400
-
-    def test_invalid_input_type_returns_400(self):
-        """InvalidInputTypeError should return 400 status code."""
-        mock_engine = MagicMock()
-        mock_engine.process.side_effect = InvalidInputTypeError("Invalid input type: INVALID")
-
-        app = FastAPI()
-
-        async def get_engine_override():
-            return mock_engine
-
-        app.dependency_overrides[get_engine] = get_engine_override
-        app.add_exception_handler(InvalidInputTypeError, tts_exception_handler)
-
-        @app.get("/test-input")
-        async def test_input(engine: EngineDep):
-            return engine.process("test", "ru_RU", "voice", "INVALID", "AUDIO")
-
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/test-input")
-
-        assert response.status_code == 400
-
-    def test_invalid_output_type_returns_406(self):
-        """InvalidOutputTypeError should return 406 status code."""
-        mock_engine = MagicMock()
-        mock_engine.process.side_effect = InvalidOutputTypeError("Invalid output type: PHONEMES")
-
-        app = FastAPI()
-
-        async def get_engine_override():
-            return mock_engine
-
-        app.dependency_overrides[get_engine] = get_engine_override
-        app.add_exception_handler(InvalidOutputTypeError, tts_exception_handler)
-
-        @app.get("/test-output")
-        async def test_output(engine: EngineDep):
-            return engine.process("test", "ru_RU", "voice", "TEXT", "PHONEMES")
-
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/test-output")
-
-        assert response.status_code == 406
-
-    def test_processing_error_returns_500(self):
-        """TTSProcessingError should return 500 status code."""
-        mock_engine = MagicMock()
-        mock_engine.process.side_effect = TTSProcessingError("Model failed")
-
-        app = FastAPI()
-
-        async def get_engine_override():
-            return mock_engine
-
-        app.dependency_overrides[get_engine] = get_engine_override
-        app.add_exception_handler(TTSProcessingError, tts_exception_handler)
+        app.add_exception_handler(TTSEngineError, global_exception_handler)
 
         @app.get("/test-processing")
         async def test_processing(engine: EngineDep):
-            return engine.process("test", "ru_RU", "voice", "TEXT", "AUDIO")
+            return await engine.process("test", "ru_RU", "voice", "TEXT")
 
         client = TestClient(app, raise_server_exceptions=False)
         response = client.get("/test-processing")
 
         assert response.status_code == 500
+        assert response.json() == {"message": "Internal Server Error"}
 
 
 class TestLocalesEndpoint:
@@ -300,7 +203,9 @@ class TestProcessEndpoint:
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
         mock_engine = AsyncMock()
-        mock_engine.process.return_value = mock_result
+        mock_engine.has_locale = MagicMock(return_value=True)
+        mock_engine.has_voice = MagicMock(return_value=True)
+        mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
         mock_engine.process.return_value = mock_result
 
         app = FastAPI()
@@ -328,6 +233,9 @@ class TestProcessEndpoint:
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
         mock_engine = AsyncMock()
+        mock_engine.has_locale = MagicMock(return_value=True)
+        mock_engine.has_voice = MagicMock(return_value=True)
+        mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
         mock_engine.process.return_value = mock_result
 
         app = FastAPI()
@@ -372,15 +280,14 @@ class TestProcessEndpoint:
 
         assert response.status_code == 400
 
-    def test_process_invalid_locale_returns_400(self):
-        """GET /process should return 400 for invalid locale."""
+    def test_process_invalid_audio_returns_400(self):
+        """GET /process should return 400 for unsupported audio format."""
         from src.main import get_engine
-        from src.tts.exceptions import InvalidLocaleError
 
         mock_engine = MagicMock()
-        mock_engine.process.side_effect = InvalidLocaleError(
-            "Unsupported locale: xx_XX", locale="xx_XX"
-        )
+        mock_engine.has_locale.return_value = True
+        mock_engine.has_voice.return_value = True
+        mock_engine.get_input_types.return_value = ("TEXT", "SSML")
 
         app = FastAPI()
 
@@ -388,7 +295,32 @@ class TestProcessEndpoint:
             return mock_engine
 
         app.dependency_overrides[get_engine] = get_engine_override
-        app.add_exception_handler(InvalidLocaleError, tts_exception_handler)
+
+        from src.routers import process
+
+        app.include_router(process.router)
+
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(
+            "/process?INPUT_TEXT=Hello&LOCALE=ru_RU&VOICE=silero-v5_5_ru-aidar&AUDIO=MP3"
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {"detail": "Unsupported audio format"}
+
+    def test_process_invalid_locale_returns_400(self):
+        """GET /process should return 400 for invalid locale."""
+        from src.main import get_engine
+
+        mock_engine = MagicMock()
+        mock_engine.has_locale.return_value = False
+
+        app = FastAPI()
+
+        async def get_engine_override():
+            return mock_engine
+
+        app.dependency_overrides[get_engine] = get_engine_override
 
         from src.routers import process
 
@@ -398,16 +330,15 @@ class TestProcessEndpoint:
         response = client.get("/process?INPUT_TEXT=Hello&LOCALE=xx_XX&VOICE=silero-v5_5_ru-aidar")
 
         assert response.status_code == 400
+        assert "Unsupported locale" in response.json()["detail"]
 
     def test_process_invalid_voice_returns_400(self):
         """GET /process should return 400 for invalid voice."""
         from src.main import get_engine
-        from src.tts.exceptions import InvalidVoiceError
 
         mock_engine = MagicMock()
-        mock_engine.process.side_effect = InvalidVoiceError(
-            "Invalid voice: bad", locale="ru_RU", voice="bad"
-        )
+        mock_engine.has_locale.return_value = True
+        mock_engine.has_voice.return_value = False
 
         app = FastAPI()
 
@@ -415,7 +346,6 @@ class TestProcessEndpoint:
             return mock_engine
 
         app.dependency_overrides[get_engine] = get_engine_override
-        app.add_exception_handler(InvalidVoiceError, tts_exception_handler)
 
         from src.routers import process
 
@@ -425,6 +355,63 @@ class TestProcessEndpoint:
         response = client.get("/process?INPUT_TEXT=Hello&LOCALE=ru_RU&VOICE=bad")
 
         assert response.status_code == 400
+        assert "Invalid voice" in response.json()["detail"]
+
+    def test_process_invalid_input_type_returns_400(self):
+        """GET /process should return 400 for invalid input type."""
+        from src.main import get_engine
+
+        mock_engine = MagicMock()
+        mock_engine.has_locale.return_value = True
+        mock_engine.has_voice.return_value = True
+        mock_engine.get_input_types.return_value = ("TEXT", "SSML")
+
+        app = FastAPI()
+
+        async def get_engine_override():
+            return mock_engine
+
+        app.dependency_overrides[get_engine] = get_engine_override
+
+        from src.routers import process
+
+        app.include_router(process.router)
+
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(
+            "/process?INPUT_TEXT=Hello&LOCALE=ru_RU&VOICE=silero-v5_5_ru-aidar&INPUT_TYPE=RAWMARYXML"
+        )
+
+        assert response.status_code == 400
+        assert "Invalid input type" in response.json()["detail"]
+
+    def test_process_invalid_output_type_returns_406(self):
+        """GET /process should return 406 for unsupported output type."""
+        from src.main import get_engine
+
+        mock_engine = MagicMock()
+        mock_engine.has_locale.return_value = True
+        mock_engine.has_voice.return_value = True
+        mock_engine.get_input_types.return_value = ("TEXT", "SSML")
+
+        app = FastAPI()
+
+        async def get_engine_override():
+            return mock_engine
+
+        app.dependency_overrides[get_engine] = get_engine_override
+
+        from src.routers import process
+
+        app.include_router(process.router)
+
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(
+            "/process?INPUT_TEXT=Hello&LOCALE=ru_RU&VOICE=silero-v5_5_ru-aidar&OUTPUT_TYPE=PHONEMES"
+        )
+
+        assert response.status_code == 406
+        assert "Invalid output type" in response.json()["detail"]
 
 
 class TestProcessPostEndpoint:
@@ -439,6 +426,9 @@ class TestProcessPostEndpoint:
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
         mock_engine = AsyncMock()
+        mock_engine.has_locale = MagicMock(return_value=True)
+        mock_engine.has_voice = MagicMock(return_value=True)
+        mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
         mock_engine.process.return_value = mock_result
 
         app = FastAPI()
@@ -473,6 +463,9 @@ class TestProcessPostEndpoint:
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
         mock_engine = AsyncMock()
+        mock_engine.has_locale = MagicMock(return_value=True)
+        mock_engine.has_voice = MagicMock(return_value=True)
+        mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
         mock_engine.process.return_value = mock_result
 
         app = FastAPI()

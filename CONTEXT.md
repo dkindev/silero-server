@@ -37,10 +37,9 @@ This naming scheme:
 - Embeds the model name (e.g., `v5_5_ru`) to disambiguate speakers that may not exist in other model versions.
 - Speaker names are Silero's native speaker identifiers.
 
-Voice validation at request time:
-1. Look up locale in config → get voices → get model
-2. Verify requested locale matches config locale
-3. Verify requested voice is contained in locale
+Voice validation at request time (endpoint level):
+1. Check locale exists via `has_locale()`
+2. Check voice exists via `has_voice(locale, voice_name)`
 
 Gender is sourced from config.
 
@@ -49,9 +48,12 @@ Gender is sourced from config.
 Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 
 **Methods:**
+- `has_locale(locale)` → `bool` — returns True if locale is configured
+- `has_voice(locale, voice_name)` → `bool` — returns True if voice exists for the locale
+- `get_input_types()` → `tuple[str, ...]` — returns supported input types (`"TEXT"`, `"SSML"`)
 - `get_locales()` → `list[str]` — returns cached list from config (e.g., `["ru_RU", "de_DE"]`)
 - `get_voices()` → `list[str]` — returns cached list in Mary-TTS format: `"{voice_name} {locale} {gender}"` per voice (e.g., `["silero-v5_5_ru-aidar ru_RU male", "silero-v5_5_ru-baya ru_RU female"]`)
-- `process(text, locale, voice, input_type, output_type)` → `bytes` — returns raw WAV audio
+- `process(text, locale, voice, input_type)` → `TTSResult` — returns synthesized audio
 
 **Initialization:**
 - Config loaded from `TTS_CONFIG_PATH` at init, cached for app lifetime
@@ -69,11 +71,17 @@ Sample rate selection logic:
    f. Exact match → use that value
    g. Not in list → use highest value less than TTS_SAMPLE_RATE
 
-**Validation rules (in engine):**
-- Locale must exist in config → 400 if not
-- Voice must exist for locale → 400 if not
-- `INPUT_TYPE` must be TEXT or SSML → 400 if not
-- `OUTPUT_TYPE` must be AUDIO → 400 for invalid, 406 for non-AUDIO
+**Validation rules:**
+Validation happens at two levels:
+
+1. **Endpoint (first line)** — `/process` endpoint validates before calling the engine:
+   - `AUDIO` must be `WAVE_FILE` → 400
+   - Locale must exist via `has_locale()` → 400
+   - Voice must exist via `has_voice()` → 400
+   - `INPUT_TYPE` must be in `get_input_types()` → 400
+   - `OUTPUT_TYPE` must be `AUDIO` → 406
+
+2. **Engine (second line)** — `process()` redundantly validates locale, voice, and input type as a safety net. A second-line failure raises `TTSEngineError` → 500 (indicates a bug: the endpoint should have caught it).
 
 **Concurrency:**
 - Per-model `asyncio.Semaphore` with configurable limit via `TTS_MAX_CONCURRENT_PER_MODEL`
@@ -95,12 +103,13 @@ Converts text to speech audio. Uses `SileroTTSEngine.process()` for synthesis. S
 - `INPUT_TEXT` — text to synthesize (required).
 - `LOCALE` — Mary-TTS locale (e.g., `ru_RU`). Must have a cached model.
 - `VOICE` — voice name (e.g., `silero-v5_5_ru-aidar`). Must exist for the locale.
-- `INPUT_TYPE` — input format: `TEXT` (default), `SSML`, `RAWMARYXML` (rejected).
-- `OUTPUT_TYPE` — output format: `AUDIO` (default, WAV), `PHONEMES`/`TOKENS` (rejected with 406).
+- `INPUT_TYPE` — input format: `TEXT` (default), `SSML`, `RAWMARYXML` (rejected with 400).
+- `OUTPUT_TYPE` — output format: `AUDIO` (default), `PHONEMES`/`TOKENS` (rejected with 406).
+- `AUDIO` — audio file format: `WAVE_FILE` (default). Other formats rejected with 400.
 
 **Validation rules:**
 - Text length ≤ `TTS_MAX_TEXT_LENGTH` (default 1000 chars, 400 if exceeded) — checked in endpoint
-- Engine handles: locale existence, voice existence, `INPUT_TYPE`, `OUTPUT_TYPE`
+- `AUDIO`, locale, voice, `INPUT_TYPE`, `OUTPUT_TYPE` — all validated by the endpoint before the engine is called
 
 **Response:** Raw WAV audio bytes. `Content-Type: audio/wav`, `Content-Disposition: inline`.
 
@@ -123,9 +132,9 @@ Validated at startup via Pydantic Settings — app exits with a clear error on i
 ### Error Responses
 
 All errors return JSON `{"detail": "..."}`. HTTP status codes:
-- `400 Bad Request` — unsupported locale/voice, text too long, locale/text mismatch, invalid input type.
+- `400 Bad Request` — unsupported locale/voice/audio format, text too long, invalid input type.
 - `406 Not Acceptable` — unsupported output type (PHONEMES, TOKENS).
-- `500 Internal Server Error` — model failure, audio generation error. Body is generic; detail is logged server-side.
+- `500 Internal Server Error` — engine failure (model loading, synthesis error, or second-line validation miss). Body is generic; detail is logged server-side.
 
 ### Health Check
 

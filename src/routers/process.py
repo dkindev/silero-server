@@ -23,7 +23,37 @@ async def process_request(
             content={"detail": "Input text exceeds maximum length"},
         )
 
-    result = await engine.process(INPUT_TEXT, LOCALE, VOICE, INPUT_TYPE, OUTPUT_TYPE)
+    if AUDIO != "WAVE_FILE":
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Unsupported audio format"},
+        )
+
+    if not engine.has_locale(LOCALE):
+        return JSONResponse(
+            status_code=400,
+            content={"detail": f"Unsupported locale: {LOCALE}"},
+        )
+
+    if not engine.has_voice(LOCALE, VOICE):
+        return JSONResponse(
+            status_code=400,
+            content={"detail": f"Invalid voice: {VOICE}"},
+        )
+
+    if INPUT_TYPE not in engine.get_input_types():
+        return JSONResponse(
+            status_code=400,
+            content={"detail": f"Invalid input type: {INPUT_TYPE}"},
+        )
+
+    if OUTPUT_TYPE != "AUDIO":
+        return JSONResponse(
+            status_code=406,
+            content={"detail": f"Invalid output type: {OUTPUT_TYPE}"},
+        )
+
+    result = await engine.process(INPUT_TEXT, LOCALE, VOICE, INPUT_TYPE)
 
     return Response(
         content=result.audio,

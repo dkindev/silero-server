@@ -3,7 +3,7 @@ import os
 import torch
 import yaml
 
-from src.tts.exceptions import TTSProcessingError
+from src.tts.exceptions import TTSEngineError
 
 MODELS_YML_URL = (
     "https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml"
@@ -20,7 +20,7 @@ class SileroTTSModelProvider:
         """Return the local path to a model .pt file and its supported sample rates.
 
         Downloads the file if it does not exist locally.
-        Raises TTSProcessingError on failure.
+        Raises TTSEngineError on failure.
         """
         import urllib.request
 
@@ -35,7 +35,7 @@ class SileroTTSModelProvider:
             with open(yml_path) as f:
                 registry = yaml.safe_load(f)
         except yaml.YAMLError as e:
-            raise TTSProcessingError(
+            raise TTSEngineError(
                 f"Failed to parse models.yml: {e}. Delete '{yml_path}' to force a fresh download."
             ) from e
 
@@ -50,7 +50,7 @@ class SileroTTSModelProvider:
 
         package_url = model_entry.get("latest", {}).get("package")
         if not package_url:
-            raise TTSProcessingError(
+            raise TTSEngineError(
                 f"Model '{model_name}' for language '{language}' not found in configuration file. "
                 f"Delete '{yml_path}' to force a fresh download."
             )
@@ -60,7 +60,7 @@ class SileroTTSModelProvider:
         except Exception as e:
             if os.path.isfile(model_path):
                 os.remove(model_path)
-            raise TTSProcessingError(
+            raise TTSEngineError(
                 f"Failed to download model '{model_name}' for language '{language}'."
             ) from e
 

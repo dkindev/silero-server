@@ -135,6 +135,121 @@ class TestGetLocales:
         assert len(result) == 2
 
 
+class TestHasLocale:
+    """Tests for has_locale() method."""
+
+    def test_has_locale_returns_true_for_configured_locale(self, tmp_path):
+        """has_locale should return True for a locale that exists in config."""
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={"ru_RU": {"voices": {}}, "en_US": {"voices": {}}},
+        )
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+
+        engine = create_silero_engine(config, config_path)
+
+        assert engine.has_locale("ru_RU") is True
+        assert engine.has_locale("en_US") is True
+
+    def test_has_locale_returns_false_for_unconfigured_locale(self, tmp_path):
+        """has_locale should return False for a locale not in config."""
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config_path = make_config_file(tmp_path, models={}, locales={"ru_RU": {"voices": {}}})
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+
+        engine = create_silero_engine(config, config_path)
+
+        assert engine.has_locale("de_DE") is False
+
+
+class TestHasVoice:
+    """Tests for has_voice() method."""
+
+    def test_has_voice_returns_true_for_configured_voice(self, tmp_path):
+        """has_voice should return True for a voice that exists for the locale."""
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={
+                "ru_RU": {
+                    "voices": {
+                        "silero-v5_5_ru-aidar": {
+                            "speaker": "aidar",
+                            "model": "v5_5_ru",
+                            "gender": "male",
+                        }
+                    }
+                }
+            },
+        )
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+
+        engine = create_silero_engine(config, config_path)
+
+        assert engine.has_voice("ru_RU", "silero-v5_5_ru-aidar") is True
+
+    def test_has_voice_returns_false_for_missing_locale(self, tmp_path):
+        """has_voice should return False if the locale doesn't exist."""
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config_path = make_config_file(tmp_path, models={}, locales={})
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+
+        engine = create_silero_engine(config, config_path)
+
+        assert engine.has_voice("ru_RU", "silero-v5_5_ru-aidar") is False
+
+    def test_has_voice_returns_false_for_missing_voice(self, tmp_path):
+        """has_voice should return False if the voice doesn't exist for the locale."""
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config_path = make_config_file(
+            tmp_path,
+            models={},
+            locales={"ru_RU": {"voices": {}}},
+        )
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+
+        engine = create_silero_engine(config, config_path)
+
+        assert engine.has_voice("ru_RU", "silero-v5_5_ru-aidar") is False
+
+
+class TestGetInputTypes:
+    """Tests for get_input_types() method."""
+
+    def test_get_input_types_returns_tuple(self, tmp_path):
+        """get_input_types should return a tuple."""
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config_path = make_config_file(tmp_path, models={}, locales={})
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+
+        engine = create_silero_engine(config, config_path)
+
+        result = engine.get_input_types()
+        assert isinstance(result, tuple)
+
+    def test_get_input_types_includes_text_and_ssml(self, tmp_path):
+        """get_input_types should include TEXT and SSML."""
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config_path = make_config_file(tmp_path, models={}, locales={})
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+
+        engine = create_silero_engine(config, config_path)
+
+        assert "TEXT" in engine.get_input_types()
+        assert "SSML" in engine.get_input_types()
+        assert len(engine.get_input_types()) == 2
+
+
 class TestGetVoices:
     """Tests for get_voices() method."""
 
@@ -201,8 +316,8 @@ class TestProcessValidation:
 
     @pytest.mark.asyncio
     async def test_process_invalid_locale_raises_invalid_locale_error(self, tmp_path):
-        """process() with invalid locale should raise InvalidLocaleError."""
-        from src.tts.exceptions import InvalidLocaleError
+        """process() with invalid locale should raise TTSEngineError."""
+        from src.tts.exceptions import TTSEngineError
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
@@ -235,21 +350,20 @@ class TestProcessValidation:
             with unittest.mock.patch.object(
                 engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
-                with pytest.raises(InvalidLocaleError) as exc_info:
+                with pytest.raises(TTSEngineError) as exc_info:
                     await engine.process(
                         text="hello",
                         locale="invalid_Locale",
                         voice="silero-v5_5_ru-aidar",
                         input_type="TEXT",
-                        output_type="AUDIO",
                     )
 
-        assert exc_info.value.locale == "invalid_Locale"
+        assert "Unsupported locale: invalid_Locale" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_process_invalid_voice_raises_invalid_voice_error(self, tmp_path):
-        """process() with invalid voice should raise InvalidVoiceError."""
-        from src.tts.exceptions import InvalidVoiceError
+        """process() with invalid voice should raise TTSEngineError."""
+        from src.tts.exceptions import TTSEngineError
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
@@ -282,21 +396,20 @@ class TestProcessValidation:
             with unittest.mock.patch.object(
                 engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
-                with pytest.raises(InvalidVoiceError) as exc_info:
+                with pytest.raises(TTSEngineError) as exc_info:
                     await engine.process(
                         text="hello",
                         locale="ru_RU",
                         voice="invalid_voice",
                         input_type="TEXT",
-                        output_type="AUDIO",
                     )
 
-        assert exc_info.value.voice == "invalid_voice"
+        assert "Invalid voice: invalid_voice" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_process_invalid_input_type_raises_invalid_input_type_error(self, tmp_path):
-        """process() with invalid input_type should raise InvalidInputTypeError."""
-        from src.tts.exceptions import InvalidInputTypeError
+        """process() with invalid input_type should raise TTSEngineError."""
+        from src.tts.exceptions import TTSEngineError
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
@@ -329,58 +442,12 @@ class TestProcessValidation:
             with unittest.mock.patch.object(
                 engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
-                with pytest.raises(InvalidInputTypeError):
+                with pytest.raises(TTSEngineError):
                     await engine.process(
                         text="hello",
                         locale="ru_RU",
                         voice="silero-v5_5_ru-aidar",
                         input_type="INVALID",
-                        output_type="AUDIO",
-                    )
-
-    @pytest.mark.asyncio
-    async def test_process_invalid_output_type_raises_invalid_output_type_error(self, tmp_path):
-        """process() with invalid output_type should raise InvalidOutputTypeError."""
-        from src.tts.exceptions import InvalidOutputTypeError
-        from src.tts.silero_tts_engine import create_silero_engine
-
-        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
-        config_path = make_config_file(
-            tmp_path,
-            models={},
-            locales={
-                "ru_RU": {
-                    "voices": {
-                        "silero-v5_5_ru-aidar": {
-                            "speaker": "aidar",
-                            "model": "v5_5_ru",
-                            "gender": "male",
-                        }
-                    }
-                }
-            },
-        )
-
-        engine = create_silero_engine(config, config_path)
-
-        mock_model = unittest.mock.MagicMock()
-        mock_importer = unittest.mock.MagicMock()
-        mock_importer.load_pickle.return_value = mock_model
-
-        with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
-            return_value=mock_importer,
-        ):
-            with unittest.mock.patch.object(
-                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
-            ):
-                with pytest.raises(InvalidOutputTypeError):
-                    await engine.process(
-                        text="hello",
-                        locale="ru_RU",
-                        voice="silero-v5_5_ru-aidar",
-                        input_type="TEXT",
-                        output_type="PHONEMES",
                     )
 
     @pytest.mark.asyncio
@@ -421,7 +488,6 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert isinstance(result, TTSResult)
@@ -473,7 +539,6 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert calls[0] == 24000
@@ -523,7 +588,6 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert calls[0] == 24000
@@ -573,7 +637,6 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert calls[0] == 24000
@@ -623,7 +686,6 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert calls[0] == 24000
@@ -671,7 +733,6 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert calls[0] == 24000
@@ -719,7 +780,6 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert calls[0] == 48000
@@ -767,7 +827,6 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert calls[0] == 48000
@@ -816,14 +875,12 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
                 await engine.process(
                     text="world",
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert load_counter[0] == 1
@@ -864,7 +921,6 @@ class TestProcessValidation:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert "v5_5_ru" in engine._cached_models
@@ -946,8 +1002,8 @@ class TestLoadModel:
     """Tests for _load_model method."""
 
     def test_load_model_to_raises_raises_tts_processing_error(self, tmp_path):
-        """Should raise TTSProcessingError when model.to() fails."""
-        from src.tts.exceptions import TTSProcessingError
+        """Should raise TTSEngineError when model.to() fails."""
+        from src.tts.exceptions import TTSEngineError
         from src.tts.silero_tts_engine import create_silero_engine
 
         config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
@@ -967,7 +1023,7 @@ class TestLoadModel:
             with unittest.mock.patch.object(
                 engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
             ):
-                with pytest.raises(TTSProcessingError, match="Failed to move model"):
+                with pytest.raises(TTSEngineError, match="Failed to move model"):
                     engine._load_model("v5_5_ru", Model(language="ru"))
 
     def test_load_model_success_caches_model(self, tmp_path):
@@ -1081,7 +1137,6 @@ class TestCachedModel:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert "v5_5_ru" in engine._cached_models

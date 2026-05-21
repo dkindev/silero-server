@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.tts.exceptions import TTSProcessingError
+from src.tts.exceptions import TTSEngineError
 from src.tts.provider import SileroTTSModelProvider
 
 
@@ -65,7 +65,7 @@ class TestGetModelCacheHit:
 
         provider = SileroTTSModelProvider(models_dir=models_dir)
 
-        with pytest.raises(TTSProcessingError):
+        with pytest.raises(TTSEngineError):
             provider.get_model("ru", "v5_5_ru")
 
         assert models_dir.exists()
@@ -103,7 +103,7 @@ tts_models:
 
         try:
             provider.get_model("ru", "v5_5_ru")
-        except TTSProcessingError:
+        except TTSEngineError:
             pass
 
         assert len(downloaded_urls) == 1
@@ -115,7 +115,7 @@ class TestGetModelMalformedYml:
     """Tests for get_model() error handling."""
 
     def test_raises_on_malformed_models_yml(self, tmp_path, monkeypatch):
-        """get_model should raise TTSProcessingError with delete hint for bad YAML."""
+        """get_model should raise TTSEngineError with delete hint for bad YAML."""
         import urllib.request
 
         models_dir = tmp_path / ".models" / "silero"
@@ -129,14 +129,14 @@ class TestGetModelMalformedYml:
 
         provider = SileroTTSModelProvider(models_dir=models_dir)
 
-        with pytest.raises(TTSProcessingError) as exc_info:
+        with pytest.raises(TTSEngineError) as exc_info:
             provider.get_model("ru", "v5_5_ru")
 
         assert "Failed to parse models.yml" in str(exc_info.value.message)
         assert "Delete" in str(exc_info.value.message)
 
     def test_raises_when_model_url_missing_from_registry(self, tmp_path, monkeypatch):
-        """get_model should raise TTSProcessingError when model not in registry."""
+        """get_model should raise TTSEngineError when model not in registry."""
         import urllib.request
 
         models_dir = tmp_path / ".models" / "silero"
@@ -152,7 +152,7 @@ class TestGetModelMalformedYml:
 
         provider = SileroTTSModelProvider(models_dir=models_dir)
 
-        with pytest.raises(TTSProcessingError) as exc_info:
+        with pytest.raises(TTSEngineError) as exc_info:
             provider.get_model("ru", "v5_5_ru")
 
         assert "v5_5_ru" in str(exc_info.value.message)
@@ -160,7 +160,7 @@ class TestGetModelMalformedYml:
         assert "Delete" in str(exc_info.value.message)
 
     def test_wraps_download_runtime_error_in_tts_processing_error(self, tmp_path, monkeypatch):
-        """Download failure should be wrapped in TTSProcessingError."""
+        """Download failure should be wrapped in TTSEngineError."""
         models_dir = tmp_path / ".models" / "silero"
         ru_dir = models_dir / "ru"
         ru_dir.mkdir(parents=True)
@@ -176,7 +176,7 @@ class TestGetModelMalformedYml:
 
         provider = SileroTTSModelProvider(models_dir=models_dir)
 
-        with pytest.raises(TTSProcessingError) as exc_info:
+        with pytest.raises(TTSEngineError) as exc_info:
             provider.get_model("ru", "v5_5_ru")
 
         assert "Failed to download model" in str(exc_info.value.message)
@@ -199,7 +199,7 @@ tts_models:
 
         provider = SileroTTSModelProvider(models_dir=models_dir)
 
-        with pytest.raises(TTSProcessingError) as exc_info:
+        with pytest.raises(TTSEngineError) as exc_info:
             provider.get_model("ru", "aidar_8khz")
 
         assert "aidar_8khz" in str(exc_info.value.message)

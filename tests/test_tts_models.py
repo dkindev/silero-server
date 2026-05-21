@@ -2,14 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from src.tts.exceptions import (
-    InvalidInputTypeError,
-    InvalidLocaleError,
-    InvalidOutputTypeError,
-    InvalidVoiceError,
-    TTSEngineError,
-    TTSProcessingError,
-)
+from src.tts.exceptions import TTSEngineError
 from src.tts.models import Locale, Model, TTSConfigModel, VoiceConfig
 from src.tts.result import TTSResult
 
@@ -73,43 +66,13 @@ class TestTTSConfigModel:
 
 
 class TestExceptions:
-    def test_tts_engine_error_base(self):
-        """TTSEngineError can be raised with message."""
+    def test_tts_engine_error_message_only(self):
+        """TTSEngineError accepts only message — no locale/voice/status_code."""
         err = TTSEngineError("test error")
-        assert err.message == "test error"
         assert str(err) == "test error"
-
-    def test_tts_engine_error_with_locale_and_voice(self):
-        """TTSEngineError accepts optional locale and voice."""
-        err = TTSEngineError("invalid locale", locale="en_XX", voice="voice1")
-        assert err.locale == "en_XX"
-        assert err.voice == "voice1"
-
-    def test_invalid_locale_error_is_tts_engine_error(self):
-        """InvalidLocaleError inherits from TTSEngineError."""
-        err = InvalidLocaleError("Locale not found", locale="en_XX")
-        assert isinstance(err, TTSEngineError)
-        assert err.status_code == 400
-
-    def test_invalid_voice_error_has_400_status(self):
-        """InvalidVoiceError has status code 400."""
-        err = InvalidVoiceError("Voice not found", locale="en_US", voice="invalid")
-        assert err.status_code == 400
-
-    def test_invalid_input_type_error_has_400_status(self):
-        """InvalidInputTypeError has status code 400."""
-        err = InvalidInputTypeError("Invalid input type")
-        assert err.status_code == 400
-
-    def test_invalid_output_type_error_has_406_status(self):
-        """InvalidOutputTypeError has status code 406."""
-        err = InvalidOutputTypeError("Invalid output type")
-        assert err.status_code == 406
-
-    def test_tts_processing_error_has_500_status(self):
-        """TTSProcessingError has status code 500."""
-        err = TTSProcessingError("Processing failed")
-        assert err.status_code == 500
+        assert not hasattr(err, "locale")
+        assert not hasattr(err, "voice")
+        assert not hasattr(err, "status_code")
 
 
 class TestTTSResult:
