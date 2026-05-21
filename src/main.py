@@ -1,26 +1,13 @@
 from contextlib import asynccontextmanager
-from typing import Annotated
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.config import Settings, get_settings
+from src.config import get_settings
 from src.handlers import global_exception_handler
 from src.routers import setup_routers
 from src.tts.models import TTSConfig
-from src.tts.silero_tts_engine import SileroTTSEngine, create_silero_engine
-
-
-def get_engine(request: Request) -> SileroTTSEngine:
-    """Dependency to get the TTS engine from app state."""
-    engine = request.app.state.engine
-    if engine is None:
-        raise RuntimeError("TTS engine not initialized")
-    return engine
-
-
-EngineDep = Annotated[SileroTTSEngine, Depends(get_engine)]
-SettingsDep = Annotated[Settings, Depends(get_settings)]
+from src.tts.silero_tts_engine import create_silero_engine
 
 
 @asynccontextmanager

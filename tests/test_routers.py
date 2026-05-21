@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from src.deps import EngineDep, get_engine
 from src.handlers import global_exception_handler
-from src.main import EngineDep, get_engine
 from src.tts.exceptions import TTSEngineError
 
 
@@ -40,7 +40,7 @@ class TestLocalesEndpoint:
 
     def test_locales_returns_200(self):
         """GET /locales should return 200 status code."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.get_locales.return_value = ("ru_RU", "en_US")
@@ -63,7 +63,7 @@ class TestLocalesEndpoint:
 
     def test_locales_returns_plain_text(self):
         """GET /locales should return text/plain content type."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.get_locales.return_value = ("ru_RU", "en_US")
@@ -86,7 +86,7 @@ class TestLocalesEndpoint:
 
     def test_locales_returns_one_per_line(self):
         """GET /locales should return one locale per line."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.get_locales.return_value = ("ru_RU", "de_DE", "en_US")
@@ -113,7 +113,7 @@ class TestVoicesEndpoint:
 
     def test_voices_returns_200(self):
         """GET /voices should return 200 status code."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.get_voices.return_value = (
@@ -139,7 +139,7 @@ class TestVoicesEndpoint:
 
     def test_voices_returns_plain_text(self):
         """GET /voices should return text/plain content type."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.get_voices.return_value = ("silero-v5_5_ru-aidar ru_RU male",)
@@ -162,7 +162,7 @@ class TestVoicesEndpoint:
 
     def test_voices_returns_mary_tts_format(self):
         """GET /voices should return voices in Mary-TTS format, one per line."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.get_voices.return_value = (
@@ -196,7 +196,7 @@ class TestProcessEndpoint:
 
     def test_process_returns_wav(self):
         """GET /process should return WAV audio."""
-        from src.main import get_engine
+        from src.deps import get_engine
         from src.tts.result import TTSResult
 
         mock_audio = b"RIFF" + b"\x00" * 1000
@@ -226,7 +226,7 @@ class TestProcessEndpoint:
 
     def test_process_returns_content_disposition_inline(self):
         """GET /process should return Content-Disposition: inline."""
-        from src.main import get_engine
+        from src.deps import get_engine
         from src.tts.result import TTSResult
 
         mock_audio = b"RIFF" + b"\x00" * 1000
@@ -256,7 +256,7 @@ class TestProcessEndpoint:
 
     def test_process_text_too_long_returns_400(self):
         """GET /process should return 400 if text exceeds max length."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
 
@@ -282,7 +282,7 @@ class TestProcessEndpoint:
 
     def test_process_invalid_audio_returns_400(self):
         """GET /process should return 400 for unsupported audio format."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.has_locale.return_value = True
@@ -310,7 +310,7 @@ class TestProcessEndpoint:
 
     def test_process_invalid_locale_returns_400(self):
         """GET /process should return 400 for invalid locale."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.has_locale.return_value = False
@@ -334,7 +334,7 @@ class TestProcessEndpoint:
 
     def test_process_invalid_voice_returns_400(self):
         """GET /process should return 400 for invalid voice."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.has_locale.return_value = True
@@ -359,7 +359,7 @@ class TestProcessEndpoint:
 
     def test_process_invalid_input_type_returns_400(self):
         """GET /process should return 400 for invalid input type."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.has_locale.return_value = True
@@ -387,7 +387,7 @@ class TestProcessEndpoint:
 
     def test_process_invalid_output_type_returns_406(self):
         """GET /process should return 406 for unsupported output type."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = MagicMock()
         mock_engine.has_locale.return_value = True
@@ -419,7 +419,7 @@ class TestProcessPostEndpoint:
 
     def test_post_process_returns_wav(self):
         """POST /process should return WAV audio."""
-        from src.main import get_engine
+        from src.deps import get_engine
         from src.tts.result import TTSResult
 
         mock_audio = b"RIFF" + b"\x00" * 1000
@@ -456,7 +456,7 @@ class TestProcessPostEndpoint:
 
     def test_post_process_returns_audio_wav_content_type(self):
         """POST /process should return audio/wav content type."""
-        from src.main import get_engine
+        from src.deps import get_engine
         from src.tts.result import TTSResult
 
         mock_audio = b"RIFF" + b"\x00" * 1000
@@ -493,7 +493,7 @@ class TestProcessPostEndpoint:
 
     def test_post_process_text_too_long_returns_400(self):
         """POST /process should return 400 if text exceeds max length."""
-        from src.main import get_engine
+        from src.deps import get_engine
 
         mock_engine = AsyncMock()
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Form, Query
 from fastapi.responses import JSONResponse, Response
 
-from src.main import EngineDep, SettingsDep
+from src.deps import EngineDep, SettingsDep
 
 router = APIRouter(tags=["process"])
 

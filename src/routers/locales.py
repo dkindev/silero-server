@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import PlainTextResponse
 
-from src.main import EngineDep
+from src.deps import EngineDep
 
 router = APIRouter(tags=["locales"])
 
