@@ -1,9 +1,13 @@
 import asyncio
+import io
 from dataclasses import dataclass
 from typing import Any
 
+import numpy as np
 import torch
+import torchcodec
 import yaml
+from scipy.io import wavfile
 
 from src.tts.exceptions import TTSEngineError
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
@@ -62,6 +66,40 @@ def _select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
     return max_rate
 
 
+def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int, device: torch.device) -> bytes:
+    try:
+        if device.type == "cpu":
+            audio_np = audio.squeeze().detach().numpy()
+            audio_np = np.clip(audio_np, -1.0, 1.0)
+            pcm_data = (audio_np * 32767).astype(np.int16)
+            buffer = io.BytesIO()
+            wavfile.write(buffer, sample_rate, pcm_data)
+            return buffer.getvalue()
+        elif device.type == "cuda":
+            audio_gpu = torch.clamp(audio, -1.0, 1.0)
+            pcm_gpu = (audio_gpu * 32767).to(torch.int16)
+            return torchcodec.encoders.encode_audio(  # type: ignore[attr-defined]
+                pcm_gpu, sample_rate=sample_rate, format="wav"
+            )
+        elif device.type == "xpu":
+            try:
+                import intel_extension_for_pytorch as ipex  # noqa: F401
+                import torchcodec_xpu  # noqa: F401
+            except ImportError as e:
+                raise TTSEngineError(f"XPU packages not installed: {e}") from e
+            audio_xpu = torch.clamp(audio, -1.0, 1.0)
+            pcm_xpu = (audio_xpu * 32767).to(torch.int16)
+            return torchcodec.encoders.encode_audio(  # type: ignore[attr-defined]
+                pcm_xpu, sample_rate=sample_rate, format="wav"
+            )
+        else:
+            raise TTSEngineError(f"Unsupported device: {device.type}")
+    except TTSEngineError:
+        raise
+    except Exception as e:
+        raise TTSEngineError(f"Failed to convert tensor to WAV: {e}") from e
+
+
 @dataclass
 class CachedModel:
     """Bundles a loaded model with its sample rate and concurrency control."""
@@ -110,11 +148,12 @@ class SileroTTSEngine:
         speaker = voice_config.speaker
 
         async with cached.semaphore:
-            audio = await asyncio.to_thread(
+            audio_tensor = await asyncio.to_thread(
                 cached.model.apply_tts, text, speaker=speaker, sample_rate=cached.sample_rate
             )
 
-        return TTSResult(audio=audio, sample_rate=cached.sample_rate, model=model_name)
+        wav_bytes = _tensor_to_wav_bytes(audio_tensor, cached.sample_rate, self._device)
+        return TTSResult(audio=wav_bytes, sample_rate=cached.sample_rate, model=model_name)
 
     def _resolve_device(self, device_str: str) -> torch.device:
         if device_str == "cuda" and not torch.cuda.is_available():

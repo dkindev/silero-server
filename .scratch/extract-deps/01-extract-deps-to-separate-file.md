@@ -11,12 +11,12 @@ Extract `get_engine()`, `EngineDep`, and `SettingsDep` from `src/main.py` into a
 
 ## Acceptance criteria
 
-- [ ] `src/deps.py` exists with `get_engine()`, `EngineDep`, and `SettingsDep` definitions
-- [ ] `src/main.py` no longer defines those three items (lifespan and CORS config remain unchanged)
-- [ ] All 3 routers (`process.py`, `voices.py`, `locales.py`) import from `src.deps`
-- [ ] All test references to `EngineDep` and `get_engine` import from `src.deps`
-- [ ] `pytest` passes
-- [ ] App starts and all endpoints respond correctly
+- [x] `src/deps.py` exists with `get_engine()`, `EngineDep`, and `SettingsDep` definitions
+- [x] `src/main.py` no longer defines those three items (lifespan and CORS config remain unchanged)
+- [x] All 3 routers (`process.py`, `voices.py`, `locales.py`) import from `src.deps`
+- [x] All test references to `EngineDep` and `get_engine` import from `src.deps`
+- [x] `pytest` passes
+- [x] App starts and all endpoints respond correctly
 
 ## Blocked by
 

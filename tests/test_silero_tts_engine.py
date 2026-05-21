@@ -469,7 +469,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
 
         mock_model = unittest.mock.MagicMock()
         mock_model.apply_tts.return_value = mock_audio
@@ -491,7 +491,54 @@ class TestProcessValidation:
                 )
 
         assert isinstance(result, TTSResult)
-        assert result.audio == mock_audio
+        assert isinstance(result.audio, bytes)
+        assert result.audio.startswith(b"RIFF")
+        assert result.sample_rate == 48000
+        assert result.model == "v5_5_ru"
+
+    @pytest.mark.asyncio
+    async def test_process_converts_tensor_to_wav_bytes(self, tmp_path):
+        """process() should convert tensor output from apply_tts to valid WAV bytes."""
+        from src.tts.result import TTSResult
+        from src.tts.silero_tts_engine import create_silero_engine
+
+        config = TTSConfig(device="cpu", sample_rate=48000, max_concurrent_per_model=2)
+        model_config = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        engine = create_silero_engine(config, config_model)
+
+        audio_tensor = torch.zeros(1, 48000)
+
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts.return_value = audio_tensor
+        mock_importer = unittest.mock.MagicMock()
+        mock_importer.load_pickle.return_value = mock_model
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
+        ):
+            with unittest.mock.patch.object(
+                engine._provider, "get_model", return_value=(str(tmp_path / "model.pt"), [48000])
+            ):
+                result = await engine.process(
+                    text="hello",
+                    locale="ru_RU",
+                    voice="silero-v5_5_ru-aidar",
+                    input_type="TEXT",
+                )
+
+        assert isinstance(result, TTSResult)
+        assert isinstance(result.audio, bytes)
+        assert result.audio.startswith(b"RIFF")
         assert result.sample_rate == 48000
         assert result.model == "v5_5_ru"
 
@@ -513,7 +560,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         calls = []
 
         def capture_apply_tts(text, speaker, sample_rate):
@@ -562,7 +609,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         calls = []
 
         def capture_apply_tts(text, speaker, sample_rate):
@@ -611,7 +658,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         calls = []
 
         def capture_apply_tts(text, speaker, sample_rate):
@@ -660,7 +707,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         calls = []
 
         def capture_apply_tts(text, speaker, sample_rate):
@@ -709,7 +756,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         calls = []
 
         def capture_apply_tts(text, speaker, sample_rate):
@@ -756,7 +803,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         calls = []
 
         def capture_apply_tts(text, speaker, sample_rate):
@@ -803,7 +850,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         calls = []
 
         def capture_apply_tts(text, speaker, sample_rate):
@@ -850,7 +897,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
         mock_model.apply_tts.return_value = mock_audio
         load_counter = [0]
@@ -903,7 +950,7 @@ class TestProcessValidation:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
@@ -1119,7 +1166,7 @@ class TestCachedModel:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()

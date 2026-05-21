@@ -1,6 +1,7 @@
 import unittest.mock
 
 import pytest
+import torch
 
 from src.tts.exceptions import TTSEngineError
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
@@ -129,7 +130,7 @@ class TestProcessWithProvider:
 
         engine = create_silero_engine(config, config_model)
 
-        mock_audio = b"RIFF\x00\x00\x00WAVEfmt "
+        mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
@@ -153,9 +154,9 @@ class TestProcessWithProvider:
                     locale="ru_RU",
                     voice="silero-v5_5_ru-aidar",
                     input_type="TEXT",
-                    output_type="AUDIO",
                 )
 
         assert ("ru", "v5_5_ru") in provider_calls
         assert isinstance(result, TTSResult)
-        assert result.audio == mock_audio
+        assert isinstance(result.audio, bytes)
+        assert result.audio.startswith(b"RIFF")

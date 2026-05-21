@@ -132,8 +132,8 @@ class TestGetModelMalformedYml:
         with pytest.raises(TTSEngineError) as exc_info:
             provider.get_model("ru", "v5_5_ru")
 
-        assert "Failed to parse models.yml" in str(exc_info.value.message)
-        assert "Delete" in str(exc_info.value.message)
+        assert "Failed to parse models.yml" in str(exc_info.value.args[0])
+        assert "Delete" in str(exc_info.value.args[0])
 
     def test_raises_when_model_url_missing_from_registry(self, tmp_path, monkeypatch):
         """get_model should raise TTSEngineError when model not in registry."""
@@ -155,9 +155,9 @@ class TestGetModelMalformedYml:
         with pytest.raises(TTSEngineError) as exc_info:
             provider.get_model("ru", "v5_5_ru")
 
-        assert "v5_5_ru" in str(exc_info.value.message)
-        assert "ru" in str(exc_info.value.message)
-        assert "Delete" in str(exc_info.value.message)
+        assert "v5_5_ru" in str(exc_info.value.args[0])
+        assert "ru" in str(exc_info.value.args[0])
+        assert "Delete" in str(exc_info.value.args[0])
 
     def test_wraps_download_runtime_error_in_tts_processing_error(self, tmp_path, monkeypatch):
         """Download failure should be wrapped in TTSEngineError."""
@@ -179,7 +179,7 @@ class TestGetModelMalformedYml:
         with pytest.raises(TTSEngineError) as exc_info:
             provider.get_model("ru", "v5_5_ru")
 
-        assert "Failed to download model" in str(exc_info.value.message)
+        assert "Failed to download model" in str(exc_info.value.args[0])
 
     def test_raises_for_jit_only_model_without_package(self, tmp_path):
         """get_model should reject models that only have jit key (no package)."""
@@ -202,7 +202,7 @@ tts_models:
         with pytest.raises(TTSEngineError) as exc_info:
             provider.get_model("ru", "aidar_8khz")
 
-        assert "aidar_8khz" in str(exc_info.value.message)
+        assert "aidar_8khz" in str(exc_info.value.args[0])
 
 
 class TestGetModelDownload:
