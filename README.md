@@ -20,7 +20,7 @@ A simple, robust, and performant Mary-TTS compatible REST API that wraps the Sil
 
 3. **Install dependencies**
    ```bash
-   pip install -e ".[dev]"
+   uv sync --extra dev
    ```
 
 4. **Set up environment variables**

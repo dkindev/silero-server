@@ -50,11 +50,7 @@ buffer = io.BytesIO(audio_bytes)
 ```python
 import io
 import torch
-# Mandatory PyTorch extension for Intel graphics
-import intel_extension_for_pytorch as ipex 
 import torchcodec
-# Importing the XPU plugin for hardware acceleration of Intel codecs
-import torchcodec_xpu 
 
 # Let's assume the audio is on an xpu device
 device = torch.device("xpu:0")

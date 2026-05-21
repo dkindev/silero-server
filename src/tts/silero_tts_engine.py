@@ -5,7 +5,6 @@ from typing import Any
 
 import numpy as np
 import torch
-import torchcodec
 import yaml
 from scipy.io import wavfile
 
@@ -71,33 +70,22 @@ def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int, device: torch.de
         if device.type == "cpu":
             audio_np = audio.squeeze().detach().numpy()
             audio_np = np.clip(audio_np, -1.0, 1.0)
-            pcm_data = (audio_np * 32767).astype(np.int16)
-            buffer = io.BytesIO()
-            wavfile.write(buffer, sample_rate, pcm_data)
-            return buffer.getvalue()
-        elif device.type == "cuda":
-            audio_gpu = torch.clamp(audio, -1.0, 1.0)
-            pcm_gpu = (audio_gpu * 32767).to(torch.int16)
-            return torchcodec.encoders.encode_audio(  # type: ignore[attr-defined]
-                pcm_gpu, sample_rate=sample_rate, format="wav"
-            )
-        elif device.type == "xpu":
-            try:
-                import intel_extension_for_pytorch as ipex  # noqa: F401
-                import torchcodec_xpu  # noqa: F401
-            except ImportError as e:
-                raise TTSEngineError(f"XPU packages not installed: {e}") from e
-            audio_xpu = torch.clamp(audio, -1.0, 1.0)
-            pcm_xpu = (audio_xpu * 32767).to(torch.int16)
-            return torchcodec.encoders.encode_audio(  # type: ignore[attr-defined]
-                pcm_xpu, sample_rate=sample_rate, format="wav"
-            )
+        elif device.type in ("cuda", "xpu"):
+            # Processing ONLY on GPU is currently not supported (No transfer to CPU)
+            # audio is located on device 'xpu/cuda'
+            # We transfer it to the CPU and convert it into a numpy array.
+            audio_np = audio.squeeze().clamp(-1.0, 1.0).cpu().numpy()
         else:
             raise TTSEngineError(f"Unsupported device: {device.type}")
     except TTSEngineError:
         raise
     except Exception as e:
-        raise TTSEngineError(f"Failed to convert tensor to WAV: {e}") from e
+        raise TTSEngineError(f"Failed to convert tensor to WAV from device '{device.type}'.") from e
+
+    pcm_data = (audio_np * 32767).astype(np.int16)
+    buffer = io.BytesIO()
+    wavfile.write(buffer, sample_rate, pcm_data)
+    return buffer.getvalue()
 
 
 @dataclass
