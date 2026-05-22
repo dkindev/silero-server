@@ -1,3 +1,4 @@
+import io
 import unittest.mock
 
 import pytest
@@ -491,8 +492,8 @@ class TestProcessValidation:
                 )
 
         assert isinstance(result, TTSResult)
-        assert isinstance(result.audio, bytes)
-        assert result.audio.startswith(b"RIFF")
+        assert isinstance(result.audio, io.BytesIO)
+        assert result.audio.read().startswith(b"RIFF")
         assert result.sample_rate == 48000
         assert result.model == "v5_5_ru"
 
@@ -537,8 +538,8 @@ class TestProcessValidation:
                 )
 
         assert isinstance(result, TTSResult)
-        assert isinstance(result.audio, bytes)
-        assert result.audio.startswith(b"RIFF")
+        assert isinstance(result.audio, io.BytesIO)
+        assert result.audio.read().startswith(b"RIFF")
         assert result.sample_rate == 48000
         assert result.model == "v5_5_ru"
 
@@ -1024,8 +1025,8 @@ class TestProcessValidation:
                 )
 
         assert isinstance(result, TTSResult)
-        assert isinstance(result.audio, bytes)
-        assert result.audio.startswith(b"RIFF")
+        assert isinstance(result.audio, io.BytesIO)
+        assert result.audio.read().startswith(b"RIFF")
         assert result.sample_rate == 48000
         assert result.model == "v5_5_ru"
 
@@ -1080,8 +1081,8 @@ class TestProcessValidation:
                 )
 
         assert isinstance(result, TTSResult)
-        assert isinstance(result.audio, bytes)
-        assert result.audio.startswith(b"RIFF")
+        assert isinstance(result.audio, io.BytesIO)
+        assert result.audio.read().startswith(b"RIFF")
         assert result.sample_rate == 48000
         assert result.model == "v5_5_ru"
 

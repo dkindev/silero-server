@@ -1,3 +1,4 @@
+import io
 import unittest.mock
 
 import pytest
@@ -158,5 +159,5 @@ class TestProcessWithProvider:
 
         assert ("ru", "v5_5_ru") in provider_calls
         assert isinstance(result, TTSResult)
-        assert isinstance(result.audio, bytes)
-        assert result.audio.startswith(b"RIFF")
+        assert isinstance(result.audio, io.BytesIO)
+        assert result.audio.read().startswith(b"RIFF")

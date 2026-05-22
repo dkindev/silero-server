@@ -73,7 +73,7 @@ def _resolve_device(device_str: str) -> torch.device:
     return torch.device(device_str)
 
 
-def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int, device: torch.device) -> bytes:
+def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int, device: torch.device) -> io.BytesIO:
     try:
         if device.type == "cpu":
             audio_np = audio.squeeze().detach().numpy()
@@ -93,7 +93,9 @@ def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int, device: torch.de
     pcm_data = (audio_np * 32767).astype(np.int16)
     buffer = io.BytesIO()
     wavfile.write(buffer, sample_rate, pcm_data)
-    return buffer.getvalue()
+    buffer.seek(0)
+
+    return buffer
 
 
 @dataclass

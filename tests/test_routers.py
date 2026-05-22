@@ -1,3 +1,4 @@
+import io
 from unittest.mock import AsyncMock, MagicMock
 
 from fastapi import FastAPI
@@ -199,7 +200,7 @@ class TestProcessEndpoint:
         from src.deps import get_engine
         from src.tts.result import TTSResult
 
-        mock_audio = b"RIFF" + b"\x00" * 1000
+        mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
         mock_engine = AsyncMock()
@@ -229,7 +230,7 @@ class TestProcessEndpoint:
         from src.deps import get_engine
         from src.tts.result import TTSResult
 
-        mock_audio = b"RIFF" + b"\x00" * 1000
+        mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
         mock_engine = AsyncMock()
@@ -422,7 +423,7 @@ class TestProcessPostEndpoint:
         from src.deps import get_engine
         from src.tts.result import TTSResult
 
-        mock_audio = b"RIFF" + b"\x00" * 1000
+        mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
         mock_engine = AsyncMock()
@@ -459,7 +460,7 @@ class TestProcessPostEndpoint:
         from src.deps import get_engine
         from src.tts.result import TTSResult
 
-        mock_audio = b"RIFF" + b"\x00" * 1000
+        mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
         mock_engine = AsyncMock()

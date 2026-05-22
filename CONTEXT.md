@@ -53,7 +53,7 @@ Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 - `get_input_types()` → `tuple[str, ...]` — returns supported input types (`"TEXT"`, `"SSML"`)
 - `get_locales()` → `list[str]` — returns cached list from config (e.g., `["ru_RU", "de_DE"]`)
 - `get_voices()` → `list[str]` — returns cached list in Mary-TTS format: `"{voice_name} {locale} {gender}"` per voice (e.g., `["silero-v5_5_ru-aidar ru_RU male", "silero-v5_5_ru-baya ru_RU female"]`)
-- `process(text, locale, voice, input_type)` → `TTSResult` — returns synthesized audio
+- `process(text, locale, voice, input_type)` → `TTSResult` — returns synthesized audio as `TTSResult(audio=io.BytesIO, sample_rate=int, model=str)`
 
 **Initialization:**
 - Config loaded from `TTS_CONFIG_PATH` at init, cached for app lifetime
@@ -87,6 +87,10 @@ Validation happens at two levels:
 - Per-model `asyncio.Semaphore` with configurable limit via `TTS_MAX_CONCURRENT_PER_MODEL`
 - Models lazy-loaded on first `process()` call per language and speaker, cached thereafter
 
+**Normalization:** 
+- Clips/clamps Silero audio from \(-1.0\) to \(1.0\) float32 range.
+- Scales and converts the audio to 16-bit PCM integer format (int16). This creates a smaller file size and matches standard audio streaming expectations.
+
 ### `/locales` Endpoint
 
 Returns available locales from `SileroTTSEngine.get_locales()` as plain text, one per line.
@@ -111,7 +115,7 @@ Converts text to speech audio. Uses `SileroTTSEngine.process()` for synthesis. S
 - Text length ≤ `TTS_MAX_TEXT_LENGTH` (default 1000 chars, 400 if exceeded) — checked in endpoint
 - `AUDIO`, locale, voice, `INPUT_TYPE`, `OUTPUT_TYPE` — all validated by the endpoint before the engine is called
 
-**Response:** Raw WAV audio bytes. `Content-Type: audio/wav`, `Content-Disposition: inline`.
+**Response:** WAV audio streamed from a `BytesIO` buffer via `StreamingResponse`. `Content-Type: audio/wav`, `Content-Disposition: inline`.
 
 ### Configuration
 

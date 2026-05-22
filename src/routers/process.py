@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Form, Query
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.deps import EngineDep, SettingsDep
 
@@ -55,7 +55,7 @@ async def process_request(
 
     result = await engine.process(INPUT_TEXT, LOCALE, VOICE, INPUT_TYPE)
 
-    return Response(
+    return StreamingResponse(
         content=result.audio,
         media_type="audio/wav",
         headers={"Content-Disposition": "inline"},

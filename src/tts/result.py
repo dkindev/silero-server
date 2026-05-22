@@ -1,8 +1,9 @@
+import io
 from dataclasses import dataclass
 
 
 @dataclass
 class TTSResult:
-    audio: bytes
+    audio: io.BytesIO
     sample_rate: int
     model: str
