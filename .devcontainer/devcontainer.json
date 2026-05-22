@@ -8,17 +8,17 @@
 	},
 
 	// 1. Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": []
+	"forwardPorts": [59125],
 
 	// 2. Use 'mounts' to make a list of local directories available inside the container. More info: https://code.visualstudio.com/remote/advancedcontainers/add-local-file-mount
 	// "mounts": [],
 
 	// 3. Use 'runArgs' to pass arguments to the container. 
 	// run the container with all GPUs
-	//"runArgs": [
-	//	"--gpus",
-	//	"all"
-	//],
+	"runArgs": [
+		"--gpus",
+		"all"
+	],
 
 	// 4. Features to add to the Dev Container. More info: https://containers.dev/implementors/features.
 	"features": {
@@ -45,7 +45,9 @@
 			"version": "os-provided",
 			"ppa": "false"
 		},
-		"ghcr.io/devcontainers/features/docker-in-docker": {}
+		"ghcr.io/devcontainers/features/docker-in-docker:3": {
+			"version": "latest"
+		}
 	},
 
 	// 5. Configure tool-specific properties.

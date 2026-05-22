@@ -1,4 +1,4 @@
-FROM python:3.14-bookworm
+FROM mcr.microsoft.com/devcontainers/python:3.14-bookworm
 
 RUN set -ex; \
     apt-get update; \
