@@ -4,20 +4,56 @@ from pydantic import ValidationError
 from src.config import Settings
 
 
-def test_settings_has_all_tts_fields():
-    """Test that Settings has all 5 required TTS_* fields with correct defaults."""
+def test_settings_tts_torch_device_default():
+    """Test that TTS_TORCH_DEVICE defaults to 'cpu'."""
     settings = Settings.model_validate({})
-    assert hasattr(settings, "TTS_DEVICE")
+    assert settings.TTS_TORCH_DEVICE == "cpu"
+
+
+def test_settings_tts_torch_num_threads_default():
+    """Test that TTS_TORCH_NUM_THREADS defaults to 4."""
+    settings = Settings.model_validate({})
+    assert settings.TTS_TORCH_NUM_THREADS == 4
+
+
+def test_settings_tts_torch_num_interop_threads_default():
+    """Test that TTS_TORCH_NUM_INTEROP_THREADS defaults to 1."""
+    settings = Settings.model_validate({})
+    assert settings.TTS_TORCH_NUM_INTEROP_THREADS == 1
+
+
+def test_settings_tts_torch_flush_denormal_default():
+    """Test that TTS_TORCH_FLUSH_DENORMAL defaults to True."""
+    settings = Settings.model_validate({})
+    assert settings.TTS_TORCH_FLUSH_DENORMAL is True
+
+
+def test_tts_torch_num_threads_zero_fails():
+    """Test that TTS_TORCH_NUM_THREADS=0 raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_TORCH_NUM_THREADS": 0})
+
+
+def test_tts_torch_num_interop_threads_zero_fails():
+    """Test that TTS_TORCH_NUM_INTEROP_THREADS=0 raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_TORCH_NUM_INTEROP_THREADS": 0})
+
+
+def test_settings_has_all_tts_fields():
+    """Test that Settings has all TTS_* fields with correct defaults."""
+    settings = Settings.model_validate({})
+    assert hasattr(settings, "TTS_TORCH_DEVICE")
+    assert hasattr(settings, "TTS_TORCH_NUM_THREADS")
+    assert hasattr(settings, "TTS_TORCH_NUM_INTEROP_THREADS")
+    assert hasattr(settings, "TTS_TORCH_FLUSH_DENORMAL")
     assert hasattr(settings, "TTS_SAMPLE_RATE")
     assert hasattr(settings, "TTS_MAX_TEXT_LENGTH")
     assert hasattr(settings, "TTS_ALLOWED_ORIGINS")
     assert hasattr(settings, "TTS_SHUTDOWN_TIMEOUT")
-
-
-def test_settings_tts_device_default():
-    """Test that TTS_DEVICE defaults to 'cpu'."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_DEVICE == "cpu"
+    assert hasattr(settings, "TTS_CONFIG_PATH")
+    assert hasattr(settings, "TTS_MAX_MODELS")
+    assert hasattr(settings, "TTS_MAX_CONCURRENT_PER_MODEL")
 
 
 def test_settings_sample_rate_default():
@@ -80,19 +116,6 @@ def test_valid_shutdown_timeout():
     for timeout in [1, 5, 10, 30, 60]:
         settings = Settings.model_validate({"TTS_SHUTDOWN_TIMEOUT": timeout})
         assert settings.TTS_SHUTDOWN_TIMEOUT == timeout
-
-
-def test_settings_has_all_eight_tts_fields():
-    """Test that Settings has all 8 required TTS_* fields with correct defaults."""
-    settings = Settings.model_validate({})
-    assert hasattr(settings, "TTS_DEVICE")
-    assert hasattr(settings, "TTS_SAMPLE_RATE")
-    assert hasattr(settings, "TTS_MAX_TEXT_LENGTH")
-    assert hasattr(settings, "TTS_ALLOWED_ORIGINS")
-    assert hasattr(settings, "TTS_SHUTDOWN_TIMEOUT")
-    assert hasattr(settings, "TTS_CONFIG_PATH")
-    assert hasattr(settings, "TTS_MAX_MODELS")
-    assert hasattr(settings, "TTS_MAX_CONCURRENT_PER_MODEL")
 
 
 def test_settings_config_path_default():
@@ -165,23 +188,23 @@ def test_invalid_max_models_negative_fails():
 
 
 def test_valid_device_values():
-    """Test that all valid TTS_DEVICE values are accepted."""
+    """Test that all valid TTS_TORCH_DEVICE values are accepted."""
     for device in ["cpu", "cuda", "xpu"]:
-        settings = Settings.model_validate({"TTS_DEVICE": device})
-        assert settings.TTS_DEVICE == device
+        settings = Settings.model_validate({"TTS_TORCH_DEVICE": device})
+        assert settings.TTS_TORCH_DEVICE == device
 
 
 def test_valid_device_case_insensitive():
-    """Test that TTS_DEVICE is case-insensitive."""
+    """Test that TTS_TORCH_DEVICE is case-insensitive."""
     for device, expected in [("CPU", "cpu"), ("CUDA", "cuda"), ("XPU", "xpu")]:
-        settings = Settings.model_validate({"TTS_DEVICE": device})
-        assert settings.TTS_DEVICE == expected
+        settings = Settings.model_validate({"TTS_TORCH_DEVICE": device})
+        assert settings.TTS_TORCH_DEVICE == expected
 
 
 def test_invalid_device_value_fails():
-    """Test that invalid TTS_DEVICE value raises ValidationError."""
+    """Test that invalid TTS_TORCH_DEVICE value raises ValidationError."""
     with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_DEVICE": "vulkan"})
+        Settings.model_validate({"TTS_TORCH_DEVICE": "vulkan"})
 
 
 def test_get_settings_importable_from_config():

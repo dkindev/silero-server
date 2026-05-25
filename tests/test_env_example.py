@@ -1,10 +1,13 @@
 def test_env_example_has_all_tts_vars():
-    """Test that .env.example contains all 8 TTS_* variables with example values."""
+    """Test that .env.example contains all TTS_* variables with example values."""
     with open(".env.example") as f:
         content = f.read()
 
     required_vars = [
-        "TTS_DEVICE",
+        "TTS_TORCH_DEVICE",
+        "TTS_TORCH_NUM_THREADS",
+        "TTS_TORCH_NUM_INTEROP_THREADS",
+        "TTS_TORCH_FLUSH_DENORMAL",
         "TTS_SAMPLE_RATE",
         "TTS_MAX_TEXT_LENGTH",
         "TTS_ALLOWED_ORIGINS",

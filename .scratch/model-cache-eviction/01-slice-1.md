@@ -27,10 +27,10 @@ Delivered end-to-end: env var → `TTSConfig` → engine eviction logic → veri
 
 ## Acceptance criteria
 
-- [ ] `TTS_MAX_MODELS=5` in `.env` is accepted; `TTS_MAX_MODELS=0` and `TTS_MAX_MODELS=-1` are rejected at startup
-- [ ] `TTS_MAX_MODELS` default is 2 in both `Settings` and the configuration table in `CONTEXT.md`
-- [ ] All existing tests pass after refactoring (no `engine._provider` patches, no `_load_model` calls, no `engine._cached_models` access)
-- [ ] Eviction test: `max_models=1`, call `process()` for model A, then model B, then model A again → `get_model` called 3 times (A loaded, B loaded + evicts A, A re-loaded)
+- [x] `TTS_MAX_MODELS=5` in `.env` is accepted; `TTS_MAX_MODELS=0` and `TTS_MAX_MODELS=-1` are rejected at startup
+- [x] `TTS_MAX_MODELS` default is 2 in both `Settings` and the configuration table in `CONTEXT.md`
+- [x] All existing tests pass after refactoring (no `engine._provider` patches, no `_load_model` calls, no `engine._cached_models` access)
+- [x] Eviction test: `max_models=1`, call `process()` for model A, then model B, then model A again → `get_model` called 3 times (A loaded, B loaded + evicts A, A re-loaded)
 
 ## Blocked by
 

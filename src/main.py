@@ -18,10 +18,13 @@ async def lifespan(app: FastAPI):
 
     import torch
 
-    torch.set_num_threads(2)
+    torch.set_num_threads(app_settings.TTS_TORCH_NUM_THREADS)
+    torch.set_num_interop_threads(app_settings.TTS_TORCH_NUM_INTEROP_THREADS)
+    if app_settings.TTS_TORCH_FLUSH_DENORMAL and hasattr(torch, "set_flush_denormal"):
+        torch.set_flush_denormal(True)
 
     config = TTSConfig(
-        device=app_settings.TTS_DEVICE,
+        device=app_settings.TTS_TORCH_DEVICE,
         sample_rate=app_settings.TTS_SAMPLE_RATE,
         max_models=app_settings.TTS_MAX_MODELS,
         max_concurrent_per_model=app_settings.TTS_MAX_CONCURRENT_PER_MODEL,

@@ -11,16 +11,25 @@ class Settings(BaseSettings):
 
     model_config = ConfigDict(env_file=".env", case_sensitive=False)
 
-    TTS_DEVICE: str = "cpu"
+    TTS_TORCH_DEVICE: str = "cpu"
     """Device to run TTS model on: 'cpu', 'cuda', or 'xpu'. Falls back to 'cpu' at runtime if unavailable."""
 
-    @field_validator("TTS_DEVICE")
+    TTS_TORCH_NUM_THREADS: int = Field(4, ge=1)
+    """Number of PyTorch intra-op threads (torch.set_num_threads)."""
+
+    TTS_TORCH_NUM_INTEROP_THREADS: int = Field(1, ge=1)
+    """Number of PyTorch inter-op threads (torch.set_num_interop_threads)."""
+
+    TTS_TORCH_FLUSH_DENORMAL: bool = True
+    """Flush denormal floats for performance (torch.set_flush_denormal)."""
+
+    @field_validator("TTS_TORCH_DEVICE")
     @classmethod
     def device_must_be_valid(cls, v: str) -> str:
         valid = {"cpu", "cuda", "xpu"}
         if v.lower() not in valid:
             raise ValueError(
-                f"Invalid TTS_DEVICE '{v}', must be one of: {', '.join(sorted(valid))}"
+                f"Invalid TTS_TORCH_DEVICE '{v}', must be one of: {', '.join(sorted(valid))}"
             )
         return v.lower()
 

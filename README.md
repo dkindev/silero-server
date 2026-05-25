@@ -62,7 +62,7 @@ A simple, robust, and performant Mary-TTS compatible REST API that wraps the Sil
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TTS_DEVICE` | `cpu` | Device to run TTS model on: `cpu` or `cuda` |
+| `TTS_TORCH_DEVICE` | `cpu` | Device to run TTS model on: `cpu` or `cuda` |
 
 ## Development
 
