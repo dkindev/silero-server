@@ -15,14 +15,24 @@ async def lifespan(app: FastAPI):
     """Manage application lifespan."""
 
     app_settings = get_settings()
+
+    import torch
+
+    torch.set_num_threads(2)
+
     config = TTSConfig(
         device=app_settings.TTS_DEVICE,
         sample_rate=app_settings.TTS_SAMPLE_RATE,
+        max_models=2,
         max_concurrent_per_model=app_settings.TTS_MAX_CONCURRENT_PER_MODEL,
     )
     app.state.engine = create_silero_engine(config, app_settings.TTS_CONFIG_PATH)
 
     yield
+
+    engine = app.state.engine
+    if engine:
+        await engine.shutdown()
 
 
 app = FastAPI(

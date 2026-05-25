@@ -16,6 +16,7 @@ Key Silero concepts:
 - **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded via Torch Hub to `~/.cache/torch/hub/`. Each model has a `language` field used by `torch.hub.load()`.
 - **Speaker**: A named voice within a model (e.g., `aidar`, `baya`, `eugene`, `kseniya`, `xenia` for Russian). Speakers are model-specific.
 - **Sample rate**: Audio output frequency in Hz. Silero produces 48000 Hz by default; torchaudio can resample.
+- **Output format**: The Silero TTS model always returns a two-dimensional (2D) tensor with batch dimension: [1, samples] (where 1 is one generated text and samples is the number of audio points).
 
 ### Locale
 

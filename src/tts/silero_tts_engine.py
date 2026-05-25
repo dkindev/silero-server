@@ -1,5 +1,7 @@
 import asyncio
+import gc
 import io
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any
 
@@ -12,6 +14,15 @@ from src.tts.exceptions import TTSEngineError
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
 from src.tts.provider import SileroTTSModelProvider
 from src.tts.result import TTSResult
+
+
+@dataclass
+class CachedModel:
+    """Bundles a loaded model with its sample rate and concurrency control."""
+
+    model: Any
+    sample_rate: int
+    semaphore: asyncio.Semaphore
 
 
 def _load_config_model(config_path: str) -> TTSConfigModel:
@@ -73,16 +84,33 @@ def _resolve_device(device_str: str) -> torch.device:
     return torch.device(device_str)
 
 
+def _run_tts_sync(cached_model: CachedModel, text: str, speaker: str):
+    with torch.inference_mode():
+        audio = cached_model.model.apply_tts(
+            text=text, speaker=speaker, sample_rate=cached_model.sample_rate
+        )
+
+        # If it's a GPU, we force the computation thread to synchronize
+        # so that the tensor is guaranteed to be formed before exiting the method.
+        if audio.device.type in ("cuda", "xpu"):
+            if audio.device.type == "cuda":
+                torch.cuda.synchronize(device=audio.device)
+            elif audio.device.type == "xpu":
+                torch.xpu.synchronize(device=audio.device)
+
+        return audio
+
+
 def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int, device: torch.device) -> io.BytesIO:
     try:
         if device.type == "cpu":
-            audio_np = audio.squeeze().detach().numpy()
+            audio_np = audio.detach().squeeze(0).numpy()
             audio_np = np.clip(audio_np, -1.0, 1.0)
         elif device.type in ("cuda", "xpu"):
             # Processing ONLY on GPU is currently not supported (No transfer to CPU)
             # audio is located on device 'xpu/cuda'
             # We transfer it to the CPU and convert it into a numpy array.
-            audio_np = audio.squeeze().clamp(-1.0, 1.0).cpu().numpy()
+            audio_np = audio.detach().squeeze(0).clamp(-1.0, 1.0).cpu().numpy()
         else:
             raise TTSEngineError(f"Unsupported device: {device.type}")
     except TTSEngineError:
@@ -98,13 +126,18 @@ def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int, device: torch.de
     return buffer
 
 
-@dataclass
-class CachedModel:
-    """Bundles a loaded model with its sample rate and concurrency control."""
+def _clear_cached_model(cached_model):
+    del cached_model.model
+    del cached_model.semaphore
+    del cached_model
 
-    model: Any
-    sample_rate: int
-    semaphore: asyncio.Semaphore
+
+def _clear_torch_cache_on_device(device: torch.device):
+    # Clearing the PyTorch allocator cache to free up VRAM/RAM
+    if device == "cuda":
+        torch.cuda.empty_cache()
+    elif device == "xpu":
+        torch.xpu.empty_cache()
 
 
 class SileroTTSEngine:
@@ -114,15 +147,17 @@ class SileroTTSEngine:
         self,
         config: TTSConfig,
         config_model: TTSConfigModel,
-        provider: "SileroTTSModelProvider",
+        provider: SileroTTSModelProvider,
     ):
         self._config = config
         self._config_model = config_model
         self._locales = tuple(config_model.locales.keys())
         self._voices = self._build_voices()
-        self._cached_models: dict[str, CachedModel] = {}
+        # Using OrderedDict instead of regular dict for LRU logic
+        self._cached_models: OrderedDict[str, CachedModel] = OrderedDict()
         self._device = _resolve_device(config.device)
         self._provider = provider
+        self._lock: asyncio.Lock | None = None
 
     async def process(
         self,
@@ -142,43 +177,87 @@ class SileroTTSEngine:
         model_name = voice_config.model
         model_info = self._config_model.models[model_name]
 
-        cached = self._cached_models.get(model_name) or self._load_model(model_name, model_info)
+        async with self._get_lock():
+            if model_name in self._cached_models:
+                # The model is in the cache: move it to the end (it is now the most recent)
+                self._cached_models.move_to_end(model_name)
+                cached = self._cached_models[model_name]
+            else:
+                # The model is not in the cache: check the limit and download the old one if necessary
+                self._evict_oldest_model()
+
+                # Load a new model
+                cached = await self._load_model_async(model_name, model_info)
+                # _load_model_async will write it to self._cached_models itself,
+                # and it will automatically appear at the end as the most recent one.
+
         speaker = voice_config.speaker
 
         async with cached.semaphore:
-            audio_tensor = await asyncio.to_thread(
-                cached.model.apply_tts, text, speaker=speaker, sample_rate=cached.sample_rate
-            )
+            audio_tensor = await asyncio.to_thread(_run_tts_sync, cached, text, speaker)
 
-        wav_bytes = _tensor_to_wav_bytes(audio_tensor, cached.sample_rate, self._device)
+        wav_bytes = await asyncio.to_thread(
+            _tensor_to_wav_bytes, audio_tensor, cached.sample_rate, self._device
+        )
+
         return TTSResult(audio=wav_bytes, sample_rate=cached.sample_rate, model=model_name)
 
-    def _load_model(self, model_name: str, model_info: Model) -> CachedModel:
+    async def shutdown(self):
+        """Clears the model cache and forces VRAM to be released."""
+        async with self._get_lock():
+            while self._cached_models:
+                _, evicted_model = self._cached_models.popitem()
+                _clear_cached_model(evicted_model)
+                del evicted_model
+
+            gc.collect()
+
+            _clear_torch_cache_on_device(self._device)
+
+    def _get_lock(self) -> asyncio.Lock:
+        # Ensures that the lock is created strictly within the running FastAPI Event Loop
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    def _evict_oldest_model(self):
+        """Internal method for removing the least used model from memory."""
+        if len(self._cached_models) >= self._config.max_models:
+            # delete the first model (the oldest)
+            _, evicted_model = self._cached_models.popitem(last=False)
+            _clear_cached_model(evicted_model)
+            del evicted_model
+
+            gc.collect()
+
+            _clear_torch_cache_on_device(self._device)
+
+    async def _load_model_async(self, model_name: str, model_info: Model) -> CachedModel:
         language = model_info.language
         if not language:
             raise TTSEngineError(f"Language isn't specified for Silero model: {model_name}")
 
-        local_path, sample_rates = self._provider.get_model(language, model_name)
+        # Move blocking disk reading and heavy PyTorch initialization to a separate thread
+        def _sync_load():
+            local_path, sample_rates = self._provider.get_model(language, model_name)
+            try:
+                importer = torch.package.PackageImporter(local_path)
+                model = importer.load_pickle("tts_models", "model")
+                model.to(self._device)
+                return model, sample_rates
+            except Exception as e:
+                raise TTSEngineError(
+                    f"Failed to load model '{model_name}' for language '{language}' with path: {local_path}. "
+                    f"Try to delete model to force a fresh download."
+                ) from e
 
-        try:
-            importer = torch.package.PackageImporter(local_path)
-            model = importer.load_pickle("tts_models", "model")
-        except Exception as e:
-            raise TTSEngineError(
-                f"Failed to load model '{model_name}' for language '{language}' with path: {local_path}. "
-                f"Delete model to force a fresh download."
-            ) from e
-
-        try:
-            model.to(self._device)
-        except Exception as e:
-            raise TTSEngineError(f"Failed to move model to device: '{self._device.type}'") from e
+        model, sample_rates = await asyncio.to_thread(_sync_load)
 
         sample_rate = _select_sample_rate(self._config.sample_rate, sample_rates)
         semaphore = asyncio.Semaphore(self._config.max_concurrent_per_model)
-
-        cached = CachedModel(model=model, sample_rate=sample_rate, semaphore=semaphore)
+        cached = CachedModel(model, sample_rate, semaphore)
         self._cached_models[model_name] = cached
+
         return cached
 
     def _build_voices(self) -> tuple[str, ...]:
