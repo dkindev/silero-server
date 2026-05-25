@@ -82,8 +82,8 @@ def test_valid_shutdown_timeout():
         assert settings.TTS_SHUTDOWN_TIMEOUT == timeout
 
 
-def test_settings_has_all_seven_tts_fields():
-    """Test that Settings has all 7 required TTS_* fields with correct defaults."""
+def test_settings_has_all_eight_tts_fields():
+    """Test that Settings has all 8 required TTS_* fields with correct defaults."""
     settings = Settings.model_validate({})
     assert hasattr(settings, "TTS_DEVICE")
     assert hasattr(settings, "TTS_SAMPLE_RATE")
@@ -91,6 +91,7 @@ def test_settings_has_all_seven_tts_fields():
     assert hasattr(settings, "TTS_ALLOWED_ORIGINS")
     assert hasattr(settings, "TTS_SHUTDOWN_TIMEOUT")
     assert hasattr(settings, "TTS_CONFIG_PATH")
+    assert hasattr(settings, "TTS_MAX_MODELS")
     assert hasattr(settings, "TTS_MAX_CONCURRENT_PER_MODEL")
 
 
@@ -136,6 +137,31 @@ def test_invalid_config_path_nonexistent_fails(tmp_path):
     nonexistent = str(tmp_path / "nonexistent.yml")
     with pytest.raises(ValidationError):
         Settings.model_validate({"TTS_CONFIG_PATH": nonexistent})
+
+
+def test_settings_max_models_default():
+    """Test that TTS_MAX_MODELS defaults to 2."""
+    settings = Settings.model_validate({})
+    assert settings.TTS_MAX_MODELS == 2
+
+
+def test_valid_max_models_values():
+    """Test that valid TTS_MAX_MODELS values are accepted."""
+    for val in [1, 5, 20, 100]:
+        settings = Settings.model_validate({"TTS_MAX_MODELS": val})
+        assert settings.TTS_MAX_MODELS == val
+
+
+def test_invalid_max_models_zero_fails():
+    """Test that TTS_MAX_MODELS=0 raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_MAX_MODELS": 0})
+
+
+def test_invalid_max_models_negative_fails():
+    """Test that negative TTS_MAX_MODELS raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_MAX_MODELS": -1})
 
 
 def test_valid_device_values():

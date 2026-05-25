@@ -3,7 +3,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from src.tts.exceptions import TTSEngineError
-from src.tts.models import Locale, Model, TTSConfigModel, VoiceConfig
+from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
 from src.tts.result import TTSResult
 
 
@@ -63,6 +63,23 @@ class TestTTSConfigModel:
         config = TTSConfigModel(models={}, locales={})
         with pytest.raises(FrozenInstanceError):
             config.models = {}
+
+
+class TestTTSConfig:
+    def test_tts_config_has_max_models_field(self):
+        """TTSConfig dataclass has max_models field."""
+        config = TTSConfig(
+            device="cpu", sample_rate=48000, max_models=5, max_concurrent_per_model=2
+        )
+        assert config.max_models == 5
+
+    def test_tts_config_is_frozen(self):
+        """TTSConfig dataclass is immutable (frozen)."""
+        config = TTSConfig(
+            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+        )
+        with pytest.raises(FrozenInstanceError):
+            config.max_models = 3
 
 
 class TestExceptions:

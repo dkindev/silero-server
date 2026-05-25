@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
     config = TTSConfig(
         device=app_settings.TTS_DEVICE,
         sample_rate=app_settings.TTS_SAMPLE_RATE,
-        max_models=2,
+        max_models=app_settings.TTS_MAX_MODELS,
         max_concurrent_per_model=app_settings.TTS_MAX_CONCURRENT_PER_MODEL,
     )
     app.state.engine = create_silero_engine(config, app_settings.TTS_CONFIG_PATH)

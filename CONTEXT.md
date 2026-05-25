@@ -84,6 +84,11 @@ Validation happens at two levels:
 
 2. **Engine (second line)** — `process()` redundantly validates locale, voice, and input type as a safety net. A second-line failure raises `TTSEngineError` → 500 (indicates a bug: the endpoint should have caught it).
 
+**Model Cache:**
+- Models are lazy-loaded on first use and cached.
+- `TTS_MAX_MODELS` caps the cache size. When a new model is loaded at capacity, the least-recently-used model is evicted and its torch resources freed.
+- Eviction calls `gc.collect()` and clears the torch CUDA/XPU cache.
+
 **Concurrency:**
 - Per-model `asyncio.Semaphore` with configurable limit via `TTS_MAX_CONCURRENT_PER_MODEL`
 - Models lazy-loaded on first `process()` call per language and speaker, cached thereafter
@@ -130,6 +135,7 @@ All configuration via environment variables with `TTS_` prefix:
 | `TTS_ALLOWED_ORIGINS` | `*` | CORS allowed origins |
 | `TTS_SHUTDOWN_TIMEOUT` | `10` | Graceful shutdown timeout (seconds) |
 | `TTS_CONFIG_PATH` | `silero-to-mary-config.yml` | Path to voice/locale mapping config |
+| `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached (ge=1). |
 | `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent requests per model |
 
 Validated at startup via Pydantic Settings — app exits with a clear error on invalid values.
