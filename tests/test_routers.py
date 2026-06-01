@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.deps import EngineDep, get_engine_from_request
-from src.handlers import global_exception_handler
+from src.handlers import add_global_exception_handler
 from src.tts.exceptions import TTSEngineError
 
 
@@ -23,7 +23,7 @@ class TestExceptionHandler:
             return mock_engine
 
         app.dependency_overrides[get_engine_from_request] = get_engine_override
-        app.add_exception_handler(TTSEngineError, global_exception_handler)
+        add_global_exception_handler(app)
 
         @app.get("/test-processing")
         async def test_processing(engine: EngineDep):
@@ -90,7 +90,7 @@ class TestLocalesEndpoint:
         from src.deps import get_engine_from_request
 
         mock_engine = MagicMock()
-        mock_engine.get_locales.return_value = ("ru_RU", "de_DE", "en_US")
+        mock_engine.get_storage.return_value.get_locales.return_value = ("ru_RU", "de_DE", "en_US")
 
         app = FastAPI()
 
@@ -205,7 +205,8 @@ class TestProcessEndpoint:
         mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
-        mock_engine = AsyncMock()
+        mock_engine = MagicMock()
+        mock_engine.process = AsyncMock()
         mock_engine.get_storage.return_value.has_locale.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
@@ -235,7 +236,8 @@ class TestProcessEndpoint:
         mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
-        mock_engine = AsyncMock()
+        mock_engine = MagicMock()
+        mock_engine.process = AsyncMock()
         mock_engine.get_storage.return_value.has_locale.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
@@ -428,7 +430,8 @@ class TestProcessPostEndpoint:
         mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
-        mock_engine = AsyncMock()
+        mock_engine = MagicMock()
+        mock_engine.process = AsyncMock()
         mock_engine.get_storage.return_value.has_locale.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
@@ -465,7 +468,8 @@ class TestProcessPostEndpoint:
         mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
 
-        mock_engine = AsyncMock()
+        mock_engine = MagicMock()
+        mock_engine.process = AsyncMock()
         mock_engine.get_storage.return_value.has_locale.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))

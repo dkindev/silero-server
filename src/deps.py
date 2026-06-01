@@ -13,6 +13,14 @@ from src.tts.silero_tts_engine import SileroTTSEngine
 def add_engine(app: FastAPI):
     """Create and store a SileroTTSEngine on app.state."""
     settings = get_settings()
+
+    import torch
+
+    torch.set_num_threads(settings.TTS_TORCH_NUM_THREADS)
+    torch.set_num_interop_threads(settings.TTS_TORCH_NUM_INTEROP_THREADS)
+    if settings.TTS_TORCH_FLUSH_DENORMAL and hasattr(torch, "set_flush_denormal"):
+        torch.set_flush_denormal(True)
+
     config = TTSConfig(
         device=settings.TTS_TORCH_DEVICE,
         sample_rate=settings.TTS_SAMPLE_RATE,
@@ -35,18 +43,6 @@ def get_engine_from_request(request: Request) -> SileroTTSEngine:
 def get_engine(state: State) -> SileroTTSEngine:
     """Dependency to get the TTS engine from app state."""
     return state.engine
-
-
-def setup_torch():
-    """Setting up PyTorch."""
-    app_settings = get_settings()
-
-    import torch
-
-    torch.set_num_threads(app_settings.TTS_TORCH_NUM_THREADS)
-    torch.set_num_interop_threads(app_settings.TTS_TORCH_NUM_INTEROP_THREADS)
-    if app_settings.TTS_TORCH_FLUSH_DENORMAL and hasattr(torch, "set_flush_denormal"):
-        torch.set_flush_denormal(True)
 
 
 EngineDep = Annotated[SileroTTSEngine, Depends(get_engine_from_request)]

@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.deps import add_engine, get_engine, setup_torch
+from src.deps import add_engine, get_engine
 from src.handlers import add_cors, add_global_exception_handler
 from src.routers import setup_routers
 
@@ -11,7 +11,6 @@ from src.routers import setup_routers
 async def lifespan(app: FastAPI):
     """Manage application lifespan."""
 
-    setup_torch()
     add_engine(app)
 
     yield

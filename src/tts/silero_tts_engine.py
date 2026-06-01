@@ -61,7 +61,7 @@ def _resolve_device(device_str: str) -> torch.device:
     return torch.device(device_str)
 
 
-def _run_tts_sync(cached_model: CachedModel, text: str, speaker: str):
+def _run_tts_sync(cached_model: CachedModel, text: str, speaker: str) -> torch.Tensor:
     with torch.inference_mode():
         audio = cached_model.model.apply_tts(
             text=text, speaker=speaker, sample_rate=cached_model.sample_rate
@@ -78,22 +78,24 @@ def _run_tts_sync(cached_model: CachedModel, text: str, speaker: str):
         return audio
 
 
-def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int, device: torch.device) -> io.BytesIO:
+def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int) -> io.BytesIO:
+    device = audio.device.type
+
     try:
-        if device.type == "cpu":
+        if device == "cpu":
             audio_np = audio.detach().squeeze(0).numpy()
             audio_np = np.clip(audio_np, -1.0, 1.0)
-        elif device.type in ("cuda", "xpu"):
+        elif device in ("cuda", "xpu"):
             # Processing ONLY on GPU is currently not supported (No transfer to CPU)
             # audio is located on device 'xpu/cuda'
             # We transfer it to the CPU and convert it into a numpy array.
             audio_np = audio.detach().squeeze(0).clamp(-1.0, 1.0).cpu().numpy()
         else:
-            raise TTSEngineError(f"Unsupported device: {device.type}")
+            raise TTSEngineError(f"Unsupported device: {device}")
     except TTSEngineError:
         raise
     except Exception as e:
-        raise TTSEngineError(f"Failed to convert tensor to WAV from device '{device.type}'.") from e
+        raise TTSEngineError(f"Failed to convert tensor to WAV from device '{device}'.") from e
 
     pcm_data = (audio_np * 32767).astype(np.int16)
     buffer = io.BytesIO()
@@ -111,9 +113,9 @@ def _clear_cached_model(cached_model):
 
 def _clear_torch_cache_on_device(device: torch.device):
     # Clearing the PyTorch allocator cache to free up VRAM/RAM
-    if device == "cuda":
+    if device.type == "cuda":
         torch.cuda.empty_cache()
-    elif device == "xpu":
+    elif device.type == "xpu":
         torch.xpu.empty_cache()
 
 
@@ -171,9 +173,7 @@ class SileroTTSEngine:
         async with cached.semaphore:
             audio_tensor = await asyncio.to_thread(_run_tts_sync, cached, text, speaker)
 
-        wav_bytes = await asyncio.to_thread(
-            _tensor_to_wav_bytes, audio_tensor, cached.sample_rate, self._device
-        )
+        wav_bytes = await asyncio.to_thread(_tensor_to_wav_bytes, audio_tensor, cached.sample_rate)
 
         return TTSResult(audio=wav_bytes, sample_rate=cached.sample_rate, model=model_name)
 
@@ -217,7 +217,8 @@ class SileroTTSEngine:
             local_path, sample_rates = self._provider.get_model(language, model_name)
             try:
                 importer = torch.package.PackageImporter(local_path)
-                model = importer.load_pickle("tts_models", "model")
+                model = importer.load_pickle("tts_models", "model", map_location=self._device)
+                # Ensure the model modules are shifted as well
                 model.to(self._device)
                 return model, sample_rates
             except Exception as e:
