@@ -20,9 +20,9 @@ Key Silero concepts:
 
 ### Locale
 
-The API exposes **Mary-TTS locale format** (`ru_RU`, `de_DE`) on the public API surface. Locales are derived from `SileroTTSEngine.get_locales()`.
+The API exposes **Mary-TTS locale format** (`ru_RU`, `de_DE`) on the public API surface. Locales are derived from `SileroTTSConfigStorage.get_locales()`, accessed via `engine.get_storage()`.
 
-A locale is **supported** if it appears in `SileroTTSEngine.get_locales()`. A request for an unsupported locale returns **400 Bad Request**.
+A locale is **supported** if it appears in `SileroTTSConfigStorage.get_locales()`. A request for an unsupported locale returns **400 Bad Request**.
 
 ### Voice
 
@@ -39,8 +39,8 @@ This naming scheme:
 - Speaker names are Silero's native speaker identifiers.
 
 Voice validation at request time (endpoint level):
-1. Check locale exists via `has_locale()`
-2. Check voice exists via `has_voice(locale, voice_name)`
+1. Check locale exists via `SileroTTSConfigStorage.has_locale()`
+2. Check voice exists via `SileroTTSConfigStorage.has_voice(locale, voice_name)`
 
 Gender is sourced from config.
 
@@ -49,11 +49,8 @@ Gender is sourced from config.
 Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 
 **Methods:**
-- `has_locale(locale)` → `bool` — returns True if locale is configured
-- `has_voice(locale, voice_name)` → `bool` — returns True if voice exists for the locale
+- `get_storage()` → `SileroTTSConfigStorage` — returns the config storage; clients use it for locale/voice queries (`has_locale`, `has_voice`, `get_locales`, `get_voices`)
 - `get_input_types()` → `tuple[str, ...]` — returns supported input types (`"TEXT"`, `"SSML"`)
-- `get_locales()` → `list[str]` — returns cached list from config (e.g., `["ru_RU", "de_DE"]`)
-- `get_voices()` → `list[str]` — returns cached list in Mary-TTS format: `"{voice_name} {locale} {gender}"` per voice (e.g., `["silero-v5_5_ru-aidar ru_RU male", "silero-v5_5_ru-baya ru_RU female"]`)
 - `process(text, locale, voice, input_type)` → `TTSResult` — returns synthesized audio as `TTSResult(audio=io.BytesIO, sample_rate=int, model=str)`
 
 **Initialization:**
@@ -77,8 +74,8 @@ Validation happens at two levels:
 
 1. **Endpoint (first line)** — `/process` endpoint validates before calling the engine:
    - `AUDIO` must be `WAVE_FILE` → 400
-   - Locale must exist via `has_locale()` → 400
-   - Voice must exist via `has_voice()` → 400
+   - Locale must exist via `get_storage().has_locale()` → 400
+   - Voice must exist via `get_storage().has_voice()` → 400
    - `INPUT_TYPE` must be in `get_input_types()` → 400
    - `OUTPUT_TYPE` must be `AUDIO` → 406
 
@@ -99,11 +96,11 @@ Validation happens at two levels:
 
 ### `/locales` Endpoint
 
-Returns available locales from `SileroTTSEngine.get_locales()` as plain text, one per line.
+Returns available locales from `SileroTTSConfigStorage.get_locales()` (accessed via `engine.get_storage()`) as plain text, one per line.
 
 ### `/voices` Endpoint
 
-Returns available voices from `SileroTTSEngine.get_voices()` as plain text, one per line.
+Returns available voices from `SileroTTSConfigStorage.get_voices()` (accessed via `engine.get_storage()`) as plain text, one per line.
 
 ### `/process` Endpoint
 

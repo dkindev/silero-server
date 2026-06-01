@@ -1,39 +1,22 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
-from src.config import get_settings
-from src.handlers import global_exception_handler
+from src.deps import add_engine, get_engine, setup_torch
+from src.handlers import add_cors, add_global_exception_handler
 from src.routers import setup_routers
-from src.tts.models import TTSConfig
-from src.tts.silero_tts_engine import create_silero_engine
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan."""
 
-    app_settings = get_settings()
-
-    import torch
-
-    torch.set_num_threads(app_settings.TTS_TORCH_NUM_THREADS)
-    torch.set_num_interop_threads(app_settings.TTS_TORCH_NUM_INTEROP_THREADS)
-    if app_settings.TTS_TORCH_FLUSH_DENORMAL and hasattr(torch, "set_flush_denormal"):
-        torch.set_flush_denormal(True)
-
-    config = TTSConfig(
-        device=app_settings.TTS_TORCH_DEVICE,
-        sample_rate=app_settings.TTS_SAMPLE_RATE,
-        max_models=app_settings.TTS_MAX_MODELS,
-        max_concurrent_per_model=app_settings.TTS_MAX_CONCURRENT_PER_MODEL,
-    )
-    app.state.engine = create_silero_engine(config, app_settings.TTS_CONFIG_PATH)
+    setup_torch()
+    add_engine(app)
 
     yield
 
-    engine = app.state.engine
+    engine = get_engine(app.state)
     if engine:
         await engine.shutdown()
 
@@ -45,17 +28,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app_settings = get_settings()
-allowed_origins = app_settings.TTS_ALLOWED_ORIGINS
-origins = ["*"] if allowed_origins == "*" else allowed_origins.split(",")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.add_exception_handler(Exception, global_exception_handler)
-
+add_cors(app)
+add_global_exception_handler(app)
 setup_routers(app)

@@ -7,11 +7,11 @@ from typing import Any
 
 import numpy as np
 import torch
-import yaml
 from scipy.io import wavfile
 
+from src.tts.config_storage import SileroTTSConfigStorage
 from src.tts.exceptions import TTSEngineError
-from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
+from src.tts.models import Model, TTSConfig
 from src.tts.provider import SileroTTSModelProvider
 from src.tts.result import TTSResult
 
@@ -23,29 +23,6 @@ class CachedModel:
     model: Any
     sample_rate: int
     semaphore: asyncio.Semaphore
-
-
-def _load_config_model(config_path: str) -> TTSConfigModel:
-    """Load TTS configuration from YAML file."""
-    with open(config_path) as f:
-        data = yaml.safe_load(f)
-
-    models = {}
-    for name, m in data.get("models", {}).items():
-        models[name] = Model(language=m["language"])
-
-    locales = {}
-    for name, loc in data.get("locales", {}).items():
-        voices = {}
-        for voice_name, v in loc.get("voices", {}).items():
-            voices[voice_name] = VoiceConfig(
-                speaker=v["speaker"],
-                model=v["model"],
-                gender=v["gender"],
-            )
-        locales[name] = Locale(voices=voices)
-
-    return TTSConfigModel(models=models, locales=locales)
 
 
 def _select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
@@ -146,13 +123,11 @@ class SileroTTSEngine:
     def __init__(
         self,
         config: TTSConfig,
-        config_model: TTSConfigModel,
+        storage: SileroTTSConfigStorage,
         provider: SileroTTSModelProvider,
     ):
         self._config = config
-        self._config_model = config_model
-        self._locales = tuple(config_model.locales.keys())
-        self._voices = self._build_voices()
+        self._storage = storage
         # Using OrderedDict instead of regular dict for LRU logic
         self._cached_models: OrderedDict[str, CachedModel] = OrderedDict()
         self._device = _resolve_device(config.device)
@@ -166,16 +141,16 @@ class SileroTTSEngine:
         voice: str,
         input_type: str,
     ) -> TTSResult:
-        if not self.has_locale(locale):
+        if not self._storage.has_locale(locale):
             raise TTSEngineError(f"Unsupported locale: {locale}")
-        if not self.has_voice(locale, voice):
+        if not self._storage.has_voice(locale, voice):
             raise TTSEngineError(f"Invalid voice: {voice}")
         if input_type not in self.get_input_types():
             raise TTSEngineError(f"Invalid input type: {input_type}")
 
-        voice_config = self._config_model.locales[locale].voices[voice]
+        voice_config = self._storage.get_voice_config(locale, voice)
         model_name = voice_config.model
-        model_info = self._config_model.models[model_name]
+        model_info = self._storage.get_model_info(model_name)
 
         async with self._get_lock():
             if model_name in self._cached_models:
@@ -260,45 +235,10 @@ class SileroTTSEngine:
 
         return cached
 
-    def _build_voices(self) -> tuple[str, ...]:
-        voices = []
-        for locale, locale_data in self._config_model.locales.items():
-            for voice_name, voice_config in locale_data.voices.items():
-                voices.append(f"{voice_name} {locale} {voice_config.gender}")
-        return tuple(voices)
-
-    def has_locale(self, locale: str) -> bool:
-        """Return True if the locale is configured."""
-        return locale in self._locales
-
-    def has_voice(self, locale: str, voice_name: str) -> bool:
-        """Return True if the voice exists for the given locale."""
-        return (
-            locale in self._config_model.locales
-            and voice_name in self._config_model.locales[locale].voices
-        )
+    def get_storage(self) -> SileroTTSConfigStorage:
+        """Return the config storage."""
+        return self._storage
 
     def get_input_types(self) -> tuple[str, ...]:
         """Return supported input types."""
         return ("TEXT", "SSML")
-
-    def get_locales(self) -> tuple[str, ...]:
-        """Return available locales."""
-        return self._locales
-
-    def get_voices(self) -> tuple[str, ...]:
-        """Return available voices in Mary-TTS format."""
-        return self._voices
-
-
-def create_silero_engine(
-    config: TTSConfig,
-    config_path_or_model: str | TTSConfigModel,
-) -> SileroTTSEngine:
-    """Create a SileroTTSEngine with a SileroTTSModelProvider."""
-    if isinstance(config_path_or_model, str):
-        config_model = _load_config_model(config_path_or_model)
-    else:
-        config_model = config_path_or_model
-    provider = SileroTTSModelProvider()
-    return SileroTTSEngine(config=config, config_model=config_model, provider=provider)
