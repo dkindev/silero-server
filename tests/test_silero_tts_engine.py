@@ -6,7 +6,21 @@ import torch
 
 from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
-from src.tts.provider import SileroTTSModelProvider
+
+
+def make_models_dir(tmp_path, sample_rates=None, model_name="v5_5_ru", language="ru"):
+    """Create a models directory with pre-populated models.yml and .pt files."""
+    if sample_rates is None:
+        sample_rates = [48000]
+    rates_str = ", ".join(str(r) for r in sample_rates)
+    models_dir = tmp_path / "models"
+    models_dir.mkdir()
+    yml = f"tts_models:\n  {language}:\n    {model_name}:\n      latest:\n        package: 'http://x'\n        sample_rate: [{rates_str}]\n"
+    (models_dir / "models.yml").write_text(yml)
+    lang_dir = models_dir / language
+    lang_dir.mkdir()
+    (lang_dir / f"{model_name}.pt").write_bytes(b"fake model")
+    return str(models_dir)
 
 
 def make_config_file(tmp_path, models=None, locales=None):
@@ -43,12 +57,15 @@ locales:
         )
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        provider = SileroTTSModelProvider()
-        engine = SileroTTSEngine(config=config, storage=storage, provider=provider)
+        engine = SileroTTSEngine(config=config, storage=storage)
 
         assert engine is not None
         assert "ru_RU" in engine.get_storage().get_locales()
@@ -73,12 +90,15 @@ locales:
             },
         )
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
 
         storage = SileroTTSYamlConfigStorage(config_path)
-        provider = SileroTTSModelProvider()
-        engine = SileroTTSEngine(config=config, storage=storage, provider=provider)
+        engine = SileroTTSEngine(config=config, storage=storage)
 
         locales = engine.get_storage().get_locales()
         assert isinstance(locales, tuple)
@@ -98,12 +118,15 @@ class TestGetInputTypes:
 
         config_path = make_config_file(tmp_path, models={}, locales={})
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
 
         storage = SileroTTSYamlConfigStorage(config_path)
-        provider = SileroTTSModelProvider()
-        engine = SileroTTSEngine(config=config, storage=storage, provider=provider)
+        engine = SileroTTSEngine(config=config, storage=storage)
 
         result = engine.get_input_types()
         assert isinstance(result, tuple)
@@ -114,12 +137,15 @@ class TestGetInputTypes:
 
         config_path = make_config_file(tmp_path, models={}, locales={})
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
 
         storage = SileroTTSYamlConfigStorage(config_path)
-        provider = SileroTTSModelProvider()
-        engine = SileroTTSEngine(config=config, storage=storage, provider=provider)
+        engine = SileroTTSEngine(config=config, storage=storage)
 
         assert "TEXT" in engine.get_input_types()
         assert "SSML" in engine.get_input_types()
@@ -136,7 +162,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         config_path = make_config_file(
             tmp_path,
@@ -158,27 +188,20 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_path)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
+            storage = SileroTTSYamlConfigStorage(config_path)
+            engine = SileroTTSEngine(config=config, storage=storage)
 
-                with pytest.raises(TTSEngineError) as exc_info:
-                    await engine.process(
-                        text="hello",
-                        locale="invalid_Locale",
-                        voice="silero-v5_5_ru-aidar",
-                        input_type="TEXT",
-                    )
+            with pytest.raises(TTSEngineError) as exc_info:
+                await engine.process(
+                    text="hello",
+                    locale="invalid_Locale",
+                    voice="silero-v5_5_ru-aidar",
+                    input_type="TEXT",
+                )
 
         assert "Unsupported locale: invalid_Locale" in str(exc_info.value)
 
@@ -189,7 +212,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         config_path = make_config_file(
             tmp_path,
@@ -211,27 +238,20 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_path)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
+            storage = SileroTTSYamlConfigStorage(config_path)
+            engine = SileroTTSEngine(config=config, storage=storage)
 
-                with pytest.raises(TTSEngineError) as exc_info:
-                    await engine.process(
-                        text="hello",
-                        locale="ru_RU",
-                        voice="invalid_voice",
-                        input_type="TEXT",
-                    )
+            with pytest.raises(TTSEngineError) as exc_info:
+                await engine.process(
+                    text="hello",
+                    locale="ru_RU",
+                    voice="invalid_voice",
+                    input_type="TEXT",
+                )
 
         assert "Invalid voice: invalid_voice" in str(exc_info.value)
 
@@ -242,7 +262,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         config_path = make_config_file(
             tmp_path,
@@ -264,27 +288,20 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_path)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
+            storage = SileroTTSYamlConfigStorage(config_path)
+            engine = SileroTTSEngine(config=config, storage=storage)
 
-                with pytest.raises(TTSEngineError):
-                    await engine.process(
-                        text="hello",
-                        locale="ru_RU",
-                        voice="silero-v5_5_ru-aidar",
-                        input_type="INVALID",
-                    )
+            with pytest.raises(TTSEngineError):
+                await engine.process(
+                    text="hello",
+                    locale="ru_RU",
+                    voice="silero-v5_5_ru-aidar",
+                    input_type="INVALID",
+                )
 
     @pytest.mark.asyncio
     async def test_process_successful_synthesis_returns_tts_result(self, tmp_path):
@@ -293,7 +310,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -312,26 +333,19 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
 
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert isinstance(result, TTSResult)
         assert isinstance(result.audio, io.BytesIO)
@@ -345,8 +359,13 @@ class TestProcessValidation:
         from src.tts.result import TTSResult
         from src.tts.silero_tts_engine import SileroTTSEngine
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=models_dir,
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -358,39 +377,25 @@ class TestProcessValidation:
             models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
         )
 
-        engine = SileroTTSEngine(
-            config=config,
-            storage=SileroTTSYamlConfigStorage(config_model),
-            provider=SileroTTSModelProvider(),
-        )
-
         audio_tensor = torch.zeros(1, 48000)
-
         mock_model = unittest.mock.MagicMock()
         mock_model.apply_tts.return_value = audio_tensor
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
 
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert isinstance(result, TTSResult)
         assert isinstance(result.audio, io.BytesIO)
@@ -403,8 +408,13 @@ class TestProcessValidation:
         """process() should clamp sample rate to model's max if configured rate exceeds it."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[8000, 24000])
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=models_dir,
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -428,25 +438,18 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [8000, 24000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert calls[0] == 24000
         assert result.sample_rate == 24000
@@ -456,7 +459,14 @@ class TestProcessValidation:
         """process() should use min available rate if configured rate is below min."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
-        config = TTSConfig(device="cpu", sample_rate=8000, max_models=2, max_concurrent_per_model=2)
+        models_dir = make_models_dir(tmp_path, sample_rates=[24000, 48000])
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=8000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=models_dir,
+        )
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
@@ -479,25 +489,18 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [24000, 48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert calls[0] == 24000
         assert result.sample_rate == 24000
@@ -508,7 +511,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=24000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=24000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -532,25 +539,18 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [16000, 24000, 48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert calls[0] == 24000
         assert result.sample_rate == 24000
@@ -561,7 +561,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=44100, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=44100,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -585,25 +589,18 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [16000, 24000, 48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert calls[0] == 24000
         assert result.sample_rate == 24000
@@ -613,8 +610,13 @@ class TestProcessValidation:
         """process() should use single available rate regardless of config value."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[24000])
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=models_dir,
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -638,25 +640,18 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [24000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert calls[0] == 24000
         assert result.sample_rate == 24000
@@ -667,7 +662,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -691,25 +690,18 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert calls[0] == 48000
         assert result.sample_rate == 48000
@@ -720,7 +712,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -744,25 +740,18 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert calls[0] == 48000
         assert result.sample_rate == 48000
@@ -773,7 +762,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -798,31 +791,24 @@ class TestProcessValidation:
 
         mock_importer.load_pickle = counting_load_pickle
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
-                await engine.process(
-                    text="world",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+            await engine.process(
+                text="world",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert load_counter[0] == 1
 
@@ -832,7 +818,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -850,25 +840,18 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
     @pytest.mark.asyncio
     async def test_process_cuda_unavailable_falls_back_to_cpu(self, tmp_path):
@@ -877,7 +860,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cuda", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cuda",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -905,26 +892,19 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch.object(torch, "cuda", FakeModule(), create=True):
             with unittest.mock.patch(
-                "src.tts.silero_tts_engine.SileroTTSModelProvider",
-                return_value=mock_provider,
+                "src.tts.silero_tts_engine.torch.package.PackageImporter",
+                return_value=mock_importer,
             ):
-                with unittest.mock.patch(
-                    "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                    return_value=mock_importer,
-                ):
-                    storage = SileroTTSYamlConfigStorage(config_model)
-                    engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                    result = await engine.process(
-                        text="hello",
-                        locale="ru_RU",
-                        voice="silero-v5_5_ru-aidar",
-                        input_type="TEXT",
-                    )
+                storage = SileroTTSYamlConfigStorage(config_model)
+                engine = SileroTTSEngine(config=config, storage=storage)
+                result = await engine.process(
+                    text="hello",
+                    locale="ru_RU",
+                    voice="silero-v5_5_ru-aidar",
+                    input_type="TEXT",
+                )
 
         assert isinstance(result, TTSResult)
         assert isinstance(result.audio, io.BytesIO)
@@ -939,7 +919,11 @@ class TestProcessValidation:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="xpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="xpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -967,26 +951,260 @@ class TestProcessValidation:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch.object(torch, "xpu", FakeModule(), create=True):
             with unittest.mock.patch(
-                "src.tts.silero_tts_engine.SileroTTSModelProvider",
-                return_value=mock_provider,
+                "src.tts.silero_tts_engine.torch.package.PackageImporter",
+                return_value=mock_importer,
             ):
-                with unittest.mock.patch(
-                    "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                    return_value=mock_importer,
-                ):
-                    storage = SileroTTSYamlConfigStorage(config_model)
-                    engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                    result = await engine.process(
-                        text="hello",
-                        locale="ru_RU",
-                        voice="silero-v5_5_ru-aidar",
-                        input_type="TEXT",
-                    )
+                storage = SileroTTSYamlConfigStorage(config_model)
+                engine = SileroTTSEngine(config=config, storage=storage)
+                result = await engine.process(
+                    text="hello",
+                    locale="ru_RU",
+                    voice="silero-v5_5_ru-aidar",
+                    input_type="TEXT",
+                )
+
+        assert isinstance(result, TTSResult)
+        assert isinstance(result.audio, io.BytesIO)
+        assert result.audio.read().startswith(b"RIFF")
+        assert result.sample_rate == 48000
+        assert result.model == "v5_5_ru"
+
+    @pytest.mark.asyncio
+    async def test_process_raises_on_malformed_models_yml(self, tmp_path):
+        """process() should raise TTSEngineError on malformed models.yml."""
+        from src.tts.exceptions import TTSEngineError
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "models.yml").write_bytes(b"tts_models:\n  invalid: [")
+        ru_dir = models_dir / "ru"
+        ru_dir.mkdir()
+        (ru_dir / "v5_5_ru.pt").write_bytes(b"fake model")
+
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=str(models_dir),
+        )
+        model_config = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        storage = SileroTTSYamlConfigStorage(config_model)
+        engine = SileroTTSEngine(config=config, storage=storage)
+
+        with pytest.raises(TTSEngineError) as exc_info:
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+
+        assert "Failed to parse models.yml" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_process_raises_on_model_not_in_registry(self, tmp_path):
+        """process() should raise TTSEngineError when model missing from registry."""
+        from src.tts.exceptions import TTSEngineError
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "models.yml").write_bytes(
+            b"tts_models:\n  ru:\n    other_model:\n      latest:\n        package: 'http://x'\n"
+        )
+        ru_dir = models_dir / "ru"
+        ru_dir.mkdir()
+        (ru_dir / "v5_5_ru.pt").write_bytes(b"fake model")
+
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=str(models_dir),
+        )
+        model_config = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        storage = SileroTTSYamlConfigStorage(config_model)
+        engine = SileroTTSEngine(config=config, storage=storage)
+
+        with pytest.raises(TTSEngineError) as exc_info:
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+
+        assert "v5_5_ru" in str(exc_info.value)
+        assert "ru" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_process_raises_on_model_download_failure(self, tmp_path, monkeypatch):
+        """process() should raise TTSEngineError when model download fails."""
+        from src.tts.exceptions import TTSEngineError
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "models.yml").write_bytes(
+            b"tts_models:\n  ru:\n    v5_5_ru:\n      latest:\n        package: 'http://x'\n        sample_rate: [48000]\n"
+        )
+        ru_dir = models_dir / "ru"
+        ru_dir.mkdir()
+
+        def mock_download(url, path, *a, **kw):
+            raise RuntimeError("Connection reset")
+
+        monkeypatch.setattr(torch.hub, "download_url_to_file", mock_download)
+
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=str(models_dir),
+        )
+        model_config = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        storage = SileroTTSYamlConfigStorage(config_model)
+        engine = SileroTTSEngine(config=config, storage=storage)
+
+        with pytest.raises(TTSEngineError) as exc_info:
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+
+        assert "v5_5_ru" in str(exc_info.value)
+        assert "ru" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_process_raises_on_model_download_failure_when_missing_file(
+        self, tmp_path, monkeypatch
+    ):
+        """process() should raise TTSEngineError when model .pt file is missing and download fails."""
+        from src.tts.exceptions import TTSEngineError
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "models.yml").write_bytes(
+            b"tts_models:\n  ru:\n    v5_5_ru:\n      latest:\n        package: 'http://x'\n        sample_rate: [48000]\n"
+        )
+        ru_dir = models_dir / "ru"
+        ru_dir.mkdir()
+        # No .pt file — will trigger download which we mock to fail
+
+        def mock_download(url, path, *a, **kw):
+            raise RuntimeError("Connection reset")
+
+        monkeypatch.setattr(torch.hub, "download_url_to_file", mock_download)
+
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=str(models_dir),
+        )
+        model_config = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        storage = SileroTTSYamlConfigStorage(config_model)
+        engine = SileroTTSEngine(config=config, storage=storage)
+
+        with pytest.raises(TTSEngineError) as exc_info:
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+
+        assert "Failed to download model" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_process_resolves_model_from_disk_without_provider(self, tmp_path):
+        """process() should resolve model from local files without a provider."""
+        from src.tts.result import TTSResult
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=models_dir,
+        )
+        model_config = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        mock_audio = torch.zeros(1, 48000)
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts.return_value = mock_audio
+        mock_importer = unittest.mock.MagicMock()
+        mock_importer.load_pickle.return_value = mock_model
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
+        ):
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert isinstance(result, TTSResult)
         assert isinstance(result.audio, io.BytesIO)
@@ -1014,7 +1232,11 @@ class TestCachedModel:
         from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         model_config = Model(language="ru")
         locale_ru = Locale(
@@ -1032,25 +1254,18 @@ class TestCachedModel:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
-
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
         ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
-                result = await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
 
         assert isinstance(result, TTSResult)
         assert isinstance(result.audio, io.BytesIO)
@@ -1067,8 +1282,34 @@ class TestModelEviction:
         """process() should evict oldest model when cache is full and reload on next use."""
         from src.tts.silero_tts_engine import SileroTTSEngine
 
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "models.yml").write_text(
+            "tts_models:\n"
+            "  en:\n"
+            "    v3_en:\n"
+            "      latest:\n"
+            "        package: 'http://x'\n"
+            "        sample_rate: [48000]\n"
+            "  ru:\n"
+            "    v5_5_ru:\n"
+            "      latest:\n"
+            "        package: 'http://x'\n"
+            "        sample_rate: [48000]\n"
+        )
+        en_dir = models_dir / "en"
+        en_dir.mkdir()
+        (en_dir / "v3_en.pt").write_bytes(b"fake model en")
+        ru_dir = models_dir / "ru"
+        ru_dir.mkdir()
+        (ru_dir / "v5_5_ru.pt").write_bytes(b"fake model ru")
+
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=1, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=1,
+            max_concurrent_per_model=2,
+            models_dir=str(models_dir),
         )
 
         model_en = Model(language="en")
@@ -1092,40 +1333,85 @@ class TestModelEviction:
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
-        mock_provider = unittest.mock.MagicMock()
-        mock_provider.get_model.return_value = (str(tmp_path / "model.pt"), [48000])
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
+        ) as mock_pkg:
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+
+            await engine.process(
+                text="hello",
+                locale="en_US",
+                voice="silero-v3_en-en_0",
+                input_type="TEXT",
+            )
+            assert mock_pkg.call_count == 1
+
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+            assert mock_pkg.call_count == 2
+
+            await engine.process(
+                text="hello",
+                locale="en_US",
+                voice="silero-v3_en-en_0",
+                input_type="TEXT",
+            )
+            assert mock_pkg.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_reuses_cached_model_on_subsequent_calls(self, tmp_path):
+        """process() should reuse a cached model without re-loading."""
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=models_dir,
+        )
+        model_config = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        mock_audio = torch.zeros(1, 48000)
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts.return_value = mock_audio
+        mock_importer = unittest.mock.MagicMock()
+        mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.SileroTTSModelProvider",
-            return_value=mock_provider,
-        ):
-            with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
-                return_value=mock_importer,
-            ):
-                storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage, provider=mock_provider)
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
+        ) as mock_pkg:
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
 
-                await engine.process(
-                    text="hello",
-                    locale="en_US",
-                    voice="silero-v3_en-en_0",
-                    input_type="TEXT",
-                )
-                assert mock_provider.get_model.call_count == 1
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+            assert mock_pkg.call_count == 1
 
-                await engine.process(
-                    text="hello",
-                    locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
-                    input_type="TEXT",
-                )
-                assert mock_provider.get_model.call_count == 2
-
-                await engine.process(
-                    text="hello",
-                    locale="en_US",
-                    voice="silero-v3_en-en_0",
-                    input_type="TEXT",
-                )
-                assert mock_provider.get_model.call_count == 3
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+            assert mock_pkg.call_count == 1

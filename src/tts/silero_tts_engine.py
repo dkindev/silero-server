@@ -1,19 +1,25 @@
 import asyncio
 import gc
 import io
+import os
+import urllib.request
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 import torch
+import yaml
 from scipy.io import wavfile
 
 from src.tts.config_storage import SileroTTSConfigStorage
 from src.tts.exceptions import TTSEngineError
 from src.tts.models import Model, TTSConfig
-from src.tts.provider import SileroTTSModelProvider
 from src.tts.result import TTSResult
+
+MODELS_YML_URL = (
+    "https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml"
+)
 
 
 @dataclass
@@ -126,14 +132,12 @@ class SileroTTSEngine:
         self,
         config: TTSConfig,
         storage: SileroTTSConfigStorage,
-        provider: SileroTTSModelProvider,
     ):
         self._config = config
         self._storage = storage
         # Using OrderedDict instead of regular dict for LRU logic
         self._cached_models: OrderedDict[str, CachedModel] = OrderedDict()
         self._device = _resolve_device(config.device)
-        self._provider = provider
         self._lock: asyncio.Lock | None = None
 
     async def process(
@@ -207,6 +211,56 @@ class SileroTTSEngine:
 
             _clear_torch_cache_on_device(self._device)
 
+    def _resolve_model(self, language: str, model_name: str) -> tuple[str, list[int]]:
+        """Return the local path to a model .pt file and its supported sample rates.
+
+        Downloads the file if it does not exist locally.
+        Raises TTSEngineError on failure.
+        """
+        models_dir = self._config.models_dir
+
+        lang_dir = os.path.join(models_dir, language)
+        os.makedirs(lang_dir, exist_ok=True)
+
+        yml_path = os.path.join(models_dir, "models.yml")
+        if not os.path.isfile(yml_path):
+            urllib.request.urlretrieve(MODELS_YML_URL, yml_path)
+
+        try:
+            with open(yml_path) as f:
+                registry = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise TTSEngineError(
+                f"Failed to parse models.yml: {e}. Delete '{yml_path}' to force a fresh download."
+            ) from e
+
+        tts_models = registry.get("tts_models", {})
+        lang_models = tts_models.get(language, {})
+        model_entry = lang_models.get(model_name, {})
+        sample_rates = model_entry.get("latest", {}).get("sample_rate", [])
+
+        model_path = os.path.join(lang_dir, f"{model_name}.pt")
+        if os.path.isfile(model_path):
+            return model_path, sample_rates
+
+        package_url = model_entry.get("latest", {}).get("package")
+        if not package_url:
+            raise TTSEngineError(
+                f"Model '{model_name}' for language '{language}' not found in configuration file. "
+                f"Delete '{yml_path}' to force a fresh download."
+            )
+
+        try:
+            torch.hub.download_url_to_file(package_url, model_path)
+        except Exception as e:
+            if os.path.isfile(model_path):
+                os.remove(model_path)
+            raise TTSEngineError(
+                f"Failed to download model '{model_name}' for language '{language}'."
+            ) from e
+
+        return model_path, sample_rates
+
     async def _load_model_async(self, model_name: str, model_info: Model) -> CachedModel:
         language = model_info.language
         if not language:
@@ -214,7 +268,7 @@ class SileroTTSEngine:
 
         # Move blocking disk reading and heavy PyTorch initialization to a separate thread
         def _sync_load():
-            local_path, sample_rates = self._provider.get_model(language, model_name)
+            local_path, sample_rates = self._resolve_model(language, model_name)
             try:
                 importer = torch.package.PackageImporter(local_path)
                 model = importer.load_pickle("tts_models", "model", map_location=self._device)

@@ -13,7 +13,7 @@ Target users: any client (web, mobile, desktop, embedded) that needs TTS via a w
 The underlying engine is **Silero TTS** (`silero` Python package). Silero provides neural TTS models per language with multiple speaker voices per model.
 
 Key Silero concepts:
-- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded via Torch Hub to `~/.cache/torch/hub/`. Each model has a `language` field used by `torch.hub.load()`.
+- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded to `TTS_MODELS_DIR`.
 - **Speaker**: A named voice within a model (e.g., `aidar`, `baya`, `eugene`, `kseniya`, `xenia` for Russian). Speakers are model-specific.
 - **Sample rate**: Audio output frequency in Hz. Silero produces 48000 Hz by default; torchaudio can resample.
 - **Output format**: The Silero TTS model always returns a two-dimensional (2D) tensor with batch dimension: [1, samples] (where 1 is one generated text and samples is the number of audio points).
@@ -54,20 +54,8 @@ Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 - `process(text, locale, voice, input_type)` → `TTSResult` — returns synthesized audio as `TTSResult(audio=io.BytesIO, sample_rate=int, model=str)`
 
 **Initialization:**
-- Config loaded from `TTS_CONFIG_PATH` at init, cached for app lifetime
-- Settings read: `TTS_TORCH_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_CONCURRENT_PER_MODEL`
-
-Sample rate selection logic:
-1. Get voice model (after receiving a voice from the config)
-2. Get model's supported sample_rates from config
-3. Sample rate selection logic (sort and deduplicate):
-   a. Empty list → use TTS_SAMPLE_RATE
-   b. None → use TTS_SAMPLE_RATE
-   c. Single element → use that element
-   d. TTS_SAMPLE_RATE > max → use max
-   e. TTS_SAMPLE_RATE < min → use min
-   f. Exact match → use that value
-   g. Not in list → use highest value less than TTS_SAMPLE_RATE
+- Settings read: `TTS_TORCH_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_MODELS`, `TTS_MAX_CONCURRENT_PER_MODEL`, `TTS_MODELS_DIR`
+- Config loaded from `SileroTTSConfigStorage`
 
 **Validation rules:**
 Validation happens at two levels:
@@ -80,6 +68,23 @@ Validation happens at two levels:
    - `OUTPUT_TYPE` must be `AUDIO` → 406
 
 2. **Engine (second line)** — `process()` redundantly validates locale, voice, and input type as a safety net. A second-line failure raises `TTSEngineError` → 500 (indicates a bug: the endpoint should have caught it).
+
+**Model loading logic:**
+1. Downloads `models.yml` from Silero models repo, parses it to find the model URL
+2. Downloads the `.pt` file to `TTS_MODELS_DIR/{language}/{model_name}.pt`
+3. Returns the local path with supported sample rates.
+
+**Sample rate selection logic:**
+1. Get voice model (after receiving a voice from the config)
+2. Get model's supported sample_rates from config
+3. Sample rate selection logic (sort and deduplicate):
+   a. Empty list → use TTS_SAMPLE_RATE
+   b. None → use TTS_SAMPLE_RATE
+   c. Single element → use that element
+   d. TTS_SAMPLE_RATE > max → use max
+   e. TTS_SAMPLE_RATE < min → use min
+   f. Exact match → use that value
+   g. Not in list → use highest value less than TTS_SAMPLE_RATE
 
 **Model Cache:**
 - Models are lazy-loaded on first use and cached.
@@ -137,6 +142,7 @@ All configuration via environment variables with `TTS_` prefix:
 | `TTS_CONFIG_PATH` | `silero-to-mary-config.yml` | Path to voice/locale mapping config |
 | `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached (ge=1). |
 | `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent requests per model |
+| `TTS_MODELS_DIR` | `.models/silero` | Directory for downloaded Silero .pt model files |
 
 Validated at startup via Pydantic Settings — app exits with a clear error on invalid values.
 

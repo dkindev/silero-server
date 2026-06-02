@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     TTS_MAX_CONCURRENT_PER_MODEL: int = Field(2, ge=1, le=10)
     """Maximum concurrent TTS requests per model."""
 
+    TTS_MODELS_DIR: str = ".models/silero"
+    """Directory for downloaded Silero .pt model files."""
+
     @field_validator("TTS_CONFIG_PATH")
     @classmethod
     def config_path_must_exist(cls, v: str) -> str:

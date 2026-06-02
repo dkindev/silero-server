@@ -40,6 +40,12 @@ def test_tts_torch_num_interop_threads_zero_fails():
         Settings.model_validate({"TTS_TORCH_NUM_INTEROP_THREADS": 0})
 
 
+def test_settings_tts_models_dir_default():
+    """Test that TTS_MODELS_DIR defaults to '.models/silero'."""
+    settings = Settings.model_validate({})
+    assert settings.TTS_MODELS_DIR == ".models/silero"
+
+
 def test_settings_has_all_tts_fields():
     """Test that Settings has all TTS_* fields with correct defaults."""
     settings = Settings.model_validate({})
@@ -54,6 +60,7 @@ def test_settings_has_all_tts_fields():
     assert hasattr(settings, "TTS_CONFIG_PATH")
     assert hasattr(settings, "TTS_MAX_MODELS")
     assert hasattr(settings, "TTS_MAX_CONCURRENT_PER_MODEL")
+    assert hasattr(settings, "TTS_MODELS_DIR")
 
 
 def test_settings_sample_rate_default():

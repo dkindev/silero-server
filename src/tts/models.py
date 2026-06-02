@@ -30,3 +30,4 @@ class TTSConfig:
     sample_rate: int
     max_models: int
     max_concurrent_per_model: int
+    models_dir: str

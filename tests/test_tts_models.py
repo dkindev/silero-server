@@ -69,14 +69,22 @@ class TestTTSConfig:
     def test_tts_config_has_max_models_field(self):
         """TTSConfig dataclass has max_models field."""
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=5, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=5,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         assert config.max_models == 5
 
     def test_tts_config_is_frozen(self):
         """TTSConfig dataclass is immutable (frozen)."""
         config = TTSConfig(
-            device="cpu", sample_rate=48000, max_models=2, max_concurrent_per_model=2
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
         )
         with pytest.raises(FrozenInstanceError):
             config.max_models = 3

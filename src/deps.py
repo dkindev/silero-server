@@ -6,7 +6,6 @@ from fastapi.datastructures import State
 from src.config import Settings, get_settings
 from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.models import TTSConfig
-from src.tts.provider import SileroTTSModelProvider
 from src.tts.silero_tts_engine import SileroTTSEngine
 
 
@@ -26,10 +25,10 @@ def add_engine(app: FastAPI):
         sample_rate=settings.TTS_SAMPLE_RATE,
         max_models=settings.TTS_MAX_MODELS,
         max_concurrent_per_model=settings.TTS_MAX_CONCURRENT_PER_MODEL,
+        models_dir=settings.TTS_MODELS_DIR,
     )
     storage = SileroTTSYamlConfigStorage(settings.TTS_CONFIG_PATH)
-    provider = SileroTTSModelProvider()
-    app.state.engine = SileroTTSEngine(config=config, storage=storage, provider=provider)
+    app.state.engine = SileroTTSEngine(config=config, storage=storage)
 
 
 def get_engine_from_request(request: Request) -> SileroTTSEngine:
