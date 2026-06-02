@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class Model:
     language: str
+    enabled: bool = True
 
 
 @dataclass(frozen=True)
@@ -15,7 +16,7 @@ class VoiceConfig:
 
 @dataclass(frozen=True)
 class Locale:
-    voices: dict[str, "VoiceConfig"]
+    voices: dict[str, VoiceConfig]
 
 
 @dataclass(frozen=True)

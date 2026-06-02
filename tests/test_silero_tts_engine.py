@@ -76,7 +76,9 @@ locales:
 
         config_path = make_config_file(
             tmp_path,
-            models={},
+            models={
+                "v5_5_ru": {"language": "ru"},
+            },
             locales={
                 "ru_RU": {
                     "voices": {
@@ -220,7 +222,9 @@ class TestProcessValidation:
         )
         config_path = make_config_file(
             tmp_path,
-            models={},
+            models={
+                "v5_5_ru": {"language": "ru"},
+            },
             locales={
                 "ru_RU": {
                     "voices": {
