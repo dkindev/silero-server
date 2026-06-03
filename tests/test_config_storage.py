@@ -415,6 +415,92 @@ class TestGetModelInfo:
         assert m.language == "ru"
 
 
+class TestGetModels:
+    def test_get_models_returns_all_enabled_models(self):
+        """get_models() returns dict of all enabled model names to Model objects."""
+        from src.tts.config_storage import SileroTTSYamlConfigStorage
+
+        config_model = TTSConfigModel(
+            models={
+                "v5_5_ru": Model(language="ru", warmup=True),
+                "v3_en": Model(language="en"),
+            },
+            locales={
+                "ru_RU": Locale(
+                    voices={
+                        "silero-v5_5_ru-aidar": VoiceConfig(
+                            speaker="aidar", model="v5_5_ru", gender="male"
+                        )
+                    }
+                ),
+            },
+        )
+
+        storage = SileroTTSYamlConfigStorage(config_model)
+        result = storage.get_models()
+
+        assert isinstance(result, dict)
+        assert "v5_5_ru" in result
+        assert result["v5_5_ru"].warmup is True
+        assert "v3_en" in result
+        assert result["v3_en"].warmup is False
+
+
+class TestYamlWarmupField:
+    """Tests for parsing warmup field from YAML config."""
+
+    def test_yaml_warmup_true_sets_warmup_on_model(self, tmp_path):
+        """YAML with warmup: true should set warmup=True on Model."""
+        from src.tts.config_storage import SileroTTSYamlConfigStorage
+
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+    warmup: true
+locales:
+  ru_RU:
+    voices:
+      silero-v5_5_ru-aidar:
+        speaker: aidar
+        model: v5_5_ru
+        gender: male
+"""
+        )
+
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        models = storage.get_models()
+
+        assert models["v5_5_ru"].warmup is True
+
+    def test_yaml_without_warmup_defaults_to_false(self, tmp_path):
+        """YAML without warmup field should default to False."""
+        from src.tts.config_storage import SileroTTSYamlConfigStorage
+
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+locales:
+  ru_RU:
+    voices:
+      silero-v5_5_ru-aidar:
+        speaker: aidar
+        model: v5_5_ru
+        gender: male
+"""
+        )
+
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        models = storage.get_models()
+
+        assert models["v5_5_ru"].warmup is False
+
+
 class TestDisabledModel:
     """Tests for model disabling via enabled=False on Model."""
 

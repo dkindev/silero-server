@@ -168,7 +168,7 @@ class SileroTTSEngine:
                 self._evict_oldest_model()
 
                 # Load a new model
-                cached = await self._load_model_async(model_name, model_info)
+                cached, _, _ = await self._load_model_async(model_name, model_info)
                 # _load_model_async will write it to self._cached_models itself,
                 # and it will automatically appear at the end as the most recent one.
 
@@ -211,10 +211,12 @@ class SileroTTSEngine:
 
             _clear_torch_cache_on_device(self._device)
 
-    def _resolve_model(self, language: str, model_name: str) -> tuple[str, list[int]]:
-        """Return the local path to a model .pt file and its supported sample rates.
+    def _resolve_model(
+        self, language: str, model_name: str
+    ) -> tuple[str, list[int], str, dict[str, str]]:
+        """Return the local path, sample rates, example text and speaker examples.
 
-        Downloads the file if it does not exist locally.
+        Downloads the Silero models.yml file and the model itself if they are not available locally.
         Raises TTSEngineError on failure.
         """
         models_dir = self._config.models_dir
@@ -237,13 +239,18 @@ class SileroTTSEngine:
         tts_models = registry.get("tts_models", {})
         lang_models = tts_models.get(language, {})
         model_entry = lang_models.get(model_name, {})
-        sample_rates = model_entry.get("latest", {}).get("sample_rate", [])
+        latest = model_entry.get("latest", {})
+        sample_rates = latest.get("sample_rate", [])
+        example_text = latest.get("example", "")
+
+        raw_speakers = latest.get("speakers", {})
+        speakers = {name: s.get("example", "") for name, s in raw_speakers.items()}
 
         model_path = os.path.join(lang_dir, f"{model_name}.pt")
         if os.path.isfile(model_path):
-            return model_path, sample_rates
+            return model_path, sample_rates, example_text, speakers
 
-        package_url = model_entry.get("latest", {}).get("package")
+        package_url = latest.get("package")
         if not package_url:
             raise TTSEngineError(
                 f"Model '{model_name}' for language '{language}' not found in configuration file. "
@@ -259,36 +266,66 @@ class SileroTTSEngine:
                 f"Failed to download model '{model_name}' for language '{language}'."
             ) from e
 
-        return model_path, sample_rates
+        return model_path, sample_rates, example_text, speakers
 
-    async def _load_model_async(self, model_name: str, model_info: Model) -> CachedModel:
+    async def _load_model_async(
+        self, model_name: str, model_info: Model
+    ) -> tuple[CachedModel, str, dict[str, str]]:
+        """Loads the model into the cache and returns the cached model, sample text, and speaker samples."""
+
         language = model_info.language
         if not language:
             raise TTSEngineError(f"Language isn't specified for Silero model: {model_name}")
 
         # Move blocking disk reading and heavy PyTorch initialization to a separate thread
         def _sync_load():
-            local_path, sample_rates = self._resolve_model(language, model_name)
+            local_path, sample_rates, example_text, speakers = self._resolve_model(
+                language, model_name
+            )
             try:
                 importer = torch.package.PackageImporter(local_path)
                 model = importer.load_pickle("tts_models", "model", map_location=self._device)
                 # Ensure the model modules are shifted as well
                 model.to(self._device)
-                return model, sample_rates
+                return model, sample_rates, example_text, speakers
             except Exception as e:
                 raise TTSEngineError(
                     f"Failed to load model '{model_name}' for language '{language}' with path: {local_path}. "
                     f"Try to delete model to force a fresh download."
                 ) from e
 
-        model, sample_rates = await asyncio.to_thread(_sync_load)
+        model, sample_rates, example_text, speakers = await asyncio.to_thread(_sync_load)
 
         sample_rate = _select_sample_rate(self._config.sample_rate, sample_rates)
         semaphore = asyncio.Semaphore(self._config.max_concurrent_per_model)
         cached = CachedModel(model, sample_rate, semaphore)
         self._cached_models[model_name] = cached
 
-        return cached
+        return cached, example_text, speakers
+
+    async def warmup(self):
+        """Warm up the models."""
+
+        async with self._get_lock():
+            if self._cached_models:
+                return
+
+            models = self._storage.get_models()
+            to_warm = [name for name, m in models.items() if m.warmup][: self._config.max_models]
+
+            for name in to_warm:
+                try:
+                    model_info = self._storage.get_model_info(name)
+                    cached, example_text, speakers = await self._load_model_async(name, model_info)
+                    if speakers:
+                        speaker = next(iter(speakers))
+                        text = speakers[speaker]
+                    else:
+                        speaker = cached.model.speakers[0]
+                        text = example_text
+                    await asyncio.to_thread(_run_tts_sync, cached, text, speaker)
+                except Exception:
+                    pass
 
     def get_storage(self) -> SileroTTSConfigStorage:
         """Return the config storage."""

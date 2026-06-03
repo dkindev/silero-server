@@ -13,6 +13,10 @@ async def lifespan(app: FastAPI):
 
     add_engine(app)
 
+    engine = get_engine(app.state)
+    if engine:
+        await engine.warmup()
+
     yield
 
     engine = get_engine(app.state)

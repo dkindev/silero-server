@@ -1,6 +1,7 @@
 models:
   v5_5_ru:
     language: ru
+    warmup: true
   v5_cis_base:
     language: ru
   v5_cis_base_nostress:

@@ -28,6 +28,10 @@ class SileroTTSConfigStorage(ABC):
     def get_model_info(self, model_name: str) -> Model:
         ...
 
+    @abstractmethod
+    def get_models(self) -> dict[str, Model]:
+        ...
+
 
 class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
     def __init__(self, config_path_or_model: str | TTSConfigModel):
@@ -47,7 +51,11 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
 
         models = {}
         for name, m in data.get("models", {}).items():
-            models[name] = Model(language=m["language"], enabled=m.get("enabled", True))
+            models[name] = Model(
+                language=m["language"],
+                enabled=m.get("enabled", True),
+                warmup=m.get("warmup", False),
+            )
 
         locales = {}
         for name, loc in data.get("locales", {}).items():
@@ -104,3 +112,6 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
 
     def get_model_info(self, model_name: str) -> Model:
         return self._config_model.models[model_name]
+
+    def get_models(self) -> dict[str, Model]:
+        return dict(self._config_model.models)

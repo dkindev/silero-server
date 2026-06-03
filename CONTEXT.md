@@ -13,7 +13,7 @@ Target users: any client (web, mobile, desktop, embedded) that needs TTS via a w
 The underlying engine is **Silero TTS** (`silero` Python package). Silero provides neural TTS models per language with multiple speaker voices per model.
 
 Key Silero concepts:
-- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded to `TTS_MODELS_DIR`.
+- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded to `TTS_MODELS_DIR`. Models can be flagged with `warmup: true` to preload at startup. Mark as `enabled: false` to disable the model.
 - **Speaker**: A named voice within a model (e.g., `aidar`, `baya`, `eugene`, `kseniya`, `xenia` for Russian). Speakers are model-specific.
 - **Sample rate**: Audio output frequency in Hz. Silero produces 48000 Hz by default; torchaudio can resample.
 - **Output format**: The Silero TTS model always returns a two-dimensional (2D) tensor with batch dimension: [1, samples] (where 1 is one generated text and samples is the number of audio points).
@@ -52,10 +52,12 @@ Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
 - `get_storage()` → `SileroTTSConfigStorage` — returns the config storage; clients use it for locale/voice queries (`has_locale`, `has_voice`, `get_locales`, `get_voices`)
 - `get_input_types()` → `tuple[str, ...]` — returns supported input types (`"TEXT"`, `"SSML"`)
 - `process(text, locale, voice, input_type)` → `TTSResult` — returns synthesized audio as `TTSResult(audio=io.BytesIO, sample_rate=int, model=str)`
+- `warmup()` — async. Preloads models with `warmup: true` from config up to `max_models` capacity. Runs a dummy synthesis pass per model to warm GPU caches. Silently swallows per-model failures. No-op if cache is already populated.
 
 **Initialization:**
 - Settings read: `TTS_TORCH_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_MODELS`, `TTS_MAX_CONCURRENT_PER_MODEL`, `TTS_MODELS_DIR`
 - Config loaded from `SileroTTSConfigStorage`
+- `warmup()` called during application lifespan startup (after engine creation, before first request)
 
 **Validation rules:**
 Validation happens at two levels:

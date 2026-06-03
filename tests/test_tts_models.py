@@ -13,6 +13,16 @@ class TestModel:
         model = Model(language="en")
         assert model.language == "en"
 
+    def test_model_warmup_defaults_to_false(self):
+        """Model.warmup defaults to False."""
+        model = Model(language="en")
+        assert model.warmup is False
+
+    def test_model_warmup_can_be_set_to_true(self):
+        """Model(language, warmup=True) sets warmup to True."""
+        model = Model(language="en", warmup=True)
+        assert model.warmup is True
+
     def test_model_is_frozen(self):
         """Model dataclass is immutable (frozen)."""
         model = Model(language="en")

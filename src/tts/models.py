@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class Model:
     language: str
     enabled: bool = True
+    warmup: bool = False
 
 
 @dataclass(frozen=True)

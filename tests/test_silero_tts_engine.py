@@ -1419,3 +1419,104 @@ class TestModelEviction:
                 input_type="TEXT",
             )
             assert mock_pkg.call_count == 1
+
+
+class TestWarmup:
+    """Tests for SileroTTSEngine.warmup()."""
+
+    @pytest.mark.asyncio
+    async def test_warmup_does_not_raise_and_process_succeeds(self, tmp_path):
+        """warmup() should not raise and subsequent process() should succeed."""
+        from src.tts.result import TTSResult
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=".models/silero",
+        )
+        model_config = Model(language="ru", warmup=True)
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"v5_5_ru": model_config}, locales={"ru_RU": locale_ru}
+        )
+
+        mock_audio = torch.zeros(1, 48000)
+        mock_model = unittest.mock.MagicMock()
+        mock_model.speakers = ["aidar"]
+        mock_model.apply_tts.return_value = mock_audio
+        mock_importer = unittest.mock.MagicMock()
+        mock_importer.load_pickle.return_value = mock_model
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
+        ):
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(config=config, storage=storage)
+
+            await engine.warmup()
+
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+
+        assert isinstance(result, TTSResult)
+
+    @pytest.mark.asyncio
+    async def test_warmup_unknown_model_failure_does_not_block_process(self, tmp_path):
+        """warmup() should silently swallow failure for an unknown model name."""
+        from src.tts.result import TTSResult
+        from src.tts.silero_tts_engine import SileroTTSEngine
+
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            models_dir=tmp_path / "models",
+        )
+        warmup_model = Model(language="ru", warmup=True)
+        process_model = Model(language="ru")
+        locale_ru = Locale(
+            voices={
+                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+            }
+        )
+        config_model = TTSConfigModel(
+            models={"nonexistent_model": warmup_model, "v5_5_ru": process_model},
+            locales={"ru_RU": locale_ru},
+        )
+
+        storage = SileroTTSYamlConfigStorage(config_model)
+        engine = SileroTTSEngine(config=config, storage=storage)
+
+        await engine.warmup()
+
+        mock_audio = torch.zeros(1, 48000)
+        mock_model = unittest.mock.MagicMock()
+        mock_model.apply_tts.return_value = mock_audio
+        mock_importer = unittest.mock.MagicMock()
+        mock_importer.load_pickle.return_value = mock_model
+
+        with unittest.mock.patch(
+            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            return_value=mock_importer,
+        ):
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+
+        assert isinstance(result, TTSResult)
