@@ -156,7 +156,7 @@ All errors return JSON `{"detail": "..."}`. HTTP status codes:
 
 ### Health Check
 
-`GET /api/v1/health` returns extended status:
+`GET /health` returns extended status:
 - `status`: always `"ok"`
 
 ### Docker Strategy
@@ -166,7 +166,7 @@ All errors return JSON `{"detail": "..."}`. HTTP status codes:
 
 ## Key Conventions
 
-- **API versioning**: All routes under `/api/v1/`.
+- **API versioning**: Not versioned at the URL path level. Mary TTS compatibility requires root-level paths.
 - **Response format**: Raw bytes for audio; JSON for errors and health.
 - **No rate limiting** at the application layer — delegate to infrastructure.
 - **No API key auth** at the application layer — delegate to infrastructure.

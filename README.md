@@ -54,7 +54,7 @@ A simple, robust, and performant Mary-TTS compatible REST API that wraps the Sil
 ## API Endpoints
 
 ### Health Check
-- **Endpoint**: `GET /api/v1/health`
+- **Endpoint**: `GET /health`
 - **Response**: `{"status": "ok"}`
 - **Status Code**: 200
 
