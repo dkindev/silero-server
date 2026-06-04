@@ -62,7 +62,18 @@ A simple, robust, and performant Mary-TTS compatible REST API that wraps the Sil
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TTS_TORCH_DEVICE` | `cpu` | Device to run TTS model on: `cpu` or `cuda` |
+| `TTS_TORCH_DEVICE` | `cpu` | `cpu`, `cuda`, or `xpu`. Falls back to `cpu` at runtime if requested device is unavailable. |
+| `TTS_TORCH_NUM_THREADS` | `4` | PyTorch intra-op thread count (`torch.set_num_threads`). Must be ≥ 1. |
+| `TTS_TORCH_NUM_INTEROP_THREADS` | `1` | PyTorch inter-op thread count (`torch.set_num_interop_threads`). Must be ≥ 1. |
+| `TTS_TORCH_FLUSH_DENORMAL` | `true` | Flush denormal floats for performance (`torch.set_flush_denormal`). Only called when `hasattr` passes. |
+| `TTS_SAMPLE_RATE` | `48000` | Output audio sample rate (Hz). Supported: 8000, 16000, 22050, 24000, 48000 |
+| `TTS_MAX_TEXT_LENGTH` | `1000` | Max input characters. |
+| `TTS_ALLOWED_ORIGINS` | `*` | CORS allowed origins. |
+| `TTS_SHUTDOWN_TIMEOUT` | `10` | Graceful shutdown timeout (seconds). |
+| `TTS_CONFIG_PATH` | `silero-to-mary-config.yml` | Path to voice/locale mapping config. |
+| `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached (ge=1). |
+| `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent requests per model. |
+| `TTS_MODELS_DIR` | `.models/silero` | Directory for downloaded Silero .pt model files. |
 
 ## Development
 

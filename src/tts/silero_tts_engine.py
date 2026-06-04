@@ -305,6 +305,8 @@ class SileroTTSEngine:
 
     async def warmup(self):
         """Warm up the models."""
+        if self._cached_models:
+            return
 
         async with self._get_lock():
             if self._cached_models:
