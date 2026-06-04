@@ -1,47 +1,53 @@
-# Stage 1: Builder
-FROM python:3.14-slim as builder
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS builder
 
-WORKDIR /build
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy project files
-COPY pyproject.toml .
-COPY src/ src/
-
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -e .
-
-# Download and cache Silero TTS models
-RUN python -c "import torch; torch.hub.load('snakers4/silero-models', 'silero_tts', language='ru', speaker='v5_5_ru')"
-
-# Stage 2: Runtime
-FROM python:3.14-slim
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+COPY pyproject.toml uv.lock* README.md ./
 
-# Copy installed packages from builder
-COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project --no-dev
 
-# Copy application code
-COPY src/ src/
+COPY src/ ./src
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
-# Expose port
+FROM python:3.14-slim-bookworm
+
+RUN set -x; \
+    apt-get update && \
+	apt-get install -y --no-install-recommends \
+        # grab gosu for easy step-down from root
+        gosu \
+        && \
+	rm -rf /var/lib/apt/lists/* && \
+    # verify that the gosu binary works
+	gosu nobody true
+
+WORKDIR /app
+
+ARG UID=1000
+ARG GID=1000
+
+RUN set -x; \
+    groupadd --system --gid $GID silero && \
+    useradd --system --gid silero --home-dir /app --comment "silero user" --shell /bin/bash --uid $UID silero
+
+COPY --from=builder /app/.venv /app/.venv
+COPY silero-to-mary-config.yml .
+COPY src/ ./src
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1
+
 EXPOSE 8000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health').read()"
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=2)" || exit 1
 
-# Run application with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "src.main:app"]
+COPY --chmod=555 docker-entrypoint.sh /usr/local/bin
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "src.main:app", "--bind", "0.0.0.0:8000"]
