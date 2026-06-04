@@ -140,7 +140,6 @@ All configuration via environment variables with `TTS_` prefix:
 | `TTS_SAMPLE_RATE` | `48000` | Output audio sample rate (Hz). Supported: 8000, 16000, 22050, 24000, 48000 |
 | `TTS_MAX_TEXT_LENGTH` | `1000` | Max input characters |
 | `TTS_ALLOWED_ORIGINS` | `*` | CORS allowed origins |
-| `TTS_SHUTDOWN_TIMEOUT` | `10` | Graceful shutdown timeout (seconds) |
 | `TTS_CONFIG_PATH` | `silero-to-mary-config.yml` | Path to voice/locale mapping config |
 | `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached (ge=1). |
 | `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent requests per model |
@@ -164,7 +163,6 @@ All errors return JSON `{"detail": "..."}`. HTTP status codes:
 
 - **Default image**: CPU-only, `python:3.14-slim`.
 - **CUDA image**: `Dockerfile.cuda` variant.
-- **Models**: Pre-downloaded at build time (no cold-start latency in production).
 
 ## Key Conventions
 
@@ -172,4 +170,4 @@ All errors return JSON `{"detail": "..."}`. HTTP status codes:
 - **Response format**: Raw bytes for audio; JSON for errors and health.
 - **No rate limiting** at the application layer — delegate to infrastructure.
 - **No API key auth** at the application layer — delegate to infrastructure.
-- **Graceful shutdown**: Drain in-flight requests up to `TTS_SHUTDOWN_TIMEOUT` before exit.
+- **Graceful shutdown**: Gunicorn drains in-flight requests before exit (default graceful timeout).

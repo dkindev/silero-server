@@ -11,7 +11,6 @@ def test_env_example_has_all_tts_vars():
         "TTS_SAMPLE_RATE",
         "TTS_MAX_TEXT_LENGTH",
         "TTS_ALLOWED_ORIGINS",
-        "TTS_SHUTDOWN_TIMEOUT",
         "TTS_CONFIG_PATH",
         "TTS_MAX_MODELS",
         "TTS_MAX_CONCURRENT_PER_MODEL",

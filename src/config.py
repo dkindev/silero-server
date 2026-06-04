@@ -42,9 +42,6 @@ class Settings(BaseSettings):
     TTS_ALLOWED_ORIGINS: str = "*"
     """Allowed CORS origins, or '*' for all origins."""
 
-    TTS_SHUTDOWN_TIMEOUT: int = Field(10, ge=1)
-    """Timeout in seconds for graceful shutdown."""
-
     TTS_CONFIG_PATH: str = "silero-to-mary-config.yml"
     """Path to voice/locale mapping config file."""
 
