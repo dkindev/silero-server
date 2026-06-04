@@ -38,7 +38,7 @@ class TestSileroTTSEngineInit:
 
     def test_init_accepts_config_path_and_loads_config(self, tmp_path):
         """Engine should accept config_path string and load config internally."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config_yml = tmp_path / "config.yml"
         config_yml.write_text(
@@ -72,7 +72,7 @@ locales:
 
     def test_init_caches_locales(self, tmp_path):
         """Engine should cache locales at init time."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config_path = make_config_file(
             tmp_path,
@@ -116,7 +116,7 @@ class TestGetInputTypes:
 
     def test_get_input_types_returns_tuple(self, tmp_path):
         """get_input_types should return a tuple."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config_path = make_config_file(tmp_path, models={}, locales={})
         config = TTSConfig(
@@ -135,7 +135,7 @@ class TestGetInputTypes:
 
     def test_get_input_types_includes_text_and_ssml(self, tmp_path):
         """get_input_types should include TEXT and SSML."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config_path = make_config_file(tmp_path, models={}, locales={})
         config = TTSConfig(
@@ -160,8 +160,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_invalid_locale_raises_invalid_locale_error(self, tmp_path):
         """process() with invalid locale should raise TTSEngineError."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.exceptions import TTSEngineError
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -191,7 +191,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_path)
@@ -210,8 +210,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_invalid_voice_raises_invalid_voice_error(self, tmp_path):
         """process() with invalid voice should raise TTSEngineError."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.exceptions import TTSEngineError
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -243,7 +243,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_path)
@@ -262,8 +262,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_invalid_input_type_raises_invalid_input_type_error(self, tmp_path):
         """process() with invalid input_type should raise TTSEngineError."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.exceptions import TTSEngineError
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -293,7 +293,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_path)
@@ -310,8 +310,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_successful_synthesis_returns_tts_result(self, tmp_path):
         """process() with valid params should return TTSResult with audio bytes."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -338,7 +338,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -360,8 +360,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_converts_tensor_to_wav_bytes(self, tmp_path):
         """process() should convert tensor output from apply_tts to valid WAV bytes."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         config = TTSConfig(
@@ -388,7 +388,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -410,7 +410,7 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_sample_rate_clamped_to_model_max(self, tmp_path):
         """process() should clamp sample rate to model's max if configured rate exceeds it."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[8000, 24000])
         config = TTSConfig(
@@ -443,7 +443,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -461,7 +461,7 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_sample_rate_below_min_uses_min(self, tmp_path):
         """process() should use min available rate if configured rate is below min."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[24000, 48000])
         config = TTSConfig(
@@ -494,7 +494,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -512,7 +512,7 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_sample_rate_exact_match_uses_config(self, tmp_path):
         """process() should use config rate if it exactly matches available rate."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -544,7 +544,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -562,7 +562,7 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_sample_rate_not_in_list_uses_highest_below(self, tmp_path):
         """process() should use highest available rate below config if config not in list."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -594,7 +594,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -612,7 +612,7 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_sample_rate_single_element_uses_that_element(self, tmp_path):
         """process() should use single available rate regardless of config value."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[24000])
         config = TTSConfig(
@@ -645,7 +645,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -663,7 +663,7 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_sample_rate_empty_list_uses_config(self, tmp_path):
         """process() should use config rate if model has no sample rates."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -695,7 +695,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -713,7 +713,7 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_sample_rate_none_uses_config(self, tmp_path):
         """process() should use config rate if model sample rates is None."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -745,7 +745,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -763,7 +763,7 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_lazy_model_loading(self, tmp_path):
         """process() should load model on first request and cache it."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -796,7 +796,7 @@ class TestProcessValidation:
         mock_importer.load_pickle = counting_load_pickle
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -819,7 +819,7 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_per_model_semaphore_limits_concurrent(self, tmp_path):
         """process() should use per-model semaphores to limit concurrent requests."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -845,7 +845,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -860,8 +860,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_cuda_unavailable_falls_back_to_cpu(self, tmp_path):
         """Should fall back to CPU when CUDA is requested but unavailable."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cuda",
@@ -898,7 +898,7 @@ class TestProcessValidation:
 
         with unittest.mock.patch.object(torch, "cuda", FakeModule(), create=True):
             with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
+                "src.tts.engine.torch.package.PackageImporter",
                 return_value=mock_importer,
             ):
                 storage = SileroTTSYamlConfigStorage(config_model)
@@ -919,8 +919,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_xpu_unavailable_falls_back_to_cpu(self, tmp_path):
         """Should fall back to CPU when XPU is requested but unavailable."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
             device="xpu",
@@ -957,7 +957,7 @@ class TestProcessValidation:
 
         with unittest.mock.patch.object(torch, "xpu", FakeModule(), create=True):
             with unittest.mock.patch(
-                "src.tts.silero_tts_engine.torch.package.PackageImporter",
+                "src.tts.engine.torch.package.PackageImporter",
                 return_value=mock_importer,
             ):
                 storage = SileroTTSYamlConfigStorage(config_model)
@@ -978,8 +978,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_raises_on_malformed_models_yml(self, tmp_path):
         """process() should raise TTSEngineError on malformed models.yml."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.exceptions import TTSEngineError
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         models_dir = tmp_path / "models"
         models_dir.mkdir()
@@ -1021,8 +1021,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_raises_on_model_not_in_registry(self, tmp_path):
         """process() should raise TTSEngineError when model missing from registry."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.exceptions import TTSEngineError
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         models_dir = tmp_path / "models"
         models_dir.mkdir()
@@ -1067,8 +1067,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_raises_on_model_download_failure(self, tmp_path, monkeypatch):
         """process() should raise TTSEngineError when model download fails."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.exceptions import TTSEngineError
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         models_dir = tmp_path / "models"
         models_dir.mkdir()
@@ -1119,8 +1119,8 @@ class TestProcessValidation:
         self, tmp_path, monkeypatch
     ):
         """process() should raise TTSEngineError when model .pt file is missing and download fails."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.exceptions import TTSEngineError
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         models_dir = tmp_path / "models"
         models_dir.mkdir()
@@ -1169,8 +1169,8 @@ class TestProcessValidation:
     @pytest.mark.asyncio
     async def test_process_resolves_model_from_disk_without_provider(self, tmp_path):
         """process() should resolve model from local files without a provider."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         config = TTSConfig(
@@ -1197,7 +1197,7 @@ class TestProcessValidation:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -1222,7 +1222,7 @@ class TestCachedModel:
 
     def test_cached_model_dataclass_exists(self):
         """CachedModel should be a dataclass in silero_tts_engine module."""
-        from src.tts.silero_tts_engine import CachedModel
+        from src.tts.engine import CachedModel
 
         cached = CachedModel(model="mock", sample_rate=48000, semaphore=None)
         assert cached.model == "mock"
@@ -1232,8 +1232,8 @@ class TestCachedModel:
     @pytest.mark.asyncio
     async def test_engine_uses_cached_model_for_processing(self, tmp_path):
         """process() should succeed with standard mocking."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -1259,7 +1259,7 @@ class TestCachedModel:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -1284,7 +1284,7 @@ class TestModelEviction:
     @pytest.mark.asyncio
     async def test_evicts_oldest_model_when_cache_full(self, tmp_path):
         """process() should evict oldest model when cache is full and reload on next use."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         models_dir = tmp_path / "models"
         models_dir.mkdir()
@@ -1338,7 +1338,7 @@ class TestModelEviction:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ) as mock_pkg:
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -1371,7 +1371,7 @@ class TestModelEviction:
     @pytest.mark.asyncio
     async def test_reuses_cached_model_on_subsequent_calls(self, tmp_path):
         """process() should reuse a cached model without re-loading."""
-        from src.tts.silero_tts_engine import SileroTTSEngine
+        from src.tts.engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         config = TTSConfig(
@@ -1398,7 +1398,7 @@ class TestModelEviction:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ) as mock_pkg:
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -1427,8 +1427,8 @@ class TestWarmup:
     @pytest.mark.asyncio
     async def test_warmup_does_not_raise_and_process_succeeds(self, tmp_path):
         """warmup() should not raise and subsequent process() should succeed."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -1455,7 +1455,7 @@ class TestWarmup:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
@@ -1475,8 +1475,8 @@ class TestWarmup:
     @pytest.mark.asyncio
     async def test_warmup_unknown_model_failure_does_not_block_process(self, tmp_path):
         """warmup() should silently swallow failure for an unknown model name."""
+        from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
-        from src.tts.silero_tts_engine import SileroTTSEngine
 
         config = TTSConfig(
             device="cpu",
@@ -1509,7 +1509,7 @@ class TestWarmup:
         mock_importer.load_pickle.return_value = mock_model
 
         with unittest.mock.patch(
-            "src.tts.silero_tts_engine.torch.package.PackageImporter",
+            "src.tts.engine.torch.package.PackageImporter",
             return_value=mock_importer,
         ):
             result = await engine.process(
@@ -1520,3 +1520,16 @@ class TestWarmup:
             )
 
         assert isinstance(result, TTSResult)
+
+
+def test_new_module_path_importable():
+    """The renamed module src.tts.engine should export SileroTTSEngine."""
+    from src.tts.engine import SileroTTSEngine as NewEngine
+
+    assert NewEngine is not None
+
+
+def test_old_module_path_not_importable():
+    """Old module path src.tts.silero_tts_engine should no longer exist."""
+    with pytest.raises(ModuleNotFoundError):
+        import src.tts.silero_tts_engine  # noqa: F401

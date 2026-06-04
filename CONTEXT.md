@@ -46,7 +46,7 @@ Gender is sourced from config.
 
 ### SileroTTSEngine
 
-Low-level TTS engine wrapping Silero. Lives in `src/tts/silero_tts_engine.py`.
+Low-level TTS engine wrapping Silero.
 
 **Methods:**
 - `get_storage()` → `SileroTTSConfigStorage` — returns the config storage; clients use it for locale/voice queries (`has_locale`, `has_voice`, `get_locales`, `get_voices`)

@@ -5,8 +5,8 @@ from fastapi.datastructures import State
 
 from src.config import Settings, get_settings
 from src.tts.config_storage import SileroTTSYamlConfigStorage
+from src.tts.engine import SileroTTSEngine
 from src.tts.models import TTSConfig
-from src.tts.silero_tts_engine import SileroTTSEngine
 
 
 def add_engine(app: FastAPI):
