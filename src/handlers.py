@@ -1,4 +1,4 @@
-import sys
+import traceback
 import uuid
 
 from fastapi import FastAPI, Request
@@ -20,23 +20,25 @@ class GlobalExceptionMiddleware(BaseHTTPMiddleware):
                 response.headers["X-Request-ID"] = req_id
                 return response
 
-            except Exception:
+            except Exception as exc:
                 logger.exception(f"Unhandled exception during {request.method} {request.url.path}")
 
-                settings = get_settings()
+                content = {
+                    "request_id": req_id,
+                }
 
-                detail = "Internal Server Error"
-                if settings.TTS_ENV_TYPE == "development":
-                    _, exc_value, _ = sys.exc_info()
-                    if exc_value is not None:
-                        detail = str(exc_value)
+                if get_settings().TTS_ENV_TYPE == "development":
+                    content["detail"] = str(exc)
+                    content["exceptionType"] = (exc.__class__.__name__,)
+                    content["traceback"] = "".join(
+                        traceback.format_exception(type(exc), exc, exc.__traceback__)
+                    )
+                else:
+                    content["detail"] = "Internal Server Error"
 
                 return JSONResponse(
                     status_code=500,
-                    content={
-                        "detail": detail,
-                        "request_id": req_id,
-                    },
+                    content=content,
                     headers={"X-Request-ID": req_id},
                 )
 
