@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     TTS_MODELS_DIR: str = ".models/silero"
     """Directory for downloaded Silero .pt model files."""
 
+    TTS_ENV_TYPE: Literal["development", "production"] = "development"
+    """Application environment type. Controls error detail level and other environment-specific behavior."""
+
     @field_validator("TTS_CONFIG_PATH")
     @classmethod
     def config_path_must_exist(cls, v: str) -> str:

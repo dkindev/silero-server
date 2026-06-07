@@ -73,6 +73,7 @@ A simple, robust, and performant Mary-TTS compatible REST API that wraps the Sil
 | `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached (ge=1). |
 | `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent requests per model. |
 | `TTS_MODELS_DIR` | `.models/silero` | Directory for downloaded Silero .pt model files. |
+| `TTS_ENV_TYPE` | `development` | Application environment: `development` or `production`. Controls error detail level, log format, log level, and file logging. |
 
 ## Development
 

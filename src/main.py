@@ -4,7 +4,10 @@ from fastapi import FastAPI
 
 from src.deps import add_engine, get_engine
 from src.handlers import add_cors, add_global_exception_handler
+from src.logger import setup_logging
 from src.routers import setup_routers
+
+setup_logging()
 
 
 @asynccontextmanager
@@ -31,6 +34,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-add_cors(app)
 add_global_exception_handler(app)
+add_cors(app)
 setup_routers(app)

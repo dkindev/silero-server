@@ -16,7 +16,7 @@ Key Silero concepts:
 - **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded to `TTS_MODELS_DIR`. Models can be flagged with `warmup: true` to preload at startup. Mark as `enabled: false` to disable the model.
 - **Speaker**: A named voice within a model (e.g., `aidar`, `baya`, `eugene`, `kseniya`, `xenia` for Russian). Speakers are model-specific.
 - **Sample rate**: Audio output frequency in Hz. Silero produces 48000 Hz by default; torchaudio can resample.
-- **Output format**: The Silero TTS model always returns a two-dimensional (2D) tensor with batch dimension: [1, samples] (where 1 is one generated text and samples is the number of audio points).
+- **Output format**: The Silero TTS model always returns a one-dimensional (1D) tensor with batch dimension: [1, samples] (where 1 is one generated text and samples is the number of audio points).
 
 ### Locale
 
@@ -144,6 +144,7 @@ All configuration via environment variables with `TTS_` prefix:
 | `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached (ge=1). |
 | `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent requests per model |
 | `TTS_MODELS_DIR` | `.models/silero` | Directory for downloaded Silero .pt model files |
+| `TTS_ENV_TYPE` | `development` | Application environment: `development` or `production`. Controls error detail level in 500 responses, log format (colorized/plain), log level (DEBUG/INFO), backtrace/diagnose, and file logging in production. |
 
 Validated at startup via Pydantic Settings — app exits with a clear error on invalid values.
 

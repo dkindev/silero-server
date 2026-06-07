@@ -12,8 +12,13 @@ from src.tts.exceptions import TTSEngineError
 class TestExceptionHandler:
     """Test global exception handler for TTS engine errors."""
 
-    def test_tts_engine_error_returns_500(self):
+    def test_tts_engine_error_returns_500(self, monkeypatch):
         """TTSEngineError should return 500 status code."""
+        monkeypatch.setenv("TTS_ENV_TYPE", "production")
+        from src.config import get_settings
+
+        get_settings.cache_clear()
+
         mock_engine = MagicMock()
         mock_engine.process.side_effect = TTSEngineError("Model failed")
 
@@ -33,7 +38,49 @@ class TestExceptionHandler:
         response = client.get("/test-processing")
 
         assert response.status_code == 500
-        assert response.json() == {"message": "Internal Server Error"}
+        assert response.json()["detail"] == "Internal Server Error"
+
+    def test_production_mode_hides_error_detail(self, monkeypatch):
+        """Production mode should return generic error message in 500 responses."""
+        monkeypatch.setenv("TTS_ENV_TYPE", "production")
+        from src.config import get_settings
+
+        get_settings.cache_clear()
+
+        app = FastAPI()
+
+        @app.get("/boom")
+        async def boom():
+            raise RuntimeError("something broke")
+
+        add_global_exception_handler(app)
+
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/boom")
+
+        assert response.status_code == 500
+        assert response.json()["detail"] == "Internal Server Error"
+
+    def test_development_mode_shows_error_detail(self, monkeypatch):
+        """Development mode should include exception message in 500 responses."""
+        monkeypatch.setenv("TTS_ENV_TYPE", "development")
+        from src.config import get_settings
+
+        get_settings.cache_clear()
+
+        app = FastAPI()
+
+        @app.get("/boom")
+        async def boom():
+            raise RuntimeError("something broke")
+
+        add_global_exception_handler(app)
+
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/boom")
+
+        assert response.status_code == 500
+        assert "something broke" in response.json()["detail"]
 
 
 class TestLocalesEndpoint:

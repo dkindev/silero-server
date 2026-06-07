@@ -188,6 +188,24 @@ def test_invalid_device_value_fails():
         Settings.model_validate({"TTS_TORCH_DEVICE": "vulkan"})
 
 
+def test_settings_tts_env_type_default():
+    """Test that TTS_ENV_TYPE defaults to 'development'."""
+    settings = Settings.model_validate({})
+    assert settings.TTS_ENV_TYPE == "development"
+
+
+def test_settings_tts_env_type_production():
+    """Test that TTS_ENV_TYPE=production is accepted."""
+    settings = Settings.model_validate({"TTS_ENV_TYPE": "production"})
+    assert settings.TTS_ENV_TYPE == "production"
+
+
+def test_invalid_tts_env_type_fails():
+    """Test that invalid TTS_ENV_TYPE value raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_ENV_TYPE": "staging"})
+
+
 def test_get_settings_importable_from_config():
     """Test that get_settings can be imported from src.config."""
     from src.config import get_settings
