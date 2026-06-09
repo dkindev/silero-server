@@ -127,6 +127,22 @@ Converts text to speech audio. Uses `SileroTTSEngine.process()` for synthesis. S
 
 **Response:** WAV audio streamed from a `BytesIO` buffer via `StreamingResponse`. `Content-Type: audio/wav`, `Content-Disposition: inline`.
 
+### Text Preprocessing
+
+Text input is normalized and split into chunks before synthesis to stay within model length limits and reduce per-chunk latency.
+
+**`TextPreprocessor`** is the base class with two public methods:
+- `process_text(text, max_chunk_chars, available_chars)` — normalized and splits plain text into chunks
+- `process_ssml(text, max_chunk_chars, available_chars)` — normalized and splits SSML text, preserving XML tag structure across chunks
+
+Chunking strategy (4 levels, each used when the previous cannot split further):
+1. **Sentence boundary** — split on `[.!?\n]`
+2. **Minor punctuation** — split on `[,:\-—;]`
+3. **Word boundary** — split on spaces
+4. **Hard character limit** — split at exactly `max_chunk_chars`
+
+**Locale-specific preprocessors** extend the base class (e.g., `RuTextPreprocessor` uses `razdel.sentenize` for Russian sentence boundaries). The engine resolves preprocessors via a factory callable `Callable[[str], TextPreprocessor]` keyed by locale. If no locale-specific preprocessor is registered, the base `TextPreprocessor` is used as fallback.
+
 ### Configuration
 
 All configuration via environment variables with `TTS_` prefix:
@@ -142,7 +158,8 @@ All configuration via environment variables with `TTS_` prefix:
 | `TTS_ALLOWED_ORIGINS` | `*` | CORS allowed origins |
 | `TTS_CONFIG_PATH` | `silero-to-mary-config.yml` | Path to voice/locale mapping config |
 | `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached (ge=1). |
-| `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent requests per model |
+| `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent chunks for inferencing per model |
+| `TTS_MAX_CHUNK_CHARS` | `140` | Max characters per text chunk. Text longer than this is split into chunks and synthesized separately, then concatenated. |
 | `TTS_MODELS_DIR` | `.models/silero` | Directory for downloaded Silero .pt model files |
 | `TTS_ENV_TYPE` | `development` | Application environment: `development` or `production`. Controls error detail level in 500 responses, log format (colorized/plain), log level (DEBUG/INFO), backtrace/diagnose, and file logging in production. |
 

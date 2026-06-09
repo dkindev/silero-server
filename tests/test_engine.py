@@ -6,6 +6,7 @@ import torch
 
 from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
+from src.tts.preprocessing import TextPreprocessor
 
 
 def make_models_dir(tmp_path, sample_rates=None, model_name="v5_5_ru", language="ru"):
@@ -61,11 +62,14 @@ locales:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        engine = SileroTTSEngine(config=config, storage=storage)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
 
         assert engine is not None
         assert "ru_RU" in engine.get_storage().get_locales()
@@ -96,11 +100,14 @@ locales:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
 
         storage = SileroTTSYamlConfigStorage(config_path)
-        engine = SileroTTSEngine(config=config, storage=storage)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
 
         locales = engine.get_storage().get_locales()
         assert isinstance(locales, tuple)
@@ -124,11 +131,14 @@ class TestGetInputTypes:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
 
         storage = SileroTTSYamlConfigStorage(config_path)
-        engine = SileroTTSEngine(config=config, storage=storage)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
 
         result = engine.get_input_types()
         assert isinstance(result, tuple)
@@ -143,11 +153,14 @@ class TestGetInputTypes:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
 
         storage = SileroTTSYamlConfigStorage(config_path)
-        engine = SileroTTSEngine(config=config, storage=storage)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
 
         assert "TEXT" in engine.get_input_types()
         assert "SSML" in engine.get_input_types()
@@ -168,6 +181,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         config_path = make_config_file(
@@ -187,6 +201,7 @@ class TestProcessValidation:
         )
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
@@ -195,7 +210,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_path)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
 
             with pytest.raises(TTSEngineError) as exc_info:
                 await engine.process(
@@ -218,6 +237,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         config_path = make_config_file(
@@ -239,6 +259,7 @@ class TestProcessValidation:
         )
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
@@ -247,7 +268,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_path)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
 
             with pytest.raises(TTSEngineError) as exc_info:
                 await engine.process(
@@ -270,6 +295,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         config_path = make_config_file(
@@ -289,6 +315,7 @@ class TestProcessValidation:
         )
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
 
@@ -297,7 +324,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_path)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
 
             with pytest.raises(TTSEngineError):
                 await engine.process(
@@ -318,6 +349,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -333,6 +365,7 @@ class TestProcessValidation:
         mock_audio = torch.zeros(1, 48000)
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -342,7 +375,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
 
             result = await engine.process(
                 text="hello",
@@ -369,6 +406,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=models_dir,
         )
         model_config = Model(language="ru")
@@ -383,6 +421,7 @@ class TestProcessValidation:
 
         audio_tensor = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = audio_tensor
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -392,7 +431,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
 
             result = await engine.process(
                 text="hello",
@@ -418,6 +461,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=models_dir,
         )
         model_config = Model(language="ru")
@@ -438,6 +482,7 @@ class TestProcessValidation:
             return mock_audio
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -447,7 +492,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -469,6 +518,7 @@ class TestProcessValidation:
             sample_rate=8000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=models_dir,
         )
         model_config = Model(language="ru")
@@ -489,6 +539,7 @@ class TestProcessValidation:
             return mock_audio
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -498,7 +549,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -519,6 +574,7 @@ class TestProcessValidation:
             sample_rate=24000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -539,6 +595,7 @@ class TestProcessValidation:
             return mock_audio
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -548,7 +605,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -569,6 +630,7 @@ class TestProcessValidation:
             sample_rate=44100,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -589,6 +651,7 @@ class TestProcessValidation:
             return mock_audio
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -598,7 +661,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -620,6 +687,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=models_dir,
         )
         model_config = Model(language="ru")
@@ -640,6 +708,7 @@ class TestProcessValidation:
             return mock_audio
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -649,7 +718,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -670,6 +743,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -690,6 +764,7 @@ class TestProcessValidation:
             return mock_audio
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -699,7 +774,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -720,6 +799,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -740,6 +820,7 @@ class TestProcessValidation:
             return mock_audio
 
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -749,7 +830,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -770,6 +855,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -784,6 +870,7 @@ class TestProcessValidation:
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = mock_audio
         load_counter = [0]
         mock_importer = unittest.mock.MagicMock()
@@ -800,7 +887,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -826,6 +917,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -840,6 +932,7 @@ class TestProcessValidation:
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -849,7 +942,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -868,6 +965,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -891,6 +989,7 @@ class TestProcessValidation:
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.to = FakeModule.to
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
@@ -902,7 +1001,11 @@ class TestProcessValidation:
                 return_value=mock_importer,
             ):
                 storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage)
+                engine = SileroTTSEngine(
+                    config=config,
+                    storage=storage,
+                    text_preprocessor_factory=lambda _: TextPreprocessor(),
+                )
                 result = await engine.process(
                     text="hello",
                     locale="ru_RU",
@@ -927,6 +1030,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -950,6 +1054,7 @@ class TestProcessValidation:
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = mock_audio
         mock_model.to = FakeModule.to
         mock_importer = unittest.mock.MagicMock()
@@ -961,7 +1066,11 @@ class TestProcessValidation:
                 return_value=mock_importer,
             ):
                 storage = SileroTTSYamlConfigStorage(config_model)
-                engine = SileroTTSEngine(config=config, storage=storage)
+                engine = SileroTTSEngine(
+                    config=config,
+                    storage=storage,
+                    text_preprocessor_factory=lambda _: TextPreprocessor(),
+                )
                 result = await engine.process(
                     text="hello",
                     locale="ru_RU",
@@ -993,6 +1102,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=str(models_dir),
         )
         model_config = Model(language="ru")
@@ -1006,7 +1116,9 @@ class TestProcessValidation:
         )
 
         storage = SileroTTSYamlConfigStorage(config_model)
-        engine = SileroTTSEngine(config=config, storage=storage)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
 
         with pytest.raises(TTSEngineError) as exc_info:
             await engine.process(
@@ -1038,6 +1150,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=str(models_dir),
         )
         model_config = Model(language="ru")
@@ -1051,7 +1164,9 @@ class TestProcessValidation:
         )
 
         storage = SileroTTSYamlConfigStorage(config_model)
-        engine = SileroTTSEngine(config=config, storage=storage)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
 
         with pytest.raises(TTSEngineError) as exc_info:
             await engine.process(
@@ -1088,6 +1203,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=str(models_dir),
         )
         model_config = Model(language="ru")
@@ -1101,7 +1217,9 @@ class TestProcessValidation:
         )
 
         storage = SileroTTSYamlConfigStorage(config_model)
-        engine = SileroTTSEngine(config=config, storage=storage)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
 
         with pytest.raises(TTSEngineError) as exc_info:
             await engine.process(
@@ -1141,6 +1259,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=str(models_dir),
         )
         model_config = Model(language="ru")
@@ -1154,7 +1273,9 @@ class TestProcessValidation:
         )
 
         storage = SileroTTSYamlConfigStorage(config_model)
-        engine = SileroTTSEngine(config=config, storage=storage)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
 
         with pytest.raises(TTSEngineError) as exc_info:
             await engine.process(
@@ -1178,6 +1299,7 @@ class TestProcessValidation:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=models_dir,
         )
         model_config = Model(language="ru")
@@ -1192,6 +1314,7 @@ class TestProcessValidation:
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -1201,7 +1324,11 @@ class TestProcessValidation:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
 
             result = await engine.process(
                 text="hello",
@@ -1240,6 +1367,7 @@ class TestCachedModel:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru")
@@ -1254,6 +1382,7 @@ class TestCachedModel:
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -1263,7 +1392,11 @@ class TestCachedModel:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
@@ -1313,6 +1446,7 @@ class TestModelEviction:
             sample_rate=48000,
             max_models=1,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=str(models_dir),
         )
 
@@ -1333,6 +1467,7 @@ class TestModelEviction:
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -1342,7 +1477,11 @@ class TestModelEviction:
             return_value=mock_importer,
         ) as mock_pkg:
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
 
             await engine.process(
                 text="hello",
@@ -1379,6 +1518,7 @@ class TestModelEviction:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=models_dir,
         )
         model_config = Model(language="ru")
@@ -1393,6 +1533,7 @@ class TestModelEviction:
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -1402,7 +1543,11 @@ class TestModelEviction:
             return_value=mock_importer,
         ) as mock_pkg:
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
 
             await engine.process(
                 text="hello",
@@ -1435,6 +1580,7 @@ class TestWarmup:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         model_config = Model(language="ru", warmup=True)
@@ -1449,6 +1595,7 @@ class TestWarmup:
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.speakers = ["aidar"]
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
@@ -1459,7 +1606,11 @@ class TestWarmup:
             return_value=mock_importer,
         ):
             storage = SileroTTSYamlConfigStorage(config_model)
-            engine = SileroTTSEngine(config=config, storage=storage)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
 
             await engine.warmup()
 
@@ -1483,6 +1634,7 @@ class TestWarmup:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=tmp_path / "models",
         )
         warmup_model = Model(language="ru", warmup=True)
@@ -1498,12 +1650,15 @@ class TestWarmup:
         )
 
         storage = SileroTTSYamlConfigStorage(config_model)
-        engine = SileroTTSEngine(config=config, storage=storage)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
 
         await engine.warmup()
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
         mock_model.apply_tts.return_value = mock_audio
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
@@ -1527,9 +1682,3 @@ def test_new_module_path_importable():
     from src.tts.engine import SileroTTSEngine as NewEngine
 
     assert NewEngine is not None
-
-
-def test_old_module_path_not_importable():
-    """Old module path src.tts.silero_tts_engine should no longer exist."""
-    with pytest.raises(ModuleNotFoundError):
-        import src.tts.silero_tts_engine  # noqa: F401

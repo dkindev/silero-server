@@ -4,6 +4,7 @@ import io
 import os
 import urllib.request
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,6 +17,7 @@ from scipy.io import wavfile
 from src.tts.config_storage import SileroTTSConfigStorage
 from src.tts.exceptions import TTSEngineError
 from src.tts.models import Model, TTSConfig
+from src.tts.preprocessing import TextPreprocessor
 from src.tts.result import TTSResult
 
 MODELS_YML_URL = (
@@ -68,17 +70,26 @@ def _resolve_device(device_str: str) -> torch.device:
     return torch.device(device_str)
 
 
-def _run_tts_sync(cached_model: CachedModel, text: str, speaker: str) -> torch.Tensor:
+def _run_tts_sync(
+    cached_model: CachedModel, text: str, speaker: str, type: str = "TEXT"
+) -> torch.Tensor:
     with torch.inference_mode():
         logger.debug(
-            "TTS inferencing. Speaker: {speaker}. Sample rate: {sample_rate}. Text: {text}",
+            "TTS inferencing. Speaker: {speaker}. Sample rate: {sample_rate}. Type: {type}. Text: {text}",
             speaker=speaker,
             sample_rate=cached_model.sample_rate,
+            type=type,
             text=text,
         )
 
-        audio = cached_model.model.apply_tts(
-            text=text, speaker=speaker, sample_rate=cached_model.sample_rate
+        audio = (
+            cached_model.model.apply_tts(
+                ssml_text=text, speaker=speaker, sample_rate=cached_model.sample_rate
+            )
+            if type == "SSML"
+            else cached_model.model.apply_tts(
+                text=text, speaker=speaker, sample_rate=cached_model.sample_rate
+            )
         )
 
         # If it's a GPU, we force the computation thread to synchronize
@@ -92,32 +103,19 @@ def _run_tts_sync(cached_model: CachedModel, text: str, speaker: str) -> torch.T
                 torch.xpu.synchronize(device=audio.device)
 
         logger.debug(
-            "TTS has been successfully inferenced on device '{device}'.",
+            "TTS has been successfully inferenced on device '{device}'. Tensor shape: [{shape}]",
             device=device_type,
+            shape=audio.shape[0],
         )
 
         return audio
 
 
-def _tensor_to_wav_bytes(audio: torch.Tensor, sample_rate: int) -> io.BytesIO:
-    device = audio.device.type
+def _chunks_to_wav_bytes(chunks: list[np.ndarray], sample_rate: int) -> io.BytesIO:
+    logger.debug("Saving audio chunks to WAV buffer.")
 
-    logger.debug(
-        "Converting tensor (shape: [{shape}]) to WAV bytes. Device '{device}'. Sample rate '{sample_rate}'.",
-        shape=audio.shape[0],
-        device=device,
-        sample_rate=sample_rate,
-    )
-
-    # Processing ONLY on GPU is currently not supported (No transfer to CPU)
-    # audio is located on device 'xpu/cuda'
-    # We transfer it to the CPU and convert it into a numpy array.
-    try:
-        audio_np = audio.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
-    except Exception as e:
-        raise TTSEngineError(f"Failed to convert tensor to WAV from device '{device}'.") from e
-
-    pcm_data = (audio_np * 32767).astype(np.int16)
+    combined_audio = np.concatenate(chunks)
+    pcm_data = (combined_audio * 32767).astype(np.int16)
     buffer = io.BytesIO()
     wavfile.write(buffer, sample_rate, pcm_data)
     buffer.seek(0)
@@ -148,6 +146,7 @@ class SileroTTSEngine:
         self,
         config: TTSConfig,
         storage: SileroTTSConfigStorage,
+        text_preprocessor_factory: Callable[[str], TextPreprocessor],
     ):
         self._config = config
         self._storage = storage
@@ -155,6 +154,7 @@ class SileroTTSEngine:
         self._cached_models: OrderedDict[str, CachedModel] = OrderedDict()
         self._device = _resolve_device(config.device)
         self._lock: asyncio.Lock | None = None
+        self._text_preprocessor_factory = text_preprocessor_factory
 
     async def process(
         self,
@@ -169,6 +169,10 @@ class SileroTTSEngine:
             raise TTSEngineError(f"Invalid voice: {voice}")
         if input_type not in self.get_input_types():
             raise TTSEngineError(f"Invalid input type: {input_type}")
+
+        text = text.strip()
+        if not text:
+            raise TTSEngineError("Text is empty or whitespace")
 
         voice_config = self._storage.get_voice_config(locale, voice)
         model_name = voice_config.model
@@ -201,12 +205,47 @@ class SileroTTSEngine:
                 # _load_model_async will write it to self._cached_models itself,
                 # and it will automatically appear at the end as the most recent one.
 
+        text_preprocessor = self._text_preprocessor_factory(locale)
+        if not text_preprocessor:
+            raise TTSEngineError("Text preprocessor not found for locale: '{locale}'.")
+
+        logger.debug(
+            "Text preprocessor '{text_preprocessor}' found for locale '{locale}'.",
+            text_preprocessor=text_preprocessor.__class__.__name__,
+            locale=locale,
+        )
+
+        chunks = (
+            text_preprocessor.process_ssml(text, self._config.max_chunk_chars, cached.model.symbols)
+            if input_type == "SSML"
+            else text_preprocessor.process_text(
+                text, self._config.max_chunk_chars, cached.model.symbols
+            )
+        )
+        if not chunks:
+            raise TTSEngineError("The text is empty or contains only invalid characters.")
+
+        logger.debug("Chunks count for TTS processing: {chunks_count}", chunks_count=len(chunks))
+
         speaker = voice_config.speaker
 
-        async with cached.semaphore:
-            audio_tensor = await asyncio.to_thread(_run_tts_sync, cached, text, speaker)
+        async def process_chunk(chunk: str):
+            async with cached.semaphore:
+                tensor = await asyncio.to_thread(_run_tts_sync, cached, chunk, speaker, input_type)
 
-        wav_bytes = await asyncio.to_thread(_tensor_to_wav_bytes, audio_tensor, cached.sample_rate)
+                # Processing ONLY on GPU is currently not supported (No transfer to CPU)
+                # audio is located on device 'xpu/cuda'
+                # We transfer it to the CPU and convert it into a numpy array.
+                try:
+                    audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
+                except Exception as e:
+                    raise TTSEngineError("Failed to clipping and transfer to 'cpu'.") from e
+
+                return audio_np
+
+        tasks = [process_chunk(chunk) for chunk in chunks]
+        audio_chunks = await asyncio.gather(*tasks)
+        wav_bytes = await asyncio.to_thread(_chunks_to_wav_bytes, audio_chunks, cached.sample_rate)
 
         return TTSResult(audio=wav_bytes, sample_rate=cached.sample_rate, model=model_name)
 
@@ -224,7 +263,6 @@ class SileroTTSEngine:
                 del evicted_model
 
             gc.collect()
-
             _clear_torch_cache_on_device(self._device)
 
             logger.debug("Engine resources have been cleared.")
@@ -245,9 +283,7 @@ class SileroTTSEngine:
 
             _clear_cached_model(evicted_model)
             del evicted_model
-
             gc.collect()
-
             _clear_torch_cache_on_device(self._device)
 
             logger.debug("Model '{model}' was removed from cache.", model=model_name)

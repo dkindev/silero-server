@@ -83,6 +83,7 @@ class TestTTSConfig:
             sample_rate=48000,
             max_models=5,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         assert config.max_models == 5
@@ -94,6 +95,7 @@ class TestTTSConfig:
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
+            max_chunk_chars=48000,
             models_dir=".models/silero",
         )
         with pytest.raises(FrozenInstanceError):

@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     TTS_MAX_CONCURRENT_PER_MODEL: int = Field(2, ge=1, le=10)
     """Maximum concurrent TTS requests per model."""
 
+    TTS_MAX_CHUNK_CHARS: int = Field(140, ge=1)
+    """Maximum character count per text chunk for TTS processing."""
+
     TTS_MODELS_DIR: str = ".models/silero"
     """Directory for downloaded Silero .pt model files."""
 

@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
@@ -7,6 +8,16 @@ from src.config import Settings, get_settings
 from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.engine import SileroTTSEngine
 from src.tts.models import TTSConfig
+from src.tts.preprocessing import RuTextPreprocessor, TextPreprocessor
+
+_TEXT_PREPROCESSOR_BUILDERS: dict[str, Callable[[], TextPreprocessor]] = {
+    "ru_RU": RuTextPreprocessor,
+}
+
+
+def build_text_preprocessor(locale: str) -> TextPreprocessor:
+    builder = _TEXT_PREPROCESSOR_BUILDERS.get(locale)
+    return builder() if builder is not None else TextPreprocessor()
 
 
 def add_engine(app: FastAPI):
@@ -25,10 +36,15 @@ def add_engine(app: FastAPI):
         sample_rate=settings.TTS_SAMPLE_RATE,
         max_models=settings.TTS_MAX_MODELS,
         max_concurrent_per_model=settings.TTS_MAX_CONCURRENT_PER_MODEL,
+        max_chunk_chars=settings.TTS_MAX_CHUNK_CHARS,
         models_dir=settings.TTS_MODELS_DIR,
     )
     storage = SileroTTSYamlConfigStorage(settings.TTS_CONFIG_PATH)
-    app.state.engine = SileroTTSEngine(config=config, storage=storage)
+    app.state.engine = SileroTTSEngine(
+        config=config,
+        storage=storage,
+        text_preprocessor_factory=build_text_preprocessor,
+    )
 
 
 def get_engine_from_request(request: Request) -> SileroTTSEngine:

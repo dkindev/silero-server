@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+import yaml
 from loguru import logger
 
 from src.tts.models import Locale, Model, TTSConfigModel, VoiceConfig
@@ -46,8 +47,6 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
         self._voices = self._build_voices()
 
     def _load_config_model(self, config_path: str) -> TTSConfigModel:
-        import yaml
-
         logger.debug("Loading Silero-To-Mary configuration from '{path}'.", path=config_path)
 
         with open(config_path) as f:
