@@ -2,11 +2,11 @@
 
 set -e
 
-chown -R silero:silero .
-
 if [ "$(id -u)" = "0" ]
 then
-    # restart script as user
+    chown -R silero:silero /app
+
+    # restart script as silero user
     exec gosu silero "$@"
 fi
 

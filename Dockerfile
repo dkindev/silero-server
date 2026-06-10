@@ -16,13 +16,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:3.14-slim-bookworm
 
-RUN set -x; \
-    apt-get update && \
+RUN set -eux; \
+    apt-get update; \
 	apt-get install -y --no-install-recommends \
         # grab gosu for easy step-down from root
         gosu \
-        && \
-	rm -rf /var/lib/apt/lists/* && \
+    ; \
+	rm -rf /var/lib/apt/lists/*; \
     # verify that the gosu binary works
 	gosu nobody true
 
@@ -31,13 +31,14 @@ WORKDIR /app
 ARG UID=1000
 ARG GID=1000
 
-RUN set -x; \
-    groupadd --system --gid $GID silero && \
-    useradd --system --gid silero --home-dir /app --comment "silero user" --shell /bin/bash --uid $UID silero
+RUN set -eux; \
+    groupadd -r --gid $GID silero; \
+    useradd -r --gid silero --uid $UID --home-dir /app --shell /bin/bash silero
 
 COPY --from=builder /app/.venv /app/.venv
 COPY silero-to-mary-config.yml .
 COPY src/ ./src
+RUN chown -R silero:silero .
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
