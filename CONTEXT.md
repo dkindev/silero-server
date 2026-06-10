@@ -157,7 +157,7 @@ All configuration via environment variables with `TTS_` prefix:
 | `TTS_MAX_TEXT_LENGTH` | `1000` | Max input characters |
 | `TTS_ALLOWED_ORIGINS` | `*` | CORS allowed origins |
 | `TTS_CONFIG_PATH` | `silero-to-mary-config.yml` | Path to voice/locale mapping config |
-| `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached (ge=1). |
+| `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached. |
 | `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent chunks for inferencing per model |
 | `TTS_MAX_CHUNK_CHARS` | `140` | Max characters per text chunk. Text longer than this is split into chunks and synthesized separately, then concatenated. |
 | `TTS_MODELS_DIR` | `.models/silero` | Directory for downloaded Silero .pt model files |

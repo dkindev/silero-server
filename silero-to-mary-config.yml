@@ -8,6 +8,8 @@ models:
     language: ru
   v3_en:
     language: en
+  multi_v2:
+    language: multi
     enabled: false
 locales:
   ru_RU:
