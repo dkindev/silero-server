@@ -10,52 +10,99 @@ Target users: any client (web, mobile, desktop, embedded) that needs TTS via a w
 
 ### TTS Engine
 
-The underlying engine is **Silero TTS** (`silero` Python package). Silero provides neural TTS models per language with multiple speaker voices per model.
+The underlying engine is **Silero TTS**. Silero provides neural TTS models per language with multiple speaker voices per model.
 
 Key Silero concepts:
-- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`). Downloaded to `TTS_MODELS_DIR`. Models can be flagged with `warmup: true` to preload at startup. Mark as `enabled: false` to disable the model.
+- **Model**: A `.pt` file downloaded per language (e.g., `v5_5_ru.pt`).
 - **Speaker**: A named voice within a model (e.g., `aidar`, `baya`, `eugene`, `kseniya`, `xenia` for Russian). Speakers are model-specific.
-- **Sample rate**: Audio output frequency in Hz. Silero produces 48000 Hz by default; torchaudio can resample.
+- **Sample rate**: Audio output frequency in Hz. Silero produces 48000 Hz by default.
 - **Output format**: The Silero TTS model always returns a one-dimensional (1D) tensor with batch dimension: [1, samples] (where 1 is one generated text and samples is the number of audio points).
+
+### Model
+
+Models are defined in the YAML config file at `TTS_CONFIG_PATH` (default `silero-to-mary-config.yml`) under the `models:` key:
+
+```yaml
+models:
+  v5_5_ru:
+    language: ru
+    warmup: true
+  v3_en:
+    language: en
+    enabled: false
+```
+
+Each model entry has these fields:
+
+- **`language`** — Internal Silero language identifier (`ru`, `en`, `de`, etc.). Used to resolve and download the correct `.pt` model from the Silero model registry. This is **not** the Mary-TTS locale (e.g. `ru_RU`); locale-to-model mapping is handled separately under the `locales:` section of the config.
+- **`enabled`** — `true` (default) to make the model active; `false` to disable it and exclude its voices from the API.
+- **`warmup`** — `true` to preload the model at startup; `false` (default) to lazy-load on first use.
 
 ### Locale
 
-The API exposes **Mary-TTS locale format** (`ru_RU`, `de_DE`) on the public API surface. Locales are derived from `SileroTTSConfigStorage.get_locales()`, accessed via `engine.get_storage()`.
+Locales are defined in the YAML config file at `TTS_CONFIG_PATH` (default `silero-to-mary-config.yml`) under the `locales:` key:
 
-A locale is **supported** if it appears in `SileroTTSConfigStorage.get_locales()`. A request for an unsupported locale returns **400 Bad Request**.
+```yaml
+locales:
+  ru_RU:
+    voices:
+      ...
+  en_US:
+    voices:
+      ...
+```
+
+Each locale key follows **Mary-TTS locale format** — `{language}_{COUNTRY}` (e.g., `en_US`, `de_DE`, `ru_RU`).
+
+Each locale entry has one field:
+
+- **`voices`** — Mapping of voice names to voice configurations. Voice-level fields (`voice_name`, `speaker`, `model`, `gender`) are documented in the [Voice](#-voice) concept.
+
+Locales whose voices all reference disabled models are excluded from the supported set.
 
 ### Voice
 
-Voices are named in `silero-{model_name}-{speaker}` format, e.g.:
-- `silero-v5_5_ru-aidar`
-- `silero-v5_5_ru-baya`
-- `silero-v5_5_ru-eugene`
-- `silero-v5_5_ru-kseniya`
-- `silero-v5_5_ru-xenia`
+Voices are defined in the YAML config file under the `locales.*.voices` key:
 
-This naming scheme:
-- Prefixes all voices with `silero-` to avoid collision with other TTS systems.
-- Embeds the model name (e.g., `v5_5_ru`) to disambiguate speakers that may not exist in other model versions.
-- Speaker names are Silero's native speaker identifiers.
+```yaml
+locales:
+  ru_RU:
+    voices:
+      aidar:
+        model: v5_5_ru
+        gender: male
+      baya:
+        model: v5_5_ru
+        gender: female
+  en_US:
+    voices:
+      custom_name:
+        speaker: en_0 # required for custom voice name
+        model: v3_en
+        gender: male
+```
 
-Voice validation at request time (endpoint level):
-1. Check locale exists via `SileroTTSConfigStorage.has_locale()`
-2. Check voice exists via `SileroTTSConfigStorage.has_voice(locale, voice_name)`
+Voice names are presented in free format — no naming convention is enforced.
 
-Gender is sourced from config.
+Each voice entry has these fields:
+
+- **`voice_name`** — The key of the voice entry in the config (e.g. `silero-v5_5_ru-aidar`). Free format; choose a name that is meaningful for your application. Used in Mary-TTS voice identifiers returned by the API.
+- **`speaker`** — Silero's native speaker identifier (e.g. `aidar`, `en_0`). Must match a speaker known to the model. Optional in YAML — if missing or empty, defaults to the `voice_name` value.
+- **`model`** — The model name to use for this voice. References a `model` key defined in the `models:` section.
+- **`gender`** — Speaker gender label (`male`, `female`, etc.). Used in Mary-TTS formatted output.
 
 ### SileroTTSEngine
 
 Low-level TTS engine wrapping Silero.
 
 **Methods:**
-- `get_storage()` → `SileroTTSConfigStorage` — returns the config storage; clients use it for locale/voice queries (`has_locale`, `has_voice`, `get_locales`, `get_voices`)
+- `get_storage()` → `SileroTTSConfigStorage` — returns the config storage; clients use it for locale/voice queries (`has_locale`, `has_voice`, `get_locales`, `get_voices` → `dict[str, list[VoiceConfig]]`)
 - `get_input_types()` → `tuple[str, ...]` — returns supported input types (`"TEXT"`, `"SSML"`)
 - `process(text, locale, voice, input_type)` → `TTSResult` — returns synthesized audio as `TTSResult(audio=io.BytesIO, sample_rate=int, model=str)`
 - `warmup()` — async. Preloads models with `warmup: true` from config up to `max_models` capacity. Runs a dummy synthesis pass per model to warm GPU caches. Silently swallows per-model failures. No-op if cache is already populated.
 
 **Initialization:**
-- Settings read: `TTS_TORCH_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_MODELS`, `TTS_MAX_CONCURRENT_PER_MODEL`, `TTS_MODELS_DIR`
+- Settings read: `TTS_TORCH_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_MODELS`, `TTS_MAX_CONCURRENT_PER_MODEL`, `TTS_MAX_CHUNK_CHARS`, `TTS_MODELS_DIR`
 - Config loaded from `SileroTTSConfigStorage`
 - `warmup()` called during application lifespan startup (after engine creation, before first request)
 
@@ -74,7 +121,7 @@ Validation happens at two levels:
 **Model loading logic:**
 1. Downloads `models.yml` from Silero models repo, parses it to find the model URL
 2. Downloads the `.pt` file to `TTS_MODELS_DIR/{language}/{model_name}.pt`
-3. Returns the local path with supported sample rates.
+3. Returns the local path with supported sample rates, sample text, and speaker samples.
 
 **Sample rate selection logic:**
 1. Get voice model (after receiving a voice from the config)
@@ -99,7 +146,7 @@ Validation happens at two levels:
 
 **Normalization:** 
 - Clips/clamps Silero audio from \(-1.0\) to \(1.0\) float32 range.
-- Scales and converts the audio to 16-bit PCM integer format (int16). This creates a smaller file size and matches standard audio streaming expectations.
+- Scales and converts the audio to 16-bit PCM integer format (int16).
 
 ### `/locales` Endpoint
 
@@ -108,6 +155,8 @@ Returns available locales from `SileroTTSConfigStorage.get_locales()` (accessed 
 ### `/voices` Endpoint
 
 Returns available voices from `SileroTTSConfigStorage.get_voices()` (accessed via `engine.get_storage()`) as plain text, one per line.
+
+Each line is formatted in Mary-TTS voice format: `{voice_name} {locale} {gender}`.
 
 ### `/process` Endpoint
 

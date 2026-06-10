@@ -20,7 +20,7 @@ class SileroTTSConfigStorage(ABC):
         ...
 
     @abstractmethod
-    def get_voices(self) -> tuple[str, ...]:
+    def get_voices(self) -> dict[str, list[VoiceConfig]]:
         ...
 
     @abstractmethod
@@ -64,8 +64,11 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
         for name, loc in data.get("locales", {}).items():
             voices = {}
             for voice_name, v in loc.get("voices", {}).items():
+                speaker_raw = v.get("speaker")
+                speaker = speaker_raw if speaker_raw and speaker_raw.strip() else voice_name
                 voices[voice_name] = VoiceConfig(
-                    speaker=v["speaker"],
+                    voice_name=voice_name,
+                    speaker=speaker,
                     model=v["model"],
                     gender=v["gender"],
                 )
@@ -75,12 +78,18 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
 
         return TTSConfigModel(models=models, locales=locales)
 
-    def _build_voices(self) -> tuple[str, ...]:
-        voices = []
+    def _build_voices(self) -> dict[str, list[VoiceConfig]]:
+        result: dict[str, list[VoiceConfig]] = {}
         for locale, locale_data in self._config_model.locales.items():
-            for voice_name, voice_config in locale_data.voices.items():
-                voices.append(f"{voice_name} {locale} {voice_config.gender}")
-        return tuple(voices)
+            seen: set[str] = set()
+            voices: list[VoiceConfig] = []
+            for voice_name, vc in locale_data.voices.items():
+                if voice_name not in seen:
+                    seen.add(voice_name)
+                    voices.append(vc)
+            if voices:
+                result[locale] = voices
+        return result
 
     @staticmethod
     def _filter_enabled(config: TTSConfigModel) -> TTSConfigModel:
@@ -109,7 +118,7 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
     def get_locales(self) -> tuple[str, ...]:
         return self._locales
 
-    def get_voices(self) -> tuple[str, ...]:
+    def get_voices(self) -> dict[str, list[VoiceConfig]]:
         return self._voices
 
     def get_voice_config(self, locale: str, voice_name: str) -> VoiceConfig:

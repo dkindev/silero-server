@@ -2,273 +2,33 @@ models:
   v5_5_ru:
     language: ru
     warmup: true
-  v5_cis_base:
-    language: ru
-  v5_cis_base_nostress:
-    language: ru
   v3_en:
     language: en
-  multi_v2:
-    language: multi
-    enabled: false
 locales:
   ru_RU:
     voices:
-      silero-v5_5_ru-aidar:
-        speaker: aidar
+      aidar:
         model: v5_5_ru
         gender: male
-      silero-v5_5_ru-eugene:
-        speaker: eugene
+      eugene:
         model: v5_5_ru
         gender: male
-      silero-v5_5_ru-baya:
-        speaker: baya
+      baya:
         model: v5_5_ru
         gender: female
-      silero-v5_5_ru-kseniya:
-        speaker: kseniya
+      kseniya:
         model: v5_5_ru
         gender: female
-      silero-v5_5_ru-xenia:
-        speaker: xenia
+      xenia:
         model: v5_5_ru
-        gender: female
-      silero-v5_cis_base-ru_aigul:
-        speaker: ru_aigul
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_albina:
-        speaker: ru_albina
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_alexandr:
-        speaker: ru_alexandr
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_alfia:
-        speaker: ru_alfia
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_alfia2:
-        speaker: ru_alfia2
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_bogdan:
-        speaker: ru_bogdan
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_dmitriy:
-        speaker: ru_dmitriy
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_eduard:
-        speaker: ru_eduard
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_ekaterina:
-        speaker: ru_ekaterina
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_gamat:
-        speaker: ru_gamat
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_igor:
-        speaker: ru_igor
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_karina:
-        speaker: ru_karina
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_kejilgan:
-        speaker: ru_kejilgan
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_kermen:
-        speaker: ru_kermen
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_marat:
-        speaker: ru_marat
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_miyau:
-        speaker: ru_miyau
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_nurgul:
-        speaker: ru_nurgul
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_oksana:
-        speaker: ru_oksana
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_onaoy:
-        speaker: ru_onaoy
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_ramilia:
-        speaker: ru_ramilia
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_roman:
-        speaker: ru_roman
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_safarhuja:
-        speaker: ru_safarhuja
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_saida:
-        speaker: ru_saida
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_sibday:
-        speaker: ru_sibday
-        model: v5_cis_base
-        gender: male
-      silero-v5_cis_base-ru_vika:
-        speaker: ru_vika
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_zara:
-        speaker: ru_zara
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_zhadyra:
-        speaker: ru_zhadyra
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_zhazira:
-        speaker: ru_zhazira
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base-ru_zinaida:
-        speaker: ru_zinaida
-        model: v5_cis_base
-        gender: female
-      silero-v5_cis_base_nostress-ru_aigul:
-        speaker: ru_aigul
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_albina:
-        speaker: ru_albina
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_alexandr:
-        speaker: ru_alexandr
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_alfia:
-        speaker: ru_alfia
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_alfia2:
-        speaker: ru_alfia2
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_bogdan:
-        speaker: ru_bogdan
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_dmitriy:
-        speaker: ru_dmitriy
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_eduard:
-        speaker: ru_eduard
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_ekaterina:
-        speaker: ru_ekaterina
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_gamat:
-        speaker: ru_gamat
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_igor:
-        speaker: ru_igor
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_karina:
-        speaker: ru_karina
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_kejilgan:
-        speaker: ru_kejilgan
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_kermen:
-        speaker: ru_kermen
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_marat:
-        speaker: ru_marat
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_miyau:
-        speaker: ru_miyau
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_nurgul:
-        speaker: ru_nurgul
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_oksana:
-        speaker: ru_oksana
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_onaoy:
-        speaker: ru_onaoy
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_ramilia:
-        speaker: ru_ramilia
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_roman:
-        speaker: ru_roman
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_safarhuja:
-        speaker: ru_safarhuja
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_saida:
-        speaker: ru_saida
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_sibday:
-        speaker: ru_sibday
-        model: v5_cis_base_nostress
-        gender: male
-      silero-v5_cis_base_nostress-ru_vika:
-        speaker: ru_vika
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_zara:
-        speaker: ru_zara
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_zhadyra:
-        speaker: ru_zhadyra
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_zhazira:
-        speaker: ru_zhazira
-        model: v5_cis_base_nostress
-        gender: female
-      silero-v5_cis_base_nostress-ru_zinaida:
-        speaker: ru_zinaida
-        model: v5_cis_base_nostress
         gender: female
   en_US:
     voices:
-      silero-v3_en-en_0:
-        speaker: en_0
+      henry:
+        speaker: en_2
         model: v3_en
         gender: male
+      sophia:
+        speaker: en_3
+        model: v3_en
+        gender: female

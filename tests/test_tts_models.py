@@ -32,15 +32,20 @@ class TestModel:
 
 class TestVoiceConfig:
     def test_voice_config_has_all_fields(self):
-        """VoiceConfig dataclass has speaker, model, gender fields."""
-        vc = VoiceConfig(speaker="en_0", model="v3_en", gender="male")
+        """VoiceConfig dataclass has voice_name, speaker, model, gender fields."""
+        vc = VoiceConfig(
+            voice_name="silero-v3_en-en_0", speaker="en_0", model="v3_en", gender="male"
+        )
+        assert vc.voice_name == "silero-v3_en-en_0"
         assert vc.speaker == "en_0"
         assert vc.model == "v3_en"
         assert vc.gender == "male"
 
     def test_voice_config_is_frozen(self):
         """VoiceConfig dataclass is immutable (frozen)."""
-        vc = VoiceConfig(speaker="en_0", model="v3_en", gender="male")
+        vc = VoiceConfig(
+            voice_name="silero-v3_en-en_0", speaker="en_0", model="v3_en", gender="male"
+        )
         with pytest.raises(FrozenInstanceError):
             vc.speaker = "en_1"
 
@@ -48,7 +53,11 @@ class TestVoiceConfig:
 class TestLocale:
     def test_locale_has_voices_dict(self):
         """Locale dataclass has voices dict field."""
-        voices = {"silero-v3_en-en_0": VoiceConfig(speaker="en_0", model="v3_en", gender="male")}
+        voices = {
+            "silero-v3_en-en_0": VoiceConfig(
+                voice_name="silero-v3_en-en_0", speaker="en_0", model="v3_en", gender="male"
+            )
+        }
         locale = Locale(voices=voices)
         assert locale.voices == voices
 

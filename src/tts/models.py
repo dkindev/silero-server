@@ -10,6 +10,7 @@ class Model:
 
 @dataclass(frozen=True)
 class VoiceConfig:
+    voice_name: str
     speaker: str
     model: str
     gender: str

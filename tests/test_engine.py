@@ -114,8 +114,9 @@ locales:
         assert "ru_RU" in locales
 
         voices = engine.get_storage().get_voices()
-        assert isinstance(voices, tuple)
+        assert isinstance(voices, dict)
         assert len(voices) == 1
+        assert "ru_RU" in voices
 
 
 class TestGetInputTypes:
@@ -355,7 +356,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -412,7 +418,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -467,7 +478,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -524,7 +540,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -580,7 +601,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -636,7 +662,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -693,7 +724,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -749,7 +785,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -805,7 +846,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -861,7 +907,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -923,7 +974,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -971,7 +1027,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1036,7 +1097,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1108,7 +1174,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1156,7 +1227,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1209,7 +1285,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1265,7 +1346,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1305,7 +1391,12 @@ class TestProcessValidation:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1373,7 +1464,12 @@ class TestCachedModel:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1453,11 +1549,20 @@ class TestModelEviction:
         model_en = Model(language="en")
         model_ru = Model(language="ru")
         locale_en = Locale(
-            voices={"silero-v3_en-en_0": VoiceConfig(speaker="en_0", model="v3_en", gender="male")}
+            voices={
+                "silero-v3_en-en_0": VoiceConfig(
+                    voice_name="silero-v3_en-en_0", speaker="en_0", model="v3_en", gender="male"
+                )
+            }
         )
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1524,7 +1629,12 @@ class TestModelEviction:
         model_config = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1586,7 +1696,12 @@ class TestWarmup:
         model_config = Model(language="ru", warmup=True)
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
@@ -1641,7 +1756,12 @@ class TestWarmup:
         process_model = Model(language="ru")
         locale_ru = Locale(
             voices={
-                "silero-v5_5_ru-aidar": VoiceConfig(speaker="aidar", model="v5_5_ru", gender="male")
+                "silero-v5_5_ru-aidar": VoiceConfig(
+                    voice_name="silero-v5_5_ru-aidar",
+                    speaker="aidar",
+                    model="v5_5_ru",
+                    gender="male",
+                )
             }
         )
         config_model = TTSConfigModel(
