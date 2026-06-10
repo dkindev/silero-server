@@ -95,12 +95,10 @@ def _run_tts_sync(
         # If it's a GPU, we force the computation thread to synchronize
         # so that the tensor is guaranteed to be formed before exiting the method.
         device_type = audio.device.type
-
-        if device_type in ("cuda", "xpu"):
-            if device_type == "cuda":
-                torch.cuda.synchronize(device=audio.device)
-            elif device_type == "xpu":
-                torch.xpu.synchronize(device=audio.device)
+        if device_type == "cuda":
+            torch.cuda.synchronize(device=audio.device)
+        elif device_type == "xpu":
+            torch.xpu.synchronize(device=audio.device)
 
         logger.debug(
             "TTS has been successfully inferenced on device '{device}'. Tensor shape: [{shape}]",
@@ -176,7 +174,6 @@ class SileroTTSEngine:
 
         voice_config = self._storage.get_voice_config(locale, voice)
         model_name = voice_config.model
-        model_info = self._storage.get_model_info(model_name)
 
         logger.info(
             "TTS processing. Text length: {text_length}. Locale: {locale}. Voice: {voice}. Input type: {input_type}. Model: {model_name}.",
@@ -200,10 +197,8 @@ class SileroTTSEngine:
                 # The model is not in the cache: check the limit and download the old one if necessary
                 self._evict_oldest_model()
 
-                # Load a new model
-                cached, _, _ = await self._load_model_async(model_name, model_info)
-                # _load_model_async will write it to self._cached_models itself,
-                # and it will automatically appear at the end as the most recent one.
+                # Load and warm up the model
+                cached = await self._warmup_model(model_name)
 
         text_preprocessor = self._text_preprocessor_factory(locale)
         if not text_preprocessor:
@@ -440,29 +435,33 @@ class SileroTTSEngine:
             logger.debug("Models to warm up: {count}.", count=len(to_warm))
 
             for name in to_warm:
-                try:
-                    model_info = self._storage.get_model_info(name)
-                    cached, example_text, speakers = await self._load_model_async(name, model_info)
+                await self._warmup_model(name)
 
-                    if speakers:
-                        speaker = next(iter(speakers))
-                        text = speakers[speaker]
-                    else:
-                        speaker = cached.model.speakers[0]
-                        text = example_text
+    async def _warmup_model(self, name: str) -> CachedModel:
+        model_info = self._storage.get_model_info(name)
+        cached, example_text, speakers = await self._load_model_async(name, model_info)
 
-                    logger.debug(
-                        "Model '{model}' is warming up. Speaker: '{speaker}' Text: '{text}'",
-                        model=name,
-                        speaker=speaker,
-                        text=text,
-                    )
+        if speakers:
+            speaker = next(iter(speakers))
+            text = speakers[speaker]
+        else:
+            speaker = cached.model.speakers[0]
+            text = example_text
 
-                    await asyncio.to_thread(_run_tts_sync, cached, text, speaker)
+        logger.debug(
+            "Model '{model}' is warming up. Speaker: '{speaker}' Text: '{text}'",
+            model=name,
+            speaker=speaker,
+            text=text,
+        )
 
-                    logger.debug("Model '{model}' has been warmed up.", model=name)
-                except Exception:
-                    logger.exception("Failed to warm up the model '{model}'.", model=name)
+        try:
+            await asyncio.to_thread(_run_tts_sync, cached, text, speaker)
+            logger.debug("Model '{model}' has been warmed up.", model=name)
+        except Exception:
+            logger.exception("Failed to warm up the model '{model}'.", model=name)
+
+        return cached
 
     def get_storage(self) -> SileroTTSConfigStorage:
         """Return the config storage."""
