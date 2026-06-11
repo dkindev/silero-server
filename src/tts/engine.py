@@ -309,6 +309,17 @@ class SileroTTSEngine:
         audio_chunks = await asyncio.gather(*tasks)
         wav_bytes = await asyncio.to_thread(_chunks_to_wav_bytes, audio_chunks, cached.sample_rate)
 
+        wav_bytes.seek(0, 2)
+        buffer_size = wav_bytes.tell()
+        wav_bytes.seek(0)
+
+        logger.info(
+            "TTS processed. Buffer size: {buffer_size}. Model: {model_name}. Sample rate: {sample_rate}",
+            buffer_size=f"{buffer_size / (1024 * 1024):.2f} MB",
+            model_name=model_name,
+            sample_rate=cached.sample_rate,
+        )
+
         return TTSResult(audio=wav_bytes, sample_rate=cached.sample_rate, model=model_name)
 
     async def shutdown(self):
