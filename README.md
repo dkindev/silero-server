@@ -232,36 +232,11 @@ pre-commit install
 
 This will run Ruff linting and formatting on staged files before each commit.
 
-## Project Structure
-
-```
-silero-server/
-├── src/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI application
-│   ├── config.py            # Settings and configuration
-│   └── routers/
-│       ├── __init__.py
-│       └── health.py        # Health check endpoint
-├── tests/
-│   ├── __init__.py
-│   └── test_health.py       # Health endpoint tests
-├── .github/
-│   └── workflows/
-│       └── ci.yml           # GitHub Actions CI/CD
-├── .pre-commit-config.yaml  # Pre-commit hooks configuration
-├── .env.example             # Environment variables template
-├── Dockerfile               # Production Docker image
-├── pyproject.toml           # Project configuration and dependencies
-├── README.md                # This file
-└── LICENSE                  # MIT License
-```
-
 ## CI/CD
 
 The project uses GitHub Actions for continuous integration. On every push:
 
-1. **Lint**: Ruff checks code quality across Python 3.10, 3.11, 3.12, and 3.13
+1. **Lint**: Ruff checks code quality across Python 3.11, 3.12, 3.13, and 3.14
 2. **Test**: pytest runs all tests across the same Python versions
 
 See `.github/workflows/ci.yml` for details.
