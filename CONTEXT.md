@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A simple, robust, and performant **Mary-TTS compatible REST API** that wraps the
+A simple, robust, and performant **Mary-TTS compatible HTTP API** that wraps the
 **Silero TTS** engine. Provides text-to-speech generation over HTTP with minimal
 latency and operational overhead.
 
