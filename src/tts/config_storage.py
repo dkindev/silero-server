@@ -67,6 +67,7 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
                 language=m["language"],
                 enabled=m.get("enabled", True),
                 warmup=m.get("warmup", False),
+                hash_prefix=m.get("hash_prefix") or None,
             )
             for name, m in data.get("models", {}).items()
         ]

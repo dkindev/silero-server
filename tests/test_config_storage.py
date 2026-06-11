@@ -601,6 +601,87 @@ locales:
         assert models["v5_5_ru"].warmup is False
 
 
+class TestYamlHashPrefixField:
+    """Tests for parsing hash_prefix field from YAML config."""
+
+    def test_yaml_hash_prefix_sets_hash_prefix_on_model(self, tmp_path):
+        """YAML with hash_prefix should set hash_prefix on Model."""
+        from src.tts.config_storage import SileroTTSYamlConfigStorage
+
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+    hash_prefix: "a1b2c3d4"
+locales:
+  ru_RU:
+    voices:
+      silero-v5_5_ru-aidar:
+        speaker: aidar
+        model: v5_5_ru
+        gender: male
+"""
+        )
+
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        models = storage.get_models()
+
+        assert models["v5_5_ru"].hash_prefix == "a1b2c3d4"
+
+    def test_yaml_without_hash_prefix_defaults_to_none(self, tmp_path):
+        """YAML without hash_prefix should default to None."""
+        from src.tts.config_storage import SileroTTSYamlConfigStorage
+
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+locales:
+  ru_RU:
+    voices:
+      silero-v5_5_ru-aidar:
+        speaker: aidar
+        model: v5_5_ru
+        gender: male
+"""
+        )
+
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        models = storage.get_models()
+
+        assert models["v5_5_ru"].hash_prefix is None
+
+    def test_yaml_empty_hash_prefix_defaults_to_none(self, tmp_path):
+        """YAML with empty hash_prefix should default to None."""
+        from src.tts.config_storage import SileroTTSYamlConfigStorage
+
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+    hash_prefix: ""
+locales:
+  ru_RU:
+    voices:
+      silero-v5_5_ru-aidar:
+        speaker: aidar
+        model: v5_5_ru
+        gender: male
+"""
+        )
+
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        models = storage.get_models()
+
+        assert models["v5_5_ru"].hash_prefix is None
+
+
 class TestDisabledModel:
     """Tests for model disabling via enabled=False on Model."""
 

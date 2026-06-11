@@ -367,7 +367,7 @@ class SileroTTSEngine:
             logger.debug("Model '{model}' was removed from cache.", model=model_name)
 
     def _resolve_model(
-        self, language: str, model_name: str
+        self, language: str, model_name: str, hash_prefix: str | None = None
     ) -> tuple[str, list[int], str, dict[str, str]]:
         """Return the local path, sample rates, example text and speaker examples.
 
@@ -418,7 +418,7 @@ class SileroTTSEngine:
         )
 
         try:
-            torch.hub.download_url_to_file(package_url, model_path)
+            torch.hub.download_url_to_file(package_url, model_path, hash_prefix=hash_prefix)
         except Exception as e:
             if os.path.isfile(model_path):
                 os.remove(model_path)
@@ -444,7 +444,7 @@ class SileroTTSEngine:
         # Move blocking disk reading and heavy PyTorch initialization to a separate thread
         def _sync_load():
             local_path, sample_rates, example_text, speakers = self._resolve_model(
-                language, model_name
+                language, model_name, hash_prefix=model_info.hash_prefix
             )
             try:
                 logger.debug(

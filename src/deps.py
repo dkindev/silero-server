@@ -39,7 +39,7 @@ def add_engine(state: State):
         max_chunk_chars=settings.TTS_MAX_CHUNK_CHARS,
         models_dir=settings.TTS_MODELS_DIR,
         models_yml_url=settings.TTS_MODELS_YML_URL,
-        models_yml_hash=settings.TTS_MODELS_YML_HASH or None,
+        models_yml_hash=settings.TTS_MODELS_YML_HASH,
     )
     storage = SileroTTSYamlConfigStorage(settings.TTS_CONFIG_PATH)
     state.engine = SileroTTSEngine(

@@ -23,6 +23,16 @@ class TestModel:
         model = Model(name="test_model", language="en", warmup=True)
         assert model.warmup is True
 
+    def test_model_hash_prefix_defaults_to_none(self):
+        """Model.hash_prefix defaults to None."""
+        model = Model(name="test_model", language="en")
+        assert model.hash_prefix is None
+
+    def test_model_hash_prefix_can_be_set(self):
+        """Model(name, language, hash_prefix=...) stores the value."""
+        model = Model(name="test_model", language="en", hash_prefix="a1b2c3")
+        assert model.hash_prefix == "a1b2c3"
+
     def test_model_is_frozen(self):
         """Model dataclass is immutable (frozen)."""
         model = Model(name="test_model", language="en")

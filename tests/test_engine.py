@@ -1462,6 +1462,66 @@ class TestProcessValidation:
         assert "ru" in str(exc_info.value)
 
     @pytest.mark.asyncio
+    async def test_process_forwards_hash_prefix_to_download(self, tmp_path, monkeypatch):
+        """process() should forward hash_prefix from Model to torch.hub.download_url_to_file."""
+        from src.tts.engine import SileroTTSEngine
+        from src.tts.exceptions import TTSEngineError
+
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "models.yml").write_bytes(
+            b"tts_models:\n  ru:\n    v5_5_ru:\n      latest:\n        package: 'http://x'\n        sample_rate: [48000]\n"
+        )
+        ru_dir = models_dir / "ru"
+        ru_dir.mkdir()
+        # No .pt file — will trigger download
+
+        captured_kw = {}
+
+        def mock_download(url, path, *a, **kw):
+            captured_kw.update(kw)
+            raise RuntimeError("Connection reset")
+
+        monkeypatch.setattr(torch.hub, "download_url_to_file", mock_download)
+
+        yml_hash = _hash_models_yml(os.path.join(str(models_dir), "models.yml"))
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            max_chunk_chars=48000,
+            models_dir=str(models_dir),
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
+        )
+        model_config = Model(name="v5_5_ru", language="ru", hash_prefix="a1b2c3d4")
+        locale_ru = Locale(name="ru_RU")
+        voice_ru = VoiceConfig(
+            voice_name="silero-v5_5_ru-aidar",
+            speaker="aidar",
+            model="v5_5_ru",
+            gender="male",
+            locale="ru_RU",
+        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
+
+        storage = SileroTTSYamlConfigStorage(config_model)
+        engine = SileroTTSEngine(
+            config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
+        )
+
+        with pytest.raises(TTSEngineError):
+            await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+
+        assert captured_kw.get("hash_prefix") == "a1b2c3d4"
+
+    @pytest.mark.asyncio
     async def test_process_raises_on_model_download_failure_when_missing_file(
         self, tmp_path, monkeypatch
     ):

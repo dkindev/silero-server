@@ -27,6 +27,7 @@ models:
   v5_5_ru:
     language: ru
     warmup: true
+    hash_prefix: a1b2c3d4
   v3_en:
     language: en
     enabled: false
@@ -38,6 +39,7 @@ Each model entry has these fields:
 - **`language`** — Internal Silero language identifier (`ru`, `en`, `de`, etc.). Used to resolve and download the correct `.pt` model from the Silero model registry. This is **not** the Mary-TTS locale (e.g. `ru_RU`); locale-to-model mapping is handled separately under the `locales:` section of the config.
 - **`enabled`** — `true` (default) to make the model active; `false` to disable it and exclude its voices from the API.
 - **`warmup`** — `true` to preload the model at startup; `false` (default) to lazy-load on first use.
+- **`hash_prefix`** — Optional SHA-256 hash prefix for download integrity verification. When set, the downloaded model file must match this prefix; omitted or empty skips verification.
 
 ### Locale
 
