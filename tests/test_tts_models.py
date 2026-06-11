@@ -3,8 +3,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from src.tts.exceptions import TTSEngineError
-from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
-from src.tts.result import TTSResult
+from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, TTSResult, VoiceConfig
 
 
 class TestModel:
@@ -180,9 +179,3 @@ class TestTTSResult:
         assert result.audio == audio
         assert result.sample_rate == 48000
         assert result.model == "v3_en"
-
-    def test_tts_result_is_mutable(self):
-        """TTSResult dataclass is mutable (not frozen)."""
-        result = TTSResult(audio=b"test", sample_rate=24000, model="v3_en")
-        result.sample_rate = 48000
-        assert result.sample_rate == 48000

@@ -1,3 +1,4 @@
+import io
 from dataclasses import dataclass
 
 
@@ -40,3 +41,10 @@ class TTSConfig:
     models_dir: str
     models_yml_url: str
     models_yml_hash: str | None
+
+
+@dataclass(frozen=True)
+class TTSResult:
+    audio: io.BytesIO
+    sample_rate: int
+    model: str

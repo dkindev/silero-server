@@ -299,7 +299,7 @@ class TestProcessEndpoint:
     def test_process_returns_wav(self):
         """GET /process should return WAV audio."""
         from src.deps import get_engine_from_request
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
@@ -330,7 +330,7 @@ class TestProcessEndpoint:
     def test_process_returns_content_disposition_inline(self):
         """GET /process should return Content-Disposition: inline."""
         from src.deps import get_engine_from_request
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
@@ -524,7 +524,7 @@ class TestProcessPostEndpoint:
     def test_post_process_returns_wav(self):
         """POST /process should return WAV audio."""
         from src.deps import get_engine_from_request
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")
@@ -562,7 +562,7 @@ class TestProcessPostEndpoint:
     def test_post_process_returns_audio_wav_content_type(self):
         """POST /process should return audio/wav content type."""
         from src.deps import get_engine_from_request
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         mock_audio = io.BytesIO(b"RIFF" + b"\x00" * 1000)
         mock_result = TTSResult(audio=mock_audio, sample_rate=48000, model="v5_5_ru")

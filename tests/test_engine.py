@@ -429,7 +429,7 @@ class TestProcessValidation:
     async def test_process_successful_synthesis_returns_tts_result(self, tmp_path):
         """process() with valid params should return TTSResult with audio bytes."""
         from src.tts.engine import SileroTTSEngine
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
@@ -548,7 +548,7 @@ class TestProcessValidation:
     async def test_process_converts_tensor_to_wav_bytes(self, tmp_path):
         """process() should convert tensor output from apply_tts to valid WAV bytes."""
         from src.tts.engine import SileroTTSEngine
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
@@ -1164,7 +1164,7 @@ class TestProcessValidation:
     async def test_process_cuda_unavailable_falls_back_to_cpu(self, tmp_path):
         """Should fall back to CPU when CUDA is requested but unavailable."""
         from src.tts.engine import SileroTTSEngine
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
@@ -1234,7 +1234,7 @@ class TestProcessValidation:
     async def test_process_xpu_unavailable_falls_back_to_cpu(self, tmp_path):
         """Should fall back to CPU when XPU is requested but unavailable."""
         from src.tts.engine import SileroTTSEngine
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
@@ -1524,7 +1524,7 @@ class TestProcessValidation:
     async def test_process_resolves_model_from_disk_without_provider(self, tmp_path):
         """process() should resolve model from local files without a provider."""
         from src.tts.engine import SileroTTSEngine
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
@@ -1597,7 +1597,7 @@ class TestCachedModel:
     async def test_engine_uses_cached_model_for_processing(self, tmp_path):
         """process() should succeed with standard mocking."""
         from src.tts.engine import SileroTTSEngine
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
@@ -1831,7 +1831,7 @@ class TestWarmup:
     async def test_warmup_does_not_raise_and_process_succeeds(self, tmp_path):
         """warmup() should not raise and subsequent process() should succeed."""
         from src.tts.engine import SileroTTSEngine
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
@@ -1890,7 +1890,7 @@ class TestWarmup:
     async def test_warmup_unknown_model_failure_does_not_block_process(self, tmp_path):
         """warmup() should silently swallow failure for an unknown model name."""
         from src.tts.engine import SileroTTSEngine
-        from src.tts.result import TTSResult
+        from src.tts.models import TTSResult
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
         yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))

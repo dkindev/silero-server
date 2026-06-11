@@ -17,9 +17,8 @@ from scipy.io import wavfile
 
 from src.tts.config_storage import SileroTTSConfigStorage
 from src.tts.exceptions import TTSEngineError
-from src.tts.models import Model, TTSConfig
+from src.tts.models import Model, TTSConfig, TTSResult
 from src.tts.preprocessing import TextPreprocessor
-from src.tts.result import TTSResult
 
 
 @dataclass
