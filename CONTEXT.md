@@ -34,6 +34,7 @@ models:
 
 Each model entry has these fields:
 
+- **`name`** — The YAML config key for the model entry (e.g. `v5_5_ru`, `v3_en`).
 - **`language`** — Internal Silero language identifier (`ru`, `en`, `de`, etc.). Used to resolve and download the correct `.pt` model from the Silero model registry. This is **not** the Mary-TTS locale (e.g. `ru_RU`); locale-to-model mapping is handled separately under the `locales:` section of the config.
 - **`enabled`** — `true` (default) to make the model active; `false` to disable it and exclude its voices from the API.
 - **`warmup`** — `true` to preload the model at startup; `false` (default) to lazy-load on first use.
@@ -45,10 +46,8 @@ Locales are defined in the YAML config file at `TTS_CONFIG_PATH` (default `siler
 ```yaml
 locales:
   ru_RU:
-    voices:
       ...
   en_US:
-    voices:
       ...
 ```
 
@@ -56,9 +55,9 @@ Each locale key follows **Mary-TTS locale format** — `{language}_{COUNTRY}` (e
 
 Each locale entry has one field:
 
-- **`voices`** — Mapping of voice names to voice configurations. Voice-level fields (`voice_name`, `speaker`, `model`, `gender`) are documented in the [Voice](#-voice) concept.
+- **`name`** — The locale key string (e.g. `ru_RU`).
 
-Locales whose voices all reference disabled models are excluded from the supported set.
+A locale is included in the supported set only when at least one of its voices references an enabled model (see Voice availability rule). Locales with no voices, or whose voices all reference disabled or undefined models, are excluded.
 
 ### Voice
 
@@ -82,21 +81,22 @@ locales:
         gender: male
 ```
 
-Voice names are presented in free format — no naming convention is enforced.
+A voice is included in the supported set only when its referenced model is enabled and the locale survives filtering (has at least one voice on an enabled model). Voices whose model is disabled, or whose locale has no remaining enabled voices, are excluded.
 
 Each voice entry has these fields:
 
-- **`voice_name`** — The key of the voice entry in the config (e.g. `silero-v5_5_ru-aidar`). Free format; choose a name that is meaningful for your application. Used in Mary-TTS voice identifiers returned by the API.
+- **`voice_name`** — The key of the voice entry in the config (e.g. `silero-v5_5_ru-aidar`). Free format; choose a name that is meaningful for your application.
 - **`speaker`** — Silero's native speaker identifier (e.g. `aidar`, `en_0`). Must match a speaker known to the model. Optional in YAML — if missing or empty, defaults to the `voice_name` value.
 - **`model`** — The model name to use for this voice. References a `model` key defined in the `models:` section.
-- **`gender`** — Speaker gender label (`male`, `female`, etc.). Used in Mary-TTS formatted output.
+- **`gender`** — Speaker gender label (`male`, `female`, etc.).
+- **`locale`** — The locale this voice belongs to (e.g. `ru_RU`). Injected from the parent YAML key during config loading; not specified in the YAML entry itself.
 
 ### SileroTTSEngine
 
 Low-level TTS engine wrapping Silero.
 
 **Methods:**
-- `get_storage()` → `SileroTTSConfigStorage` — returns the config storage; clients use it for locale/voice queries (`has_locale`, `has_voice`, `get_locales`, `get_voices` → `dict[str, list[VoiceConfig]]`)
+- `get_storage()` → `SileroTTSConfigStorage` — returns the config storage; clients use it for locale/voice queries (`has_locale`, `has_voice`, `get_locales` → `list[Locale]`, `get_voices` → `list[VoiceConfig]`)
 - `get_input_types()` → `tuple[str, ...]` — returns supported input types (`"TEXT"`, `"SSML"`)
 - `process(text, locale, voice, input_type)` → `TTSResult` — returns synthesized audio as `TTSResult(audio=io.BytesIO, sample_rate=int, model=str)`
 - `warmup()` — async. Preloads models with `warmup: true` from config up to `max_models` capacity. Runs a dummy synthesis pass per model to warm GPU caches. Silently swallows per-model failures. No-op if cache is already populated.
@@ -150,11 +150,11 @@ Validation happens at two levels:
 
 ### `/locales` Endpoint
 
-Returns available locales from `SileroTTSConfigStorage.get_locales()` (accessed via `engine.get_storage()`) as plain text, one per line.
+Returns available locales from `SileroTTSConfigStorage.get_locales() -> list[Locale]` (accessed via `engine.get_storage()`) as plain text, one locale `name` per line.
 
 ### `/voices` Endpoint
 
-Returns available voices from `SileroTTSConfigStorage.get_voices()` (accessed via `engine.get_storage()`) as plain text, one per line.
+Returns available voices from `SileroTTSConfigStorage.get_voices() -> list[VoiceConfig]` (accessed via `engine.get_storage()`) as plain text, one per line.
 
 Each line is formatted in Mary-TTS voice format: `{voice_name} {locale} {gender}`.
 

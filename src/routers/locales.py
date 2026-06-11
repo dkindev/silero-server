@@ -10,4 +10,4 @@ router = APIRouter(tags=["locales"])
 async def get_locales(engine: EngineDep) -> str:
     """Return supported locales, one per line."""
     locales = engine.get_storage().get_locales()
-    return "\n".join(locales)
+    return "\n".join(locale.name for locale in locales)

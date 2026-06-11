@@ -89,9 +89,13 @@ class TestLocalesEndpoint:
     def test_locales_returns_200(self):
         """GET /locales should return 200 status code."""
         from src.deps import get_engine_from_request
+        from src.tts.models import Locale
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.get_locales.return_value = ("ru_RU", "en_US")
+        mock_engine.get_storage.return_value.get_locales.return_value = [
+            Locale(name="ru_RU"),
+            Locale(name="en_US"),
+        ]
 
         app = FastAPI()
 
@@ -112,9 +116,13 @@ class TestLocalesEndpoint:
     def test_locales_returns_plain_text(self):
         """GET /locales should return text/plain content type."""
         from src.deps import get_engine_from_request
+        from src.tts.models import Locale
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.get_locales.return_value = ("ru_RU", "en_US")
+        mock_engine.get_storage.return_value.get_locales.return_value = [
+            Locale(name="ru_RU"),
+            Locale(name="en_US"),
+        ]
 
         app = FastAPI()
 
@@ -135,9 +143,14 @@ class TestLocalesEndpoint:
     def test_locales_returns_one_per_line(self):
         """GET /locales should return one locale per line."""
         from src.deps import get_engine_from_request
+        from src.tts.models import Locale
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.get_locales.return_value = ("ru_RU", "de_DE", "en_US")
+        mock_engine.get_storage.return_value.get_locales.return_value = [
+            Locale(name="ru_RU"),
+            Locale(name="de_DE"),
+            Locale(name="en_US"),
+        ]
 
         app = FastAPI()
 
@@ -165,22 +178,22 @@ class TestVoicesEndpoint:
         from src.tts.models import VoiceConfig
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.get_voices.return_value = {
-            "ru_RU": [
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
-                    speaker="aidar",
-                    model="v5_5_ru",
-                    gender="male",
-                ),
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-baya",
-                    speaker="baya",
-                    model="v5_5_ru",
-                    gender="female",
-                ),
-            ],
-        }
+        mock_engine.get_storage.return_value.get_voices.return_value = [
+            VoiceConfig(
+                voice_name="silero-v5_5_ru-aidar",
+                speaker="aidar",
+                model="v5_5_ru",
+                gender="male",
+                locale="ru_RU",
+            ),
+            VoiceConfig(
+                voice_name="silero-v5_5_ru-baya",
+                speaker="baya",
+                model="v5_5_ru",
+                gender="female",
+                locale="ru_RU",
+            ),
+        ]
 
         app = FastAPI()
 
@@ -204,16 +217,15 @@ class TestVoicesEndpoint:
         from src.tts.models import VoiceConfig
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.get_voices.return_value = {
-            "ru_RU": [
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
-                    speaker="aidar",
-                    model="v5_5_ru",
-                    gender="male",
-                ),
-            ],
-        }
+        mock_engine.get_storage.return_value.get_voices.return_value = [
+            VoiceConfig(
+                voice_name="silero-v5_5_ru-aidar",
+                speaker="aidar",
+                model="v5_5_ru",
+                gender="male",
+                locale="ru_RU",
+            ),
+        ]
 
         app = FastAPI()
 
@@ -237,27 +249,29 @@ class TestVoicesEndpoint:
         from src.tts.models import VoiceConfig
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.get_voices.return_value = {
-            "ru_RU": [
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
-                    speaker="aidar",
-                    model="v5_5_ru",
-                    gender="male",
-                ),
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-baya",
-                    speaker="baya",
-                    model="v5_5_ru",
-                    gender="female",
-                ),
-            ],
-            "en_US": [
-                VoiceConfig(
-                    voice_name="silero-v3_en-en_0", speaker="en_0", model="v3_en", gender="male"
-                ),
-            ],
-        }
+        mock_engine.get_storage.return_value.get_voices.return_value = [
+            VoiceConfig(
+                voice_name="silero-v5_5_ru-aidar",
+                speaker="aidar",
+                model="v5_5_ru",
+                gender="male",
+                locale="ru_RU",
+            ),
+            VoiceConfig(
+                voice_name="silero-v5_5_ru-baya",
+                speaker="baya",
+                model="v5_5_ru",
+                gender="female",
+                locale="ru_RU",
+            ),
+            VoiceConfig(
+                voice_name="silero-v3_en-en_0",
+                speaker="en_0",
+                model="v3_en",
+                gender="male",
+                locale="en_US",
+            ),
+        ]
 
         app = FastAPI()
 

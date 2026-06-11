@@ -14,17 +14,19 @@ class VoiceConfig:
     speaker: str
     model: str
     gender: str
+    locale: str
 
 
 @dataclass(frozen=True)
 class Locale:
-    voices: dict[str, VoiceConfig]
+    name: str
 
 
 @dataclass(frozen=True)
 class TTSConfigModel:
     models: dict[str, Model]
-    locales: dict[str, Locale]
+    locales: list[Locale]
+    voices: list[VoiceConfig]
 
 
 @dataclass(frozen=True)

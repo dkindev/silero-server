@@ -10,7 +10,6 @@ router = APIRouter(tags=["voices"])
 async def get_voices(engine: EngineDep) -> str:
     """Return available voices in Mary-TTS format, one per line."""
     lines: list[str] = []
-    for locale, voice_list in engine.get_storage().get_voices().items():
-        for vc in voice_list:
-            lines.append(f"{vc.voice_name} {locale} {vc.gender}")
+    for vc in engine.get_storage().get_voices():
+        lines.append(f"{vc.voice_name} {vc.locale} {vc.gender}")
     return "\n".join(lines)
