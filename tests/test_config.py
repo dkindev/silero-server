@@ -94,6 +94,13 @@ def test_invalid_sample_rate_fails():
         Settings.model_validate({"TTS_SAMPLE_RATE": 44100})
 
 
+def test_sample_rate_from_string():
+    """Test that TTS_SAMPLE_RATE from env var (string) is coerced to int."""
+    settings = Settings.model_validate({"TTS_SAMPLE_RATE": "48000"})
+    assert settings.TTS_SAMPLE_RATE == 48000
+    assert isinstance(settings.TTS_SAMPLE_RATE, int)
+
+
 def test_valid_sample_rates():
     """Test that all valid TTS_SAMPLE_RATE values are accepted."""
     for rate in [8000, 16000, 22050, 24000, 48000]:

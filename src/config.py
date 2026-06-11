@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     TTS_SAMPLE_RATE: Literal[8000, 16000, 22050, 24000, 48000] = 48000
     """Audio sample rate in Hz for TTS output."""
 
+    @field_validator("TTS_SAMPLE_RATE", mode="before")
+    @classmethod
+    def coerce_sample_rate(cls, v: object) -> object:
+        if isinstance(v, str):
+            return int(v)
+        return v
+
     TTS_MAX_TEXT_LENGTH: int = Field(1000, ge=1, le=10000)
     """Maximum length of text input for TTS synthesis."""
 
