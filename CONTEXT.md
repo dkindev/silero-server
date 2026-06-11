@@ -230,8 +230,7 @@ All errors return JSON `{"detail": "..."}`. HTTP status codes:
 
 ### Docker Strategy
 
-- **Default image**: CPU-only, `python:3.14-slim`.
-- **CUDA image**: `Dockerfile.cuda` variant.
+- **Default image**: CPU-only, `python:3.14-slim-bookworm`.
 
 ## Key Conventions
 

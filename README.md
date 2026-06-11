@@ -51,6 +51,8 @@ A simple, robust, and performant Mary-TTS compatible REST API that wraps the Sil
    docker run -p 8000:8000 silero-server:latest
    ```
 
+   > **Note:** This image runs on CPU only. CUDA/GPU support is not yet containerized.
+
 ## API Endpoints
 
 ### Health Check
