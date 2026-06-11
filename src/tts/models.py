@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Model:
+    name: str
     language: str
     enabled: bool = True
     warmup: bool = False
@@ -24,7 +25,7 @@ class Locale:
 
 @dataclass(frozen=True)
 class TTSConfigModel:
-    models: dict[str, Model]
+    models: list[Model]
     locales: list[Locale]
     voices: list[VoiceConfig]
 

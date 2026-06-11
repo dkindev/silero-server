@@ -11,7 +11,7 @@ class TestSileroTTSYamlConfigStorageInit:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={"v5_5_ru": Model(language="ru")},
+            models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
                 VoiceConfig(
@@ -38,7 +38,7 @@ class TestHasVoice:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={"v5_5_ru": Model(language="ru")},
+            models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
                 VoiceConfig(
@@ -59,7 +59,7 @@ class TestHasVoice:
         """has_voice should return False if the locale doesn't exist."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
-        config_model = TTSConfigModel(models={}, locales=[], voices=[])
+        config_model = TTSConfigModel(models=[], locales=[], voices=[])
         storage = SileroTTSYamlConfigStorage(config_model)
 
         assert storage.has_voice("ru_RU", "silero-v5_5_ru-aidar") is False
@@ -69,7 +69,7 @@ class TestHasVoice:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={"v5_5_ru": Model(language="ru")},
+            models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[],
         )
@@ -85,7 +85,7 @@ class TestGetLocales:
         """get_locales should return a list of Locale objects."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
-        config_model = TTSConfigModel(models={}, locales=[], voices=[])
+        config_model = TTSConfigModel(models=[], locales=[], voices=[])
         storage = SileroTTSYamlConfigStorage(config_model)
 
         result = storage.get_locales()
@@ -96,7 +96,7 @@ class TestGetLocales:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={"v5_5_ru": Model(language="ru")},
+            models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU"), Locale(name="de_DE")],
             voices=[
                 VoiceConfig(
@@ -123,7 +123,7 @@ class TestGetVoices:
         """get_voices should return a list of VoiceConfig objects."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
-        config_model = TTSConfigModel(models={}, locales=[], voices=[])
+        config_model = TTSConfigModel(models=[], locales=[], voices=[])
         storage = SileroTTSYamlConfigStorage(config_model)
 
         result = storage.get_voices()
@@ -134,7 +134,7 @@ class TestGetVoices:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={"v5_5_ru": Model(language="ru")},
+            models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
                 VoiceConfig(
@@ -159,7 +159,7 @@ class TestGetVoices:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={"v5_5_ru": Model(language="ru")},
+            models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
                 VoiceConfig(
@@ -190,7 +190,7 @@ class TestGetVoices:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={"v5_5_ru": Model(language="ru"), "v3_en": Model(language="en")},
+            models=[Model(name="v5_5_ru", language="ru"), Model(name="v3_en", language="en")],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
                 VoiceConfig(
@@ -223,7 +223,7 @@ class TestGetVoiceConfig:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={"v5_5_ru": Model(language="ru")},
+            models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
                 VoiceConfig(
@@ -354,7 +354,7 @@ class TestEmptyConfig:
         """Should handle empty config with no locales or models."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
-        config_model = TTSConfigModel(models={}, locales=[], voices=[])
+        config_model = TTSConfigModel(models=[], locales=[], voices=[])
         storage = SileroTTSYamlConfigStorage(config_model)
 
         assert storage.get_locales() == []
@@ -504,7 +504,7 @@ class TestGetModelInfo:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={"v5_5_ru": Model(language="ru")},
+            models=[Model(name="v5_5_ru", language="ru")],
             locales=[],
             voices=[],
         )
@@ -520,10 +520,10 @@ class TestGetModels:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={
-                "v5_5_ru": Model(language="ru", warmup=True),
-                "v3_en": Model(language="en"),
-            },
+            models=[
+                Model(name="v5_5_ru", language="ru", warmup=True),
+                Model(name="v3_en", language="en"),
+            ],
             locales=[Locale(name="ru_RU")],
             voices=[
                 VoiceConfig(
@@ -609,10 +609,10 @@ class TestDisabledModel:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={
-                "v5_5_ru": Model(language="ru", enabled=False),
-                "v3_en": Model(language="en", enabled=True),
-            },
+            models=[
+                Model(name="v5_5_ru", language="ru", enabled=False),
+                Model(name="v3_en", language="en", enabled=True),
+            ],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
                 VoiceConfig(
@@ -644,10 +644,10 @@ class TestDisabledModel:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={
-                "v5_5_ru": Model(language="ru", enabled=False),
-                "v3_en": Model(language="en", enabled=True),
-            },
+            models=[
+                Model(name="v5_5_ru", language="ru", enabled=False),
+                Model(name="v3_en", language="en", enabled=True),
+            ],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
                 VoiceConfig(
@@ -678,10 +678,10 @@ class TestDisabledModel:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={
-                "v5_5_ru": Model(language="ru", enabled=False),
-                "v3_en": Model(language="en", enabled=True),
-            },
+            models=[
+                Model(name="v5_5_ru", language="ru", enabled=False),
+                Model(name="v3_en", language="en", enabled=True),
+            ],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
                 VoiceConfig(
@@ -711,10 +711,10 @@ class TestDisabledModel:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={
-                "v5_5_ru": Model(language="ru", enabled=False),
-                "v3_en": Model(language="en", enabled=True),
-            },
+            models=[
+                Model(name="v5_5_ru", language="ru", enabled=False),
+                Model(name="v3_en", language="en", enabled=True),
+            ],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
                 VoiceConfig(
@@ -744,9 +744,9 @@ class TestDisabledModel:
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
-            models={
-                "v5_5_ru": Model(language="ru", enabled=False),
-            },
+            models=[
+                Model(name="v5_5_ru", language="ru", enabled=False),
+            ],
             locales=[],
             voices=[],
         )

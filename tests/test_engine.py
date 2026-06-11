@@ -353,7 +353,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -362,9 +362,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
 
@@ -413,7 +411,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=models_dir,
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -422,9 +420,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         audio_tensor = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
@@ -471,7 +467,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=models_dir,
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -480,9 +476,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         calls = []
@@ -531,7 +525,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=models_dir,
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -540,9 +534,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         calls = []
@@ -590,7 +582,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -599,9 +591,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         calls = []
@@ -649,7 +639,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -658,9 +648,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         calls = []
@@ -709,7 +697,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=models_dir,
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -718,9 +706,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         calls = []
@@ -768,7 +754,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -777,9 +763,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         calls = []
@@ -827,7 +811,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -836,9 +820,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         calls = []
@@ -886,7 +868,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -895,9 +877,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
@@ -951,7 +931,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -960,9 +940,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
@@ -1002,7 +980,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1011,9 +989,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         class FakeModule:
             @staticmethod
@@ -1070,7 +1046,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1079,9 +1055,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         class FakeModule:
             @staticmethod
@@ -1145,7 +1119,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=str(models_dir),
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1154,9 +1128,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         storage = SileroTTSYamlConfigStorage(config_model)
         engine = SileroTTSEngine(
@@ -1196,7 +1168,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=str(models_dir),
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1205,9 +1177,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         storage = SileroTTSYamlConfigStorage(config_model)
         engine = SileroTTSEngine(
@@ -1252,7 +1222,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=str(models_dir),
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1261,9 +1231,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         storage = SileroTTSYamlConfigStorage(config_model)
         engine = SileroTTSEngine(
@@ -1311,7 +1279,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=str(models_dir),
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1320,9 +1288,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         storage = SileroTTSYamlConfigStorage(config_model)
         engine = SileroTTSEngine(
@@ -1354,7 +1320,7 @@ class TestProcessValidation:
             max_chunk_chars=48000,
             models_dir=models_dir,
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1363,9 +1329,7 @@ class TestProcessValidation:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
@@ -1425,7 +1389,7 @@ class TestCachedModel:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1434,9 +1398,7 @@ class TestCachedModel:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
@@ -1508,8 +1470,8 @@ class TestModelEviction:
             models_dir=str(models_dir),
         )
 
-        model_en = Model(language="en")
-        model_ru = Model(language="ru")
+        model_en = Model(name="v3_en", language="en")
+        model_ru = Model(name="v5_5_ru", language="ru")
         locale_en = Locale(name="en_US")
         locale_ru = Locale(name="ru_RU")
         voice_en = VoiceConfig(
@@ -1527,7 +1489,7 @@ class TestModelEviction:
             locale="ru_RU",
         )
         config_model = TTSConfigModel(
-            models={"v3_en": model_en, "v5_5_ru": model_ru},
+            models=[model_en, model_ru],
             locales=[locale_en, locale_ru],
             voices=[voice_en, voice_ru],
         )
@@ -1588,7 +1550,7 @@ class TestModelEviction:
             max_chunk_chars=48000,
             models_dir=models_dir,
         )
-        model_config = Model(language="ru")
+        model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1597,9 +1559,7 @@ class TestModelEviction:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
@@ -1653,7 +1613,7 @@ class TestWarmup:
             max_chunk_chars=48000,
             models_dir=".models/silero",
         )
-        model_config = Model(language="ru", warmup=True)
+        model_config = Model(name="v5_5_ru", language="ru", warmup=True)
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1662,9 +1622,7 @@ class TestWarmup:
             gender="male",
             locale="ru_RU",
         )
-        config_model = TTSConfigModel(
-            models={"v5_5_ru": model_config}, locales=[locale_ru], voices=[voice_ru]
-        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
 
         mock_audio = torch.zeros(1, 48000)
         mock_model = unittest.mock.MagicMock()
@@ -1710,8 +1668,8 @@ class TestWarmup:
             max_chunk_chars=48000,
             models_dir=tmp_path / "models",
         )
-        warmup_model = Model(language="ru", warmup=True)
-        process_model = Model(language="ru")
+        warmup_model = Model(name="v5_5_ru", language="ru", warmup=True)
+        process_model = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
             voice_name="silero-v5_5_ru-aidar",
@@ -1721,7 +1679,7 @@ class TestWarmup:
             locale="ru_RU",
         )
         config_model = TTSConfigModel(
-            models={"nonexistent_model": warmup_model, "v5_5_ru": process_model},
+            models=[warmup_model, process_model],
             locales=[locale_ru],
             voices=[voice_ru],
         )

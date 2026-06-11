@@ -8,24 +8,25 @@ from src.tts.result import TTSResult
 
 
 class TestModel:
-    def test_model_has_language_field(self):
-        """Model dataclass has language field."""
-        model = Model(language="en")
+    def test_model_has_name_and_language_fields(self):
+        """Model dataclass has name and language fields."""
+        model = Model(name="test_model", language="en")
+        assert model.name == "test_model"
         assert model.language == "en"
 
     def test_model_warmup_defaults_to_false(self):
         """Model.warmup defaults to False."""
-        model = Model(language="en")
+        model = Model(name="test_model", language="en")
         assert model.warmup is False
 
     def test_model_warmup_can_be_set_to_true(self):
         """Model(language, warmup=True) sets warmup to True."""
-        model = Model(language="en", warmup=True)
+        model = Model(name="test_model", language="en", warmup=True)
         assert model.warmup is True
 
     def test_model_is_frozen(self):
         """Model dataclass is immutable (frozen)."""
-        model = Model(language="en")
+        model = Model(name="test_model", language="en")
         with pytest.raises(FrozenInstanceError):
             model.language = "fr"
 
@@ -74,8 +75,8 @@ class TestLocale:
 
 class TestTTSConfigModel:
     def test_tts_config_model_has_models_locales_and_voices(self):
-        """TTSConfigModel dataclass has models dict, locales list, voices list."""
-        models = {"v3_en": Model(language="en")}
+        """TTSConfigModel dataclass has models list, locales list, voices list."""
+        models = [Model(name="v3_en", language="en")]
         locales = [Locale(name="en_US")]
         voices = [
             VoiceConfig(
@@ -93,9 +94,9 @@ class TestTTSConfigModel:
 
     def test_tts_config_model_is_frozen(self):
         """TTSConfigModel dataclass is immutable (frozen)."""
-        config = TTSConfigModel(models={}, locales=[], voices=[])
+        config = TTSConfigModel(models=[], locales=[], voices=[])
         with pytest.raises(FrozenInstanceError):
-            config.models = {}
+            config.models = []
 
 
 class TestTTSConfig:
