@@ -244,7 +244,3 @@ See `.github/workflows/ci.yml` for details.
 ## License
 
 MIT License - see LICENSE file for details.
-
-## Author
-
-Dmitry Kiselev
