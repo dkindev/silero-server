@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, Request
 from fastapi.datastructures import State
 
 from src.config import Settings, get_settings
@@ -20,7 +20,7 @@ def build_text_preprocessor(locale: str) -> TextPreprocessor:
     return builder() if builder is not None else TextPreprocessor()
 
 
-def add_engine(app: FastAPI):
+def add_engine(state: State):
     """Create and store a SileroTTSEngine on app.state."""
     settings = get_settings()
 
@@ -38,9 +38,11 @@ def add_engine(app: FastAPI):
         max_concurrent_per_model=settings.TTS_MAX_CONCURRENT_PER_MODEL,
         max_chunk_chars=settings.TTS_MAX_CHUNK_CHARS,
         models_dir=settings.TTS_MODELS_DIR,
+        models_yml_url=settings.TTS_MODELS_YML_URL,
+        models_yml_hash=settings.TTS_MODELS_YML_HASH or None,
     )
     storage = SileroTTSYamlConfigStorage(settings.TTS_CONFIG_PATH)
-    app.state.engine = SileroTTSEngine(
+    state.engine = SileroTTSEngine(
         config=config,
         storage=storage,
         text_preprocessor_factory=build_text_preprocessor,

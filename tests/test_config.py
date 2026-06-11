@@ -60,6 +60,8 @@ def test_settings_has_all_tts_fields():
     assert hasattr(settings, "TTS_MAX_MODELS")
     assert hasattr(settings, "TTS_MAX_CONCURRENT_PER_MODEL")
     assert hasattr(settings, "TTS_MODELS_DIR")
+    assert hasattr(settings, "TTS_MODELS_YML_URL")
+    assert hasattr(settings, "TTS_MODELS_YML_HASH")
 
 
 def test_settings_sample_rate_default():
@@ -204,6 +206,48 @@ def test_invalid_tts_env_type_fails():
     """Test that invalid TTS_ENV_TYPE value raises ValidationError."""
     with pytest.raises(ValidationError):
         Settings.model_validate({"TTS_ENV_TYPE": "staging"})
+
+
+def test_settings_models_yml_url_default():
+    """Test that TTS_MODELS_YML_URL defaults to the pinned Silero models URL."""
+    settings = Settings.model_validate({})
+    expected = "https://raw.githubusercontent.com/snakers4/silero-models/88959d6c73168cab4f1487f63754c7c7c96b78a8/models.yml"
+    assert settings.TTS_MODELS_YML_URL == expected
+
+
+def test_settings_models_yml_hash_default():
+    """Test that TTS_MODELS_YML_HASH defaults to the pinned hash."""
+    settings = Settings.model_validate({})
+    expected = "c981f239ed79b3924f952eb3a4dee3a03221d9867330c2b4054c767df77a86d8"
+    assert settings.TTS_MODELS_YML_HASH == expected
+
+
+def test_settings_models_yml_hash_invalid_fails():
+    """Test that non-SHA-256 TTS_MODELS_YML_HASH raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_MODELS_YML_HASH": "not-a-valid-hash"})
+
+
+def test_settings_models_yml_hash_too_short_fails():
+    """Test that too-short TTS_MODELS_YML_HASH raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate({"TTS_MODELS_YML_HASH": "abc123"})
+
+
+def test_settings_models_yml_hash_too_long_fails():
+    """Test that too-long TTS_MODELS_YML_HASH raises ValidationError."""
+    with pytest.raises(ValidationError):
+        Settings.model_validate(
+            {
+                "TTS_MODELS_YML_HASH": "c981f239ed79b3924f952eb3a4dee3a03221d9867330c2b4054c767df77a86d8ff"
+            }
+        )
+
+
+def test_settings_models_yml_hash_empty_accepted():
+    """Test that empty TTS_MODELS_YML_HASH is accepted (skip validation)."""
+    settings = Settings.model_validate({"TTS_MODELS_YML_HASH": ""})
+    assert settings.TTS_MODELS_YML_HASH == ""
 
 
 def test_get_settings_importable_from_config():

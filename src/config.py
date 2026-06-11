@@ -57,8 +57,28 @@ class Settings(BaseSettings):
     TTS_MODELS_DIR: str = ".models/silero"
     """Directory for downloaded Silero .pt model files."""
 
+    TTS_MODELS_YML_URL: str = "https://raw.githubusercontent.com/snakers4/silero-models/88959d6c73168cab4f1487f63754c7c7c96b78a8/models.yml"
+    """URL to the Silero models.yml registry file."""
+
+    TTS_MODELS_YML_HASH: str = "c981f239ed79b3924f952eb3a4dee3a03221d9867330c2b4054c767df77a86d8"
+    """SHA-256 hash of the models.yml file for integrity verification. Set empty to skip validation."""
+
     TTS_ENV_TYPE: Literal["development", "production"] = "development"
     """Application environment type. Controls error detail level and other environment-specific behavior."""
+
+    @field_validator("TTS_MODELS_YML_HASH")
+    @classmethod
+    def models_yml_hash_must_be_valid(cls, v: str) -> str:
+        if v and not v.strip():
+            return ""
+        if v:
+            import re
+
+            if not re.fullmatch(r"[a-f0-9]{64}", v.lower()):
+                raise ValueError(
+                    "TTS_MODELS_YML_HASH must be a 64-character hex string or empty to skip validation"
+                )
+        return v
 
     @field_validator("TTS_CONFIG_PATH")
     @classmethod

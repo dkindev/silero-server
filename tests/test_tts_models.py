@@ -109,8 +109,42 @@ class TestTTSConfig:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
+            models_yml_url="https://example.com/models.yml",
+            models_yml_hash=None,
         )
         assert config.max_models == 5
+
+    def test_tts_config_accepts_models_yml_url_and_hash(self):
+        """TTSConfig accepts models_yml_url and models_yml_hash."""
+        from src.config import Settings
+
+        settings = Settings.model_validate({})
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            max_chunk_chars=48000,
+            models_dir=".models/silero",
+            models_yml_url=settings.TTS_MODELS_YML_URL,
+            models_yml_hash=settings.TTS_MODELS_YML_HASH,
+        )
+        assert config.models_yml_url == settings.TTS_MODELS_YML_URL
+        assert config.models_yml_hash == settings.TTS_MODELS_YML_HASH
+
+    def test_tts_config_models_yml_hash_accepts_none(self):
+        """TTSConfig.models_yml_hash accepts None (skip validation)."""
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            max_chunk_chars=48000,
+            models_dir=".models/silero",
+            models_yml_url="https://example.com/models.yml",
+            models_yml_hash=None,
+        )
+        assert config.models_yml_hash is None
 
     def test_tts_config_is_frozen(self):
         """TTSConfig dataclass is immutable (frozen)."""
@@ -121,6 +155,8 @@ class TestTTSConfig:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
+            models_yml_url="https://example.com/models.yml",
+            models_yml_hash=None,
         )
         with pytest.raises(FrozenInstanceError):
             config.max_models = 3

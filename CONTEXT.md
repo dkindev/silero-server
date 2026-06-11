@@ -102,7 +102,7 @@ Low-level TTS engine wrapping Silero.
 - `warmup()` — async. Preloads models with `warmup: true` from config up to `max_models` capacity. Runs a dummy synthesis pass per model to warm GPU caches. Silently swallows per-model failures. No-op if cache is already populated.
 
 **Initialization:**
-- Settings read: `TTS_TORCH_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_MODELS`, `TTS_MAX_CONCURRENT_PER_MODEL`, `TTS_MAX_CHUNK_CHARS`, `TTS_MODELS_DIR`
+- Settings read: `TTS_TORCH_DEVICE`, `TTS_SAMPLE_RATE`, `TTS_MAX_MODELS`, `TTS_MAX_CONCURRENT_PER_MODEL`, `TTS_MAX_CHUNK_CHARS`, `TTS_MODELS_DIR`, `TTS_MODELS_YML_URL`, `TTS_MODELS_YML_HASH`
 - Config loaded from `SileroTTSConfigStorage`
 - `warmup()` called during application lifespan startup (after engine creation, before first request)
 
@@ -211,6 +211,8 @@ All configuration via environment variables with `TTS_` prefix:
 | `TTS_MAX_CHUNK_CHARS` | `140` | Max characters per text chunk. Text longer than this is split into chunks and synthesized separately, then concatenated. |
 | `TTS_MODELS_DIR` | `.models/silero` | Directory for downloaded Silero .pt model files |
 | `TTS_ENV_TYPE` | `development` | Application environment: `development` or `production`. Controls error detail level in 500 responses, log format (colorized/plain), log level (DEBUG/INFO), backtrace/diagnose, and file logging in production. |
+| `TTS_MODELS_YML_URL` | `https://raw.githubusercontent.com/snakers4/silero-models/.../models.yml` | URL to the Silero models.yml registry file downloaded at runtime. |
+| `TTS_MODELS_YML_HASH` | `c981f239ed79b3924f952eb3a4dee3a03221d9867330c2b4054c767df77a86d8` | SHA-256 hash of the models.yml for integrity verification. Set empty to skip validation. |
 
 Validated at startup via Pydantic Settings — app exits with a clear error on invalid values.
 

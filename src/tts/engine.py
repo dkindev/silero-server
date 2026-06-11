@@ -21,9 +21,6 @@ from src.tts.models import Model, TTSConfig
 from src.tts.preprocessing import TextPreprocessor
 from src.tts.result import TTSResult
 
-MODELS_YML_URL = "https://raw.githubusercontent.com/snakers4/silero-models/88959d6c73168cab4f1487f63754c7c7c96b78a8/models.yml"
-MODELS_YML_HASH = "c981f239ed79b3924f952eb3a4dee3a03221d9867330c2b4054c767df77a86d8".lower()
-
 
 @dataclass
 class CachedModel:
@@ -137,7 +134,7 @@ def _clear_torch_cache_on_device(device: torch.device):
         torch.xpu.empty_cache()
 
 
-def _get_models_data(yml_path: str) -> dict:
+def _get_models_data(yml_path: str, models_yml_url: str, models_yml_hash: str | None) -> dict:
     def load_yaml() -> dict:
         try:
             with open(yml_path, encoding="utf-8") as f:
@@ -151,38 +148,45 @@ def _get_models_data(yml_path: str) -> dict:
             ) from e
 
     if os.path.exists(yml_path):
-        hasher = hashlib.sha256()
-        with open(yml_path, "rb") as f:
-            for chunk in iter(lambda: f.read(8192), b""):
-                hasher.update(chunk)
-        local_hash = hasher.hexdigest().lower()
+        if models_yml_hash:
+            hasher = hashlib.sha256()
+            with open(yml_path, "rb") as f:
+                for chunk in iter(lambda: f.read(8192), b""):
+                    hasher.update(chunk)
+            local_hash = hasher.hexdigest().lower()
 
-        if local_hash == MODELS_YML_HASH:
-            return load_yaml()
+            if local_hash == models_yml_hash:
+                return load_yaml()
+            else:
+                logger.warning(
+                    "Models configuration file '{path}' is corrupted or outdated. Redownloading..."
+                )
         else:
-            logger.warning(
-                "Models configuration file '{path}' is corrupted or outdated. Redownloading..."
+            logger.debug(
+                "Models configuration file hash validation skipped (models_yml_hash is None)."
             )
+            return load_yaml()
     else:
         logger.debug(
             "Models configuration file not found at '{path}'.",
             path=yml_path,
         )
 
-    logger.debug("Attempting to load model configuration from '{url}'.", url=MODELS_YML_URL)
-
-    _download_models_yml(yml_path)
-
-    logger.debug("Models configuration are saved in the file '{path}'.", path=yml_path)
+    _download_models_yml(yml_path, models_yml_url, models_yml_hash)
 
     return load_yaml()
 
 
-def _download_models_yml(file_path: str):
-    hasher = hashlib.sha256()
+def _download_models_yml(file_path: str, models_yml_url: str, models_yml_hash: str | None):
+    logger.debug("Attempting to load model configuration from '{url}'.", url=models_yml_url)
 
     try:
-        with urllib.request.urlopen(MODELS_YML_URL) as response:
+        if not models_yml_hash:
+            urllib.request.urlretrieve(models_yml_url, file_path)
+            return
+
+        hasher = hashlib.sha256()
+        with urllib.request.urlopen(models_yml_url) as response:
             with open(file_path, "wb") as file:
                 while True:
                     chunk = response.read(8192)
@@ -192,16 +196,18 @@ def _download_models_yml(file_path: str):
                     hasher.update(chunk)
     except Exception as e:
         raise TTSEngineError(
-            f"Failed to download the models configuration from '{MODELS_YML_URL}'."
+            f"Failed to download the models configuration from '{models_yml_url}'."
         ) from e
 
     downloaded_hash = hasher.hexdigest().lower()
-    if downloaded_hash != MODELS_YML_HASH:
+    if downloaded_hash != models_yml_hash:
         if os.path.exists(file_path):
             os.remove(file_path)
         raise TTSEngineError(
-            f"Error verifying hash of model configuration file loaded at '{MODELS_YML_URL}'."
+            f"Error verifying hash of model configuration file loaded at '{models_yml_url}'."
         )
+
+    logger.debug("Models configuration are saved in the file '{path}'.", path=file_path)
 
 
 class SileroTTSEngine:
@@ -381,7 +387,9 @@ class SileroTTSEngine:
         )
 
         yml_path = os.path.join(models_dir, "models.yml")
-        registry = _get_models_data(yml_path)
+        registry = _get_models_data(
+            yml_path, self._config.models_yml_url, self._config.models_yml_hash
+        )
 
         tts_models = registry.get("tts_models", {})
         lang_models = tts_models.get(language, {})

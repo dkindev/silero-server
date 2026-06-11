@@ -14,7 +14,7 @@ setup_logging()
 async def lifespan(app: FastAPI):
     """Manage application lifespan."""
 
-    add_engine(app)
+    add_engine(app.state)
 
     engine = get_engine(app.state)
     if engine:

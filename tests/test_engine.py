@@ -1,4 +1,6 @@
+import hashlib
 import io
+import os
 import unittest.mock
 
 import pytest
@@ -7,6 +9,15 @@ import torch
 from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
 from src.tts.preprocessing import TextPreprocessor
+
+
+def _hash_models_yml(yml_path: str) -> str:
+    """Compute SHA256 hex digest of a models.yml file."""
+    hasher = hashlib.sha256()
+    with open(yml_path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest().lower()
 
 
 def make_models_dir(tmp_path, sample_rates=None, model_name="v5_5_ru", language="ru"):
@@ -37,6 +48,67 @@ def make_config_file(tmp_path, models=None, locales=None):
 class TestSileroTTSEngineInit:
     """Tests for SileroTTSEngine initialization."""
 
+    @pytest.mark.asyncio
+    async def test_engine_uses_models_yml_hash_from_config(self, tmp_path):
+        """Engine reads models_yml_hash from TTSConfig for local file validation."""
+        from src.tts.engine import SileroTTSEngine
+
+        models_dir = make_models_dir(tmp_path)
+        yml_path = os.path.join(models_dir, "models.yml")
+        actual_hash = _hash_models_yml(yml_path)
+
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            max_chunk_chars=48000,
+            models_dir=models_dir,
+            models_yml_url="https://example.com/models.yml",
+            models_yml_hash=actual_hash,
+        )
+        model_config = Model(name="v5_5_ru", language="ru")
+        locale_ru = Locale(name="ru_RU")
+        voice_ru = VoiceConfig(
+            voice_name="silero-v5_5_ru-aidar",
+            speaker="aidar",
+            model="v5_5_ru",
+            gender="male",
+            locale="ru_RU",
+        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
+        mock_audio = torch.zeros(1, 48000)
+        mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
+        mock_model.apply_tts = unittest.mock.MagicMock(return_value=mock_audio)
+        mock_importer = unittest.mock.MagicMock()
+        mock_importer.load_pickle.return_value = mock_model
+
+        with (
+            unittest.mock.patch(
+                "src.tts.engine.torch.package.PackageImporter",
+                return_value=mock_importer,
+            ),
+            unittest.mock.patch(
+                "src.tts.engine.urllib.request.urlopen",
+                side_effect=RuntimeError("network disabled"),
+            ),
+        ):
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+
+        assert result is not None
+
     def test_init_accepts_config_path_and_loads_config(self, tmp_path):
         """Engine should accept config_path string and load config internally."""
         from src.tts.engine import SileroTTSEngine
@@ -64,6 +136,8 @@ locales:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
+            models_yml_url="https://example.com",
+            models_yml_hash="",
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
@@ -102,6 +176,8 @@ locales:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
+            models_yml_url="https://example.com",
+            models_yml_hash="",
         )
 
         storage = SileroTTSYamlConfigStorage(config_path)
@@ -134,6 +210,8 @@ class TestGetInputTypes:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
+            models_yml_url="https://example.com",
+            models_yml_hash="",
         )
 
         storage = SileroTTSYamlConfigStorage(config_path)
@@ -156,6 +234,8 @@ class TestGetInputTypes:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
+            models_yml_url="https://example.com",
+            models_yml_hash="",
         )
 
         storage = SileroTTSYamlConfigStorage(config_path)
@@ -184,6 +264,8 @@ class TestProcessValidation:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
+            models_yml_url="https://example.com",
+            models_yml_hash="",
         )
         config_path = make_config_file(
             tmp_path,
@@ -240,6 +322,8 @@ class TestProcessValidation:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
+            models_yml_url="https://example.com",
+            models_yml_hash="",
         )
         config_path = make_config_file(
             tmp_path,
@@ -298,6 +382,8 @@ class TestProcessValidation:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
+            models_yml_url="https://example.com",
+            models_yml_hash="",
         )
         config_path = make_config_file(
             tmp_path,
@@ -345,13 +431,17 @@ class TestProcessValidation:
         from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -397,12 +487,11 @@ class TestProcessValidation:
         assert result.model == "v5_5_ru"
 
     @pytest.mark.asyncio
-    async def test_process_converts_tensor_to_wav_bytes(self, tmp_path):
-        """process() should convert tensor output from apply_tts to valid WAV bytes."""
+    async def test_process_skips_hash_validation_when_config_hash_empty(self, tmp_path):
+        """process() should skip models.yml hash validation when models_yml_hash is empty."""
         from src.tts.engine import SileroTTSEngine
-        from src.tts.result import TTSResult
 
-        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        models_dir = make_models_dir(tmp_path)
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
@@ -410,6 +499,68 @@ class TestProcessValidation:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=models_dir,
+            models_yml_url="https://example.com/models.yml",
+            models_yml_hash="",
+        )
+        model_config = Model(name="v5_5_ru", language="ru")
+        locale_ru = Locale(name="ru_RU")
+        voice_ru = VoiceConfig(
+            voice_name="silero-v5_5_ru-aidar",
+            speaker="aidar",
+            model="v5_5_ru",
+            gender="male",
+            locale="ru_RU",
+        )
+        config_model = TTSConfigModel(models=[model_config], locales=[locale_ru], voices=[voice_ru])
+        mock_audio = torch.zeros(1, 48000)
+        mock_model = unittest.mock.MagicMock()
+        mock_model.symbols = "_.!,-:;?abcdefghijklmnopqrstuvwxyz "
+        mock_model.apply_tts = unittest.mock.MagicMock(return_value=mock_audio)
+        mock_importer = unittest.mock.MagicMock()
+        mock_importer.load_pickle.return_value = mock_model
+
+        with (
+            unittest.mock.patch(
+                "src.tts.engine.torch.package.PackageImporter",
+                return_value=mock_importer,
+            ),
+            unittest.mock.patch(
+                "src.tts.engine.urllib.request.urlopen",
+                side_effect=RuntimeError("network disabled"),
+            ),
+        ):
+            storage = SileroTTSYamlConfigStorage(config_model)
+            engine = SileroTTSEngine(
+                config=config,
+                storage=storage,
+                text_preprocessor_factory=lambda _: TextPreprocessor(),
+            )
+            result = await engine.process(
+                text="hello",
+                locale="ru_RU",
+                voice="silero-v5_5_ru-aidar",
+                input_type="TEXT",
+            )
+
+        assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_process_converts_tensor_to_wav_bytes(self, tmp_path):
+        """process() should convert tensor output from apply_tts to valid WAV bytes."""
+        from src.tts.engine import SileroTTSEngine
+        from src.tts.result import TTSResult
+
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            max_chunk_chars=48000,
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -459,14 +610,6 @@ class TestProcessValidation:
         from src.tts.engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[8000, 24000])
-        config = TTSConfig(
-            device="cpu",
-            sample_rate=48000,
-            max_models=2,
-            max_concurrent_per_model=2,
-            max_chunk_chars=48000,
-            models_dir=models_dir,
-        )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
@@ -490,6 +633,18 @@ class TestProcessValidation:
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
+
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            max_chunk_chars=48000,
+            models_dir=models_dir,
+            models_yml_url="https://example.com/models.yml",
+            models_yml_hash=yml_hash,
+        )
 
         with unittest.mock.patch(
             "src.tts.engine.torch.package.PackageImporter",
@@ -517,14 +672,6 @@ class TestProcessValidation:
         from src.tts.engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[24000, 48000])
-        config = TTSConfig(
-            device="cpu",
-            sample_rate=8000,
-            max_models=2,
-            max_concurrent_per_model=2,
-            max_chunk_chars=48000,
-            models_dir=models_dir,
-        )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
@@ -548,6 +695,18 @@ class TestProcessValidation:
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
+
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=8000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            max_chunk_chars=48000,
+            models_dir=models_dir,
+            models_yml_url="https://example.com/models.yml",
+            models_yml_hash=yml_hash,
+        )
 
         with unittest.mock.patch(
             "src.tts.engine.torch.package.PackageImporter",
@@ -574,13 +733,17 @@ class TestProcessValidation:
         """process() should use config rate if it exactly matches available rate."""
         from src.tts.engine import SileroTTSEngine
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[24000, 48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=24000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -631,13 +794,17 @@ class TestProcessValidation:
         """process() should use highest available rate below config if config not in list."""
         from src.tts.engine import SileroTTSEngine
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[24000, 48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=44100,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -689,14 +856,6 @@ class TestProcessValidation:
         from src.tts.engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[24000])
-        config = TTSConfig(
-            device="cpu",
-            sample_rate=48000,
-            max_models=2,
-            max_concurrent_per_model=2,
-            max_chunk_chars=48000,
-            models_dir=models_dir,
-        )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
         voice_ru = VoiceConfig(
@@ -720,6 +879,18 @@ class TestProcessValidation:
         mock_model.apply_tts = capture_apply_tts
         mock_importer = unittest.mock.MagicMock()
         mock_importer.load_pickle.return_value = mock_model
+
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
+        config = TTSConfig(
+            device="cpu",
+            sample_rate=48000,
+            max_models=2,
+            max_concurrent_per_model=2,
+            max_chunk_chars=48000,
+            models_dir=models_dir,
+            models_yml_url="https://example.com/models.yml",
+            models_yml_hash=yml_hash,
+        )
 
         with unittest.mock.patch(
             "src.tts.engine.torch.package.PackageImporter",
@@ -746,13 +917,17 @@ class TestProcessValidation:
         """process() should use config rate if model has no sample rates."""
         from src.tts.engine import SileroTTSEngine
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -803,13 +978,24 @@ class TestProcessValidation:
         """process() should use config rate if model sample rates is None."""
         from src.tts.engine import SileroTTSEngine
 
+        models_dir = tmp_path / "models"
+        models_dir.mkdir()
+        (models_dir / "models.yml").write_text(
+            "tts_models:\n  ru:\n    v5_5_ru:\n      latest:\n        package: 'http://x'\n"
+        )
+        lang_dir = models_dir / "ru"
+        lang_dir.mkdir()
+        (lang_dir / "v5_5_ru.pt").write_bytes(b"fake model")
+        yml_hash = _hash_models_yml(os.path.join(str(models_dir), "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=str(models_dir),
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -860,13 +1046,17 @@ class TestProcessValidation:
         """process() should load model on first request and cache it."""
         from src.tts.engine import SileroTTSEngine
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -923,13 +1113,17 @@ class TestProcessValidation:
         """process() should use per-model semaphores to limit concurrent requests."""
         from src.tts.engine import SileroTTSEngine
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -972,13 +1166,17 @@ class TestProcessValidation:
         from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cuda",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -1038,13 +1236,17 @@ class TestProcessValidation:
         from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="xpu",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -1111,6 +1313,8 @@ class TestProcessValidation:
         ru_dir.mkdir()
         (ru_dir / "v5_5_ru.pt").write_bytes(b"fake model")
 
+        yml_hash = _hash_models_yml(os.path.join(str(models_dir), "models.yml"))
+
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
@@ -1118,6 +1322,8 @@ class TestProcessValidation:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=str(models_dir),
+            models_yml_url="https://example.com/models.yml",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -1143,7 +1349,7 @@ class TestProcessValidation:
                 input_type="TEXT",
             )
 
-        assert "Failed to parse models.yml" in str(exc_info.value)
+        assert "Failed to parse the models configuration file" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_process_raises_on_model_not_in_registry(self, tmp_path):
@@ -1160,6 +1366,7 @@ class TestProcessValidation:
         ru_dir.mkdir()
         (ru_dir / "v5_5_ru.pt").write_bytes(b"fake model")
 
+        yml_hash = _hash_models_yml(os.path.join(str(models_dir), "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
@@ -1167,6 +1374,8 @@ class TestProcessValidation:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=str(models_dir),
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -1214,6 +1423,7 @@ class TestProcessValidation:
 
         monkeypatch.setattr(torch.hub, "download_url_to_file", mock_download)
 
+        yml_hash = _hash_models_yml(os.path.join(str(models_dir), "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
@@ -1221,6 +1431,8 @@ class TestProcessValidation:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=str(models_dir),
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -1271,6 +1483,7 @@ class TestProcessValidation:
 
         monkeypatch.setattr(torch.hub, "download_url_to_file", mock_download)
 
+        yml_hash = _hash_models_yml(os.path.join(str(models_dir), "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
@@ -1278,6 +1491,8 @@ class TestProcessValidation:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=str(models_dir),
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -1312,6 +1527,7 @@ class TestProcessValidation:
         from src.tts.result import TTSResult
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
@@ -1319,6 +1535,8 @@ class TestProcessValidation:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -1381,13 +1599,17 @@ class TestCachedModel:
         from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -1461,6 +1683,7 @@ class TestModelEviction:
         ru_dir.mkdir()
         (ru_dir / "v5_5_ru.pt").write_bytes(b"fake model ru")
 
+        yml_hash = _hash_models_yml(os.path.join(str(models_dir), "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
@@ -1468,6 +1691,8 @@ class TestModelEviction:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=str(models_dir),
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
 
         model_en = Model(name="v3_en", language="en")
@@ -1542,6 +1767,7 @@ class TestModelEviction:
         from src.tts.engine import SileroTTSEngine
 
         models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
@@ -1549,6 +1775,8 @@ class TestModelEviction:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
@@ -1605,13 +1833,17 @@ class TestWarmup:
         from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=".models/silero",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         model_config = Model(name="v5_5_ru", language="ru", warmup=True)
         locale_ru = Locale(name="ru_RU")
@@ -1660,13 +1892,17 @@ class TestWarmup:
         from src.tts.engine import SileroTTSEngine
         from src.tts.result import TTSResult
 
+        models_dir = make_models_dir(tmp_path, sample_rates=[48000])
+        yml_hash = _hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
-            models_dir=tmp_path / "models",
+            models_dir=models_dir,
+            models_yml_url="https://example.com",
+            models_yml_hash=yml_hash,
         )
         warmup_model = Model(name="v5_5_ru", language="ru", warmup=True)
         process_model = Model(name="v5_5_ru", language="ru")
