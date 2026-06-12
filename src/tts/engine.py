@@ -119,7 +119,7 @@ def _chunks_to_wav_bytes(chunks: list[np.ndarray], sample_rate: int) -> io.Bytes
     return buffer
 
 
-def _clear_cached_model(cached_model):
+def _clear_cached_model(cached_model: CachedModel):
     del cached_model.model
     del cached_model.semaphore
     del cached_model
@@ -171,14 +171,14 @@ def _get_models_data(yml_path: str, models_yml_url: str, models_yml_hash: str | 
             path=yml_path,
         )
 
+    logger.debug("Attempting to load model configuration from '{url}'.", url=models_yml_url)
     _download_models_yml(yml_path, models_yml_url, models_yml_hash)
+    logger.debug("Models configuration are saved in the file '{path}'.", path=yml_path)
 
     return load_yaml()
 
 
 def _download_models_yml(file_path: str, models_yml_url: str, models_yml_hash: str | None):
-    logger.debug("Attempting to load model configuration from '{url}'.", url=models_yml_url)
-
     try:
         if not models_yml_hash:
             urllib.request.urlretrieve(models_yml_url, file_path)
@@ -205,8 +205,6 @@ def _download_models_yml(file_path: str, models_yml_url: str, models_yml_hash: s
         raise TTSEngineError(
             f"Error verifying hash of model configuration file loaded at '{models_yml_url}'."
         )
-
-    logger.debug("Models configuration are saved in the file '{path}'.", path=file_path)
 
 
 class SileroTTSEngine:
