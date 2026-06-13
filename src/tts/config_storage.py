@@ -29,7 +29,7 @@ class SileroTTSConfigStorage(ABC):
         ...
 
     @abstractmethod
-    def get_model_info(self, model_name: str) -> Model:
+    def get_model(self, model_name: str) -> Model:
         ...
 
     @abstractmethod
@@ -123,7 +123,7 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
     def get_voice(self, locale_name: str, voice_name: str) -> Voice:
         return self._locales[locale_name][1][voice_name]
 
-    def get_model_info(self, model_name: str) -> Model:
+    def get_model(self, model_name: str) -> Model:
         return self._models[model_name]
 
     def get_models(self) -> dict[str, Model]:

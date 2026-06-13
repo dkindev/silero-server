@@ -496,11 +496,11 @@ locales:
         assert any(voice.name == "silero-v3_en-en_0" for voice in voices)
 
 
-class TestGetModelInfo:
-    """Tests for get_model_info() method."""
+class TestGetModel:
+    """Tests for get_model() method."""
 
-    def test_get_model_info_returns_correct_model(self):
-        """get_model_info should return Model for the given model name."""
+    def test_get_model_returns_correct_model(self):
+        """get_model should return Model for the given model name."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
@@ -510,7 +510,7 @@ class TestGetModelInfo:
         )
         storage = SileroTTSYamlConfigStorage(config_model)
 
-        m = storage.get_model_info("v5_5_ru")
+        m = storage.get_model("v5_5_ru")
         assert m.language == "ru"
 
 
@@ -820,8 +820,8 @@ class TestDisabledModel:
         assert storage.has_locale_in_voices("ru_RU") is False
         assert storage.has_locale_in_voices("en_US") is True
 
-    def test_disabled_model_get_model_info_raises_key_error(self):
-        """get_model_info should raise KeyError for a disabled model."""
+    def test_disabled_model_get_model_raises_key_error(self):
+        """get_model should raise KeyError for a disabled model."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
@@ -835,4 +835,4 @@ class TestDisabledModel:
         storage = SileroTTSYamlConfigStorage(config_model)
 
         with pytest.raises(KeyError):
-            storage.get_model_info("v5_5_ru")
+            storage.get_model("v5_5_ru")

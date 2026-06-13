@@ -245,6 +245,10 @@ class SileroTTSEngine:
         voice = self._storage.get_voice(locale_name, voice_name)
         model_name = voice.model
 
+        model = self._storage.get_model(model_name)
+        if model:
+            raise TTSEngineError(f"Unsupported model: {model_name}")
+
         logger.info(
             "TTS processing. Text length: {text_length}. Locale: {locale}. Voice: {voice}. Input type: {input_type}. Model: {model_name}.",
             text_length=len(text),
@@ -254,21 +258,7 @@ class SileroTTSEngine:
             model_name=model_name,
         )
 
-        async with self._get_lock():
-            if model_name in self._cached_models:
-                logger.debug("Model '{name}' found in cache.", name=model_name)
-
-                # The model is in the cache: move it to the end (it is now the most recent)
-                self._cached_models.move_to_end(model_name)
-                cached = self._cached_models[model_name]
-            else:
-                logger.debug("Model '{name}' not found in cache.", name=model_name)
-
-                # The model is not in the cache: check the limit and download the old one if necessary
-                self._evict_oldest_model()
-
-                # Load and warm up the model
-                cached = await self._warmup_model(model_name)
+        cached = await self._get_tts_model(model)
 
         text_preprocessor = self._text_preprocessor_factory(locale_name)
         if not text_preprocessor:
@@ -343,6 +333,25 @@ class SileroTTSEngine:
 
             logger.debug("Engine resources have been cleared.")
 
+    async def _get_tts_model(self, model: Model) -> CachedModel:
+        async with self._get_lock():
+            if model.name in self._cached_models:
+                logger.debug("Model '{name}' found in cache.", name=model.name)
+
+                # The model is in the cache: move it to the end (it is now the most recent)
+                self._cached_models.move_to_end(model.name)
+                cached = self._cached_models[model.name]
+            else:
+                logger.debug("Model '{name}' not found in cache.", name=model.name)
+
+                # The model is not in the cache: check the limit and download the old one if necessary
+                self._evict_oldest_model()
+
+                # Load and warm up the model
+                cached = await self._warmup_tts_model(model.name)
+
+        return cached
+
     def _get_lock(self) -> asyncio.Lock:
         # Ensures that the lock is created strictly within the running FastAPI Event Loop
         if self._lock is None:
@@ -364,24 +373,25 @@ class SileroTTSEngine:
 
             logger.debug("Model '{model}' was removed from cache.", model=model_name)
 
-    def _resolve_model(
-        self, language: str, model_name: str, hash_prefix: str | None = None
-    ) -> tuple[str, list[int], str, dict[str, str]]:
+    def _resolve_tts_model(self, model: Model) -> tuple[str, list[int], str, dict[str, str]]:
         """Return the local path, sample rates, example text and speaker examples.
 
         Downloads the Silero models.yml file and the model itself if they are not available locally.
         Raises TTSEngineError on failure.
         """
+        logger.debug(
+            "Trying to resolve model '{model}'.",
+            model=model.name,
+        )
+
+        language = model.language
+        if not language:
+            raise TTSEngineError(f"Language isn't specified for Silero model: {model.name}")
+
         models_dir = self._config.models_dir
 
         lang_dir = os.path.join(models_dir, language)
         os.makedirs(lang_dir, exist_ok=True)
-
-        logger.debug(
-            "Trying to resolve model '{model}' with language '{language}'.",
-            model=model_name,
-            language=language,
-        )
 
         yml_path = os.path.join(models_dir, "models.yml")
         registry = _get_models_data(
@@ -390,95 +400,87 @@ class SileroTTSEngine:
 
         tts_models = registry.get("tts_models", {})
         lang_models = tts_models.get(language, {})
-        model_entry = lang_models.get(model_name, {})
+        model_entry = lang_models.get(model.name, {})
         latest = model_entry.get("latest", {})
         sample_rates = latest.get("sample_rate", [])
         example_text = latest.get("example", "")
         raw_speakers = latest.get("speakers", {})
         speakers = {name: s.get("example", "") for name, s in raw_speakers.items()}
 
-        model_path = os.path.join(lang_dir, f"{model_name}.pt")
+        model_path = os.path.join(lang_dir, f"{model.name}.pt")
         if os.path.isfile(model_path):
-            logger.debug("Model '{model}' found in '{path}'.", model=model_name, path=model_path)
+            logger.debug("Model '{model}' found in '{path}'.", model=model.name, path=model_path)
             return model_path, sample_rates, example_text, speakers
 
         package_url = latest.get("package")
         if not package_url:
             raise TTSEngineError(
-                f"Model '{model_name}' for language '{language}' not found in configuration file. "
+                f"Model '{model.name}' for language '{language}' not found in configuration file. "
                 f"Delete '{yml_path}' to force a fresh download."
             )
 
         logger.debug(
             "Model '{model}' not found. Attempting to load from '{url}'.",
-            model=model_name,
+            model=model.name,
             url=package_url,
         )
 
         try:
-            torch.hub.download_url_to_file(package_url, model_path, hash_prefix=hash_prefix)
+            torch.hub.download_url_to_file(package_url, model_path, hash_prefix=model.hash_prefix)
         except Exception as e:
             if os.path.isfile(model_path):
                 os.remove(model_path)
             raise TTSEngineError(
-                f"Failed to download model '{model_name}' for language '{language}'."
+                f"Failed to download model '{model.name}' for language '{language}'."
             ) from e
 
         logger.debug(
-            "Model '{model}' is saved in the file '{path}'.", model=model_name, path=model_path
+            "Model '{model}' is saved in the file '{path}'.", model=model.name, path=model_path
         )
 
         return model_path, sample_rates, example_text, speakers
 
-    async def _load_model_async(
-        self, model_name: str, model_info: Model
-    ) -> tuple[CachedModel, str, dict[str, str]]:
+    async def _load_tts_model_async(self, model: Model) -> tuple[CachedModel, str, dict[str, str]]:
         """Loads the model into the cache and returns the cached model, sample text, and speaker samples."""
-
-        language = model_info.language
-        if not language:
-            raise TTSEngineError(f"Language isn't specified for Silero model: {model_name}")
 
         # Move blocking disk reading and heavy PyTorch initialization to a separate thread
         def _sync_load():
-            local_path, sample_rates, example_text, speakers = self._resolve_model(
-                language, model_name, hash_prefix=model_info.hash_prefix
-            )
+            local_path, sample_rates, example_text, speakers = self._resolve_tts_model(model)
             try:
                 logger.debug(
                     "Loading model '{model}' to '{device}'.",
-                    model=model_name,
+                    model=model.name,
                     device=self._device.type,
                 )
 
                 importer = torch.package.PackageImporter(local_path)
-                model = importer.load_pickle("tts_models", "model", map_location=self._device)
+                pt_model = importer.load_pickle("tts_models", "model", map_location=self._device)
                 # Ensure the model modules are shifted as well
-                model.to(self._device)
+                pt_model.to(self._device)
 
                 logger.debug(
                     "Model '{model}' loaded to '{device}'.",
-                    model=model_name,
+                    model=model.name,
                     device=self._device.type,
                 )
 
-                return model, sample_rates, example_text, speakers
+                return pt_model, sample_rates, example_text, speakers
             except Exception as e:
                 raise TTSEngineError(
-                    f"Failed to load model '{model_name}' for language '{language}' with path: {local_path}. "
+                    f"Failed to load model '{model.name}' with path: {local_path}. "
                     f"Try to delete model to force a fresh download."
                 ) from e
 
-        model, sample_rates, example_text, speakers = await asyncio.to_thread(_sync_load)
+        tts_model, sample_rates, example_text, speakers = await asyncio.to_thread(_sync_load)
 
         sample_rate = _select_sample_rate(self._config.sample_rate, sample_rates)
         semaphore = asyncio.Semaphore(self._config.max_concurrent_per_model)
-        cached = CachedModel(model, sample_rate, semaphore)
-        self._cached_models[model_name] = cached
+        cached = CachedModel(tts_model, sample_rate, semaphore)
+        self._cached_models[model.name] = cached
 
         logger.debug(
             "Model '{model}' was cached. Sample rate: '{sample_rate}'.",
-            model=model_name,
+            model=model.name,
             sample_rate=sample_rate,
         )
 
@@ -494,16 +496,17 @@ class SileroTTSEngine:
                 return
 
             models = self._storage.get_models()
-            to_warm = [name for name, m in models.items() if m.warmup][: self._config.max_models]
+            to_warm = [model for _, model in models.items() if model.warmup][
+                : self._config.max_models
+            ]
 
             logger.debug("Models to warm up: {count}.", count=len(to_warm))
 
-            for name in to_warm:
-                await self._warmup_model(name)
+            for model in to_warm:
+                await self._warmup_tts_model(model)
 
-    async def _warmup_model(self, name: str) -> CachedModel:
-        model_info = self._storage.get_model_info(name)
-        cached, example_text, speakers = await self._load_model_async(name, model_info)
+    async def _warmup_tts_model(self, model: Model) -> CachedModel:
+        cached, example_text, speakers = await self._load_tts_model_async(model)
 
         if speakers:
             speaker = next(iter(speakers))
@@ -514,16 +517,16 @@ class SileroTTSEngine:
 
         logger.debug(
             "Model '{model}' is warming up. Speaker: '{speaker}' Text: '{text}'",
-            model=name,
+            model=model.name,
             speaker=speaker,
             text=text,
         )
 
         try:
             await asyncio.to_thread(_run_tts_sync, cached, text, speaker)
-            logger.debug("Model '{model}' has been warmed up.", model=name)
+            logger.debug("Model '{model}' has been warmed up.", model=model.name)
         except Exception:
-            logger.exception("Failed to warm up the model '{model}'.", model=name)
+            logger.exception("Failed to warm up the model '{model}'.", model=model.name)
 
         return cached
 
