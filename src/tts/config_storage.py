@@ -9,7 +9,7 @@ from src.tts.models import Locale, Model, TTSConfigModel, Voice
 
 class SileroTTSConfigStorage(ABC):
     @abstractmethod
-    def has_locale(self, locale_name: str) -> bool:
+    def has_locale_in_voices(self, locale_name: str) -> bool:
         ...
 
     @abstractmethod
@@ -17,7 +17,7 @@ class SileroTTSConfigStorage(ABC):
         ...
 
     @abstractmethod
-    def get_locales(self) -> list[Locale]:
+    def get_locales_in_voices(self) -> list[Locale]:
         ...
 
     @abstractmethod
@@ -108,13 +108,13 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
             models=enabled_models, locales=filtered_locales, voices=filtered_voices
         )
 
-    def has_locale(self, locale_name: str) -> bool:
+    def has_locale_in_voices(self, locale_name: str) -> bool:
         return locale_name in self._locales
 
     def has_voice(self, locale_name: str, voice_name: str) -> bool:
         return locale_name in self._locales and voice_name in self._locales[locale_name][1]
 
-    def get_locales(self) -> list[Locale]:
+    def get_locales_in_voices(self) -> list[Locale]:
         return [locale for locale, _ in self._locales.values()]
 
     def get_voices(self) -> list[Voice]:

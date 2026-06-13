@@ -102,7 +102,7 @@ class TestSileroTTSEngineInit:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -146,7 +146,9 @@ locales:
         )
 
         assert engine is not None
-        assert any(locale.name == "ru_RU" for locale in engine.get_storage().get_locales())
+        assert any(
+            locale.name == "ru_RU" for locale in engine.get_storage().get_locales_in_voices()
+        )
 
     def test_init_caches_locales(self, tmp_path):
         """Engine should cache locales at init time."""
@@ -185,7 +187,7 @@ locales:
             config=config, storage=storage, text_preprocessor_factory=lambda _: TextPreprocessor()
         )
 
-        locales = engine.get_storage().get_locales()
+        locales = engine.get_storage().get_locales_in_voices()
         assert isinstance(locales, list)
         assert any(locale.name == "ru_RU" for locale in locales)
 
@@ -302,7 +304,7 @@ class TestProcessValidation:
             with pytest.raises(TTSEngineError) as exc_info:
                 await engine.process(
                     text="hello",
-                    locale="invalid_Locale",
+                    locale_name="invalid_Locale",
                     voice_name="silero-v5_5_ru-aidar",
                     input_type="TEXT",
                 )
@@ -362,7 +364,7 @@ class TestProcessValidation:
             with pytest.raises(TTSEngineError) as exc_info:
                 await engine.process(
                     text="hello",
-                    locale="ru_RU",
+                    locale_name="ru_RU",
                     voice_name="invalid_voice",
                     input_type="TEXT",
                 )
@@ -420,7 +422,7 @@ class TestProcessValidation:
             with pytest.raises(TTSEngineError):
                 await engine.process(
                     text="hello",
-                    locale="ru_RU",
+                    locale_name="ru_RU",
                     voice_name="silero-v5_5_ru-aidar",
                     input_type="INVALID",
                 )
@@ -475,7 +477,7 @@ class TestProcessValidation:
 
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -537,7 +539,7 @@ class TestProcessValidation:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -593,7 +595,7 @@ class TestProcessValidation:
 
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -658,7 +660,7 @@ class TestProcessValidation:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -720,7 +722,7 @@ class TestProcessValidation:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -781,7 +783,7 @@ class TestProcessValidation:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -842,7 +844,7 @@ class TestProcessValidation:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -904,7 +906,7 @@ class TestProcessValidation:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -965,7 +967,7 @@ class TestProcessValidation:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1033,7 +1035,7 @@ class TestProcessValidation:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1095,13 +1097,13 @@ class TestProcessValidation:
             )
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
             await engine.process(
                 text="world",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1155,7 +1157,7 @@ class TestProcessValidation:
             )
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1219,7 +1221,7 @@ class TestProcessValidation:
                 )
                 result = await engine.process(
                     text="hello",
-                    locale="ru_RU",
+                    locale_name="ru_RU",
                     voice_name="silero-v5_5_ru-aidar",
                     input_type="TEXT",
                 )
@@ -1289,7 +1291,7 @@ class TestProcessValidation:
                 )
                 result = await engine.process(
                     text="hello",
-                    locale="ru_RU",
+                    locale_name="ru_RU",
                     voice_name="silero-v5_5_ru-aidar",
                     input_type="TEXT",
                 )
@@ -1344,7 +1346,7 @@ class TestProcessValidation:
         with pytest.raises(TTSEngineError) as exc_info:
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1396,7 +1398,7 @@ class TestProcessValidation:
         with pytest.raises(TTSEngineError) as exc_info:
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1453,7 +1455,7 @@ class TestProcessValidation:
         with pytest.raises(TTSEngineError) as exc_info:
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1514,7 +1516,7 @@ class TestProcessValidation:
         with pytest.raises(TTSEngineError):
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1573,7 +1575,7 @@ class TestProcessValidation:
         with pytest.raises(TTSEngineError) as exc_info:
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1629,7 +1631,7 @@ class TestProcessValidation:
 
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1701,7 +1703,7 @@ class TestCachedModel:
             )
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1799,7 +1801,7 @@ class TestModelEviction:
 
             await engine.process(
                 text="hello",
-                locale="en_US",
+                locale_name="en_US",
                 voice_name="silero-v3_en-en_0",
                 input_type="TEXT",
             )
@@ -1807,7 +1809,7 @@ class TestModelEviction:
 
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1815,7 +1817,7 @@ class TestModelEviction:
 
             await engine.process(
                 text="hello",
-                locale="en_US",
+                locale_name="en_US",
                 voice_name="silero-v3_en-en_0",
                 input_type="TEXT",
             )
@@ -1869,7 +1871,7 @@ class TestModelEviction:
 
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1877,7 +1879,7 @@ class TestModelEviction:
 
             await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -1939,7 +1941,7 @@ class TestWarmup:
 
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
@@ -2000,7 +2002,7 @@ class TestWarmup:
         ):
             result = await engine.process(
                 text="hello",
-                locale="ru_RU",
+                locale_name="ru_RU",
                 voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )

@@ -7,7 +7,7 @@ class TestSileroTTSYamlConfigStorageInit:
     """Tests for SileroTTSYamlConfigStorage initialization."""
 
     def test_init_accepts_config_model(self):
-        """Should accept TTSConfigModel and expose has_locale."""
+        """Should accept TTSConfigModel and expose has_locale_in_voices."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
@@ -26,8 +26,8 @@ class TestSileroTTSYamlConfigStorageInit:
 
         storage = SileroTTSYamlConfigStorage(config_model)
 
-        assert storage.has_locale("ru_RU") is True
-        assert storage.has_locale("de_DE") is False
+        assert storage.has_locale_in_voices("ru_RU") is True
+        assert storage.has_locale_in_voices("de_DE") is False
 
 
 class TestHasVoice:
@@ -78,21 +78,21 @@ class TestHasVoice:
         assert storage.has_voice("ru_RU", "silero-v5_5_ru-aidar") is False
 
 
-class TestGetLocales:
-    """Tests for get_locales() method."""
+class TestGetLocalesInVoices:
+    """Tests for get_locales_in_voices() method."""
 
-    def test_get_locales_returns_list(self):
-        """get_locales should return a list of Locale objects."""
+    def test_get_locales_in_voices_returns_list(self):
+        """get_locales_in_voices should return a list of Locale objects."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(models=[], locales=[], voices=[])
         storage = SileroTTSYamlConfigStorage(config_model)
 
-        result = storage.get_locales()
+        result = storage.get_locales_in_voices()
         assert isinstance(result, list)
 
-    def test_get_locales_only_returns_locales_with_enabled_voices(self):
-        """get_locales should only return locales that have at least one voice on an enabled model."""
+    def test_get_locales_in_voices_only_returns_locales_with_enabled_voices(self):
+        """get_locales_in_voices should only return locales that have at least one voice on an enabled model."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
@@ -110,7 +110,7 @@ class TestGetLocales:
         )
         storage = SileroTTSYamlConfigStorage(config_model)
 
-        result = storage.get_locales()
+        result = storage.get_locales_in_voices()
         assert any(locale.name == "ru_RU" for locale in result)
         assert not any(locale.name == "de_DE" for locale in result)
         assert len(result) == 1
@@ -268,7 +268,7 @@ locales:
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
 
-        assert storage.has_locale("ru_RU") is True
+        assert storage.has_locale_in_voices("ru_RU") is True
         assert storage.has_voice("ru_RU", "silero-v5_5_ru-aidar") is True
 
     def test_loaded_voices_have_voice_configs(self, tmp_path):
@@ -357,9 +357,9 @@ class TestEmptyConfig:
         config_model = TTSConfigModel(models=[], locales=[], voices=[])
         storage = SileroTTSYamlConfigStorage(config_model)
 
-        assert storage.get_locales() == []
+        assert storage.get_locales_in_voices() == []
         assert storage.get_voices() == []
-        assert storage.has_locale("anything") is False
+        assert storage.has_locale_in_voices("anything") is False
 
     def test_empty_config_from_yaml(self, tmp_path):
         """Should load and handle empty YAML config."""
@@ -370,7 +370,7 @@ class TestEmptyConfig:
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
 
-        assert storage.get_locales() == []
+        assert storage.get_locales_in_voices() == []
         assert storage.get_voices() == []
 
 
@@ -400,7 +400,7 @@ locales:
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
 
-        assert storage.has_locale("ru_RU") is False
+        assert storage.has_locale_in_voices("ru_RU") is False
         assert storage.has_voice("ru_RU", "silero-v5_5_ru-aidar") is False
 
     def test_yaml_without_enabled_defaults_to_enabled(self, tmp_path):
@@ -425,7 +425,7 @@ locales:
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
 
-        assert storage.has_locale("ru_RU") is True
+        assert storage.has_locale_in_voices("ru_RU") is True
         assert storage.has_voice("ru_RU", "silero-v5_5_ru-aidar") is True
 
     def test_yaml_enabled_true_explicitly_enables_model(self, tmp_path):
@@ -451,7 +451,7 @@ locales:
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
 
-        assert storage.has_locale("ru_RU") is True
+        assert storage.has_locale_in_voices("ru_RU") is True
         assert storage.has_voice("ru_RU", "silero-v5_5_ru-aidar") is True
 
     def test_yaml_mixed_enabled_and_disabled(self, tmp_path):
@@ -486,8 +486,8 @@ locales:
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
 
-        assert storage.has_locale("ru_RU") is False
-        assert storage.has_locale("en_US") is True
+        assert storage.has_locale_in_voices("ru_RU") is False
+        assert storage.has_locale_in_voices("en_US") is True
         assert storage.has_voice("en_US", "silero-v3_en-en_0") is True
 
         voices = storage.get_voices()
@@ -720,8 +720,8 @@ class TestDisabledModel:
         assert any(voice.locale == "en_US" for voice in result)
         assert any(voice.name == "silero-v3_en-en_0" for voice in result)
 
-    def test_disabled_model_orphaned_locale_excluded_from_get_locales(self):
-        """get_locales should exclude locales where all voices reference disabled models."""
+    def test_disabled_model_orphaned_locale_excluded_from_get_locales_in_voices(self):
+        """get_locales_in_voices should exclude locales where all voices reference disabled models."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
@@ -750,7 +750,7 @@ class TestDisabledModel:
 
         storage = SileroTTSYamlConfigStorage(config_model)
 
-        result = storage.get_locales()
+        result = storage.get_locales_in_voices()
         assert not any(locale.name == "ru_RU" for locale in result)
         assert any(locale.name == "en_US" for locale in result)
 
@@ -787,8 +787,8 @@ class TestDisabledModel:
         assert storage.has_voice("ru_RU", "silero-v5_5_ru-aidar") is False
         assert storage.has_voice("en_US", "silero-v3_en-en_0") is True
 
-    def test_disabled_model_has_locale_false(self):
-        """has_locale should return False for locales with only disabled-model voices."""
+    def test_disabled_model_has_locale_in_voices_false(self):
+        """has_locale_in_voices should return False for locales with only disabled-model voices."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
@@ -817,8 +817,8 @@ class TestDisabledModel:
 
         storage = SileroTTSYamlConfigStorage(config_model)
 
-        assert storage.has_locale("ru_RU") is False
-        assert storage.has_locale("en_US") is True
+        assert storage.has_locale_in_voices("ru_RU") is False
+        assert storage.has_locale_in_voices("en_US") is True
 
     def test_disabled_model_get_model_info_raises_key_error(self):
         """get_model_info should raise KeyError for a disabled model."""

@@ -227,13 +227,13 @@ class SileroTTSEngine:
     async def process(
         self,
         text: str,
-        locale: str,
+        locale_name: str,
         voice_name: str,
         input_type: str,
     ) -> TTSResult:
-        if not self._storage.has_locale(locale):
-            raise TTSEngineError(f"Unsupported locale: {locale}")
-        if not self._storage.has_voice(locale, voice_name):
+        if not self._storage.has_locale_in_voices(locale_name):
+            raise TTSEngineError(f"Unsupported locale: {locale_name}")
+        if not self._storage.has_voice(locale_name, voice_name):
             raise TTSEngineError(f"Invalid voice: {voice_name}")
         if input_type not in self.get_input_types():
             raise TTSEngineError(f"Invalid input type: {input_type}")
@@ -242,13 +242,13 @@ class SileroTTSEngine:
         if not text:
             raise TTSEngineError("Text is empty or whitespace")
 
-        voice = self._storage.get_voice(locale, voice_name)
+        voice = self._storage.get_voice(locale_name, voice_name)
         model_name = voice.model
 
         logger.info(
             "TTS processing. Text length: {text_length}. Locale: {locale}. Voice: {voice}. Input type: {input_type}. Model: {model_name}.",
             text_length=len(text),
-            locale=locale,
+            locale=locale_name,
             voice=voice_name,
             input_type=input_type,
             model_name=model_name,
@@ -270,14 +270,14 @@ class SileroTTSEngine:
                 # Load and warm up the model
                 cached = await self._warmup_model(model_name)
 
-        text_preprocessor = self._text_preprocessor_factory(locale)
+        text_preprocessor = self._text_preprocessor_factory(locale_name)
         if not text_preprocessor:
             raise TTSEngineError("Text preprocessor not found for locale: '{locale}'.")
 
         logger.debug(
             "Text preprocessor '{text_preprocessor}' found for locale '{locale}'.",
             text_preprocessor=text_preprocessor.__class__.__name__,
-            locale=locale,
+            locale=locale_name,
         )
 
         chunks = (

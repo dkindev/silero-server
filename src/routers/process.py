@@ -29,7 +29,7 @@ async def process_request(
             content={"detail": "Unsupported audio format"},
         )
 
-    if not engine.get_storage().has_locale(LOCALE):
+    if not engine.get_storage().has_locale_in_voices(LOCALE):
         return JSONResponse(
             status_code=400,
             content={"detail": f"Unsupported locale: {LOCALE}"},

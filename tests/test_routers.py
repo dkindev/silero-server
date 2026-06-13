@@ -93,7 +93,7 @@ class TestLocalesEndpoint:
         from src.tts.models import Locale
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.get_locales.return_value = [
+        mock_engine.get_storage.return_value.get_locales_in_voices.return_value = [
             Locale(name="ru_RU"),
             Locale(name="en_US"),
         ]
@@ -120,7 +120,7 @@ class TestLocalesEndpoint:
         from src.tts.models import Locale
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.get_locales.return_value = [
+        mock_engine.get_storage.return_value.get_locales_in_voices.return_value = [
             Locale(name="ru_RU"),
             Locale(name="en_US"),
         ]
@@ -147,7 +147,7 @@ class TestLocalesEndpoint:
         from src.tts.models import Locale
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.get_locales.return_value = [
+        mock_engine.get_storage.return_value.get_locales_in_voices.return_value = [
             Locale(name="ru_RU"),
             Locale(name="de_DE"),
             Locale(name="en_US"),
@@ -304,7 +304,7 @@ class TestProcessEndpoint:
 
         mock_engine = MagicMock()
         mock_engine.process = AsyncMock()
-        mock_engine.get_storage.return_value.has_locale.return_value = True
+        mock_engine.get_storage.return_value.has_locale_in_voices.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
         mock_engine.process.return_value = mock_result
@@ -335,7 +335,7 @@ class TestProcessEndpoint:
 
         mock_engine = MagicMock()
         mock_engine.process = AsyncMock()
-        mock_engine.get_storage.return_value.has_locale.return_value = True
+        mock_engine.get_storage.return_value.has_locale_in_voices.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
         mock_engine.process.return_value = mock_result
@@ -387,7 +387,7 @@ class TestProcessEndpoint:
         from src.deps import get_engine_from_request
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.has_locale.return_value = True
+        mock_engine.get_storage.return_value.has_locale_in_voices.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types.return_value = ("TEXT", "SSML")
 
@@ -415,7 +415,7 @@ class TestProcessEndpoint:
         from src.deps import get_engine_from_request
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.has_locale.return_value = False
+        mock_engine.get_storage.return_value.has_locale_in_voices.return_value = False
 
         app = FastAPI()
 
@@ -439,7 +439,7 @@ class TestProcessEndpoint:
         from src.deps import get_engine_from_request
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.has_locale.return_value = True
+        mock_engine.get_storage.return_value.has_locale_in_voices.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = False
 
         app = FastAPI()
@@ -464,7 +464,7 @@ class TestProcessEndpoint:
         from src.deps import get_engine_from_request
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.has_locale.return_value = True
+        mock_engine.get_storage.return_value.has_locale_in_voices.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types.return_value = ("TEXT", "SSML")
 
@@ -492,7 +492,7 @@ class TestProcessEndpoint:
         from src.deps import get_engine_from_request
 
         mock_engine = MagicMock()
-        mock_engine.get_storage.return_value.has_locale.return_value = True
+        mock_engine.get_storage.return_value.has_locale_in_voices.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types.return_value = ("TEXT", "SSML")
 
@@ -529,7 +529,7 @@ class TestProcessPostEndpoint:
 
         mock_engine = MagicMock()
         mock_engine.process = AsyncMock()
-        mock_engine.get_storage.return_value.has_locale.return_value = True
+        mock_engine.get_storage.return_value.has_locale_in_voices.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
         mock_engine.process.return_value = mock_result
@@ -567,7 +567,7 @@ class TestProcessPostEndpoint:
 
         mock_engine = MagicMock()
         mock_engine.process = AsyncMock()
-        mock_engine.get_storage.return_value.has_locale.return_value = True
+        mock_engine.get_storage.return_value.has_locale_in_voices.return_value = True
         mock_engine.get_storage.return_value.has_voice.return_value = True
         mock_engine.get_input_types = MagicMock(return_value=("TEXT", "SSML"))
         mock_engine.process.return_value = mock_result
