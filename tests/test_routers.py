@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from src.deps import EngineDep, get_engine_from_request
 from src.handlers import add_global_exception_handler
 from src.tts.exceptions import TTSEngineError
+from src.tts.models import Voice
 
 
 class TestExceptionHandler:
@@ -175,19 +176,18 @@ class TestVoicesEndpoint:
     def test_voices_returns_200(self):
         """GET /voices should return 200 status code."""
         from src.deps import get_engine_from_request
-        from src.tts.models import VoiceConfig
 
         mock_engine = MagicMock()
         mock_engine.get_storage.return_value.get_voices.return_value = [
-            VoiceConfig(
-                voice_name="silero-v5_5_ru-aidar",
+            Voice(
+                name="silero-v5_5_ru-aidar",
                 speaker="aidar",
                 model="v5_5_ru",
                 gender="male",
                 locale="ru_RU",
             ),
-            VoiceConfig(
-                voice_name="silero-v5_5_ru-baya",
+            Voice(
+                name="silero-v5_5_ru-baya",
                 speaker="baya",
                 model="v5_5_ru",
                 gender="female",
@@ -214,12 +214,11 @@ class TestVoicesEndpoint:
     def test_voices_returns_plain_text(self):
         """GET /voices should return text/plain content type."""
         from src.deps import get_engine_from_request
-        from src.tts.models import VoiceConfig
 
         mock_engine = MagicMock()
         mock_engine.get_storage.return_value.get_voices.return_value = [
-            VoiceConfig(
-                voice_name="silero-v5_5_ru-aidar",
+            Voice(
+                name="silero-v5_5_ru-aidar",
                 speaker="aidar",
                 model="v5_5_ru",
                 gender="male",
@@ -246,26 +245,25 @@ class TestVoicesEndpoint:
     def test_voices_returns_mary_tts_format(self):
         """GET /voices should return voices in Mary-TTS format, one per line."""
         from src.deps import get_engine_from_request
-        from src.tts.models import VoiceConfig
 
         mock_engine = MagicMock()
         mock_engine.get_storage.return_value.get_voices.return_value = [
-            VoiceConfig(
-                voice_name="silero-v5_5_ru-aidar",
+            Voice(
+                name="silero-v5_5_ru-aidar",
                 speaker="aidar",
                 model="v5_5_ru",
                 gender="male",
                 locale="ru_RU",
             ),
-            VoiceConfig(
-                voice_name="silero-v5_5_ru-baya",
+            Voice(
+                name="silero-v5_5_ru-baya",
                 speaker="baya",
                 model="v5_5_ru",
                 gender="female",
                 locale="ru_RU",
             ),
-            VoiceConfig(
-                voice_name="silero-v3_en-en_0",
+            Voice(
+                name="silero-v3_en-en_0",
                 speaker="en_0",
                 model="v3_en",
                 gender="male",

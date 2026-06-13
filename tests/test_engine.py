@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from src.tts.config_storage import SileroTTSYamlConfigStorage
-from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, VoiceConfig
+from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, Voice
 from src.tts.preprocessing import TextPreprocessor
 
 
@@ -69,8 +69,8 @@ class TestSileroTTSEngineInit:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -103,7 +103,7 @@ class TestSileroTTSEngineInit:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -303,7 +303,7 @@ class TestProcessValidation:
                 await engine.process(
                     text="hello",
                     locale="invalid_Locale",
-                    voice="silero-v5_5_ru-aidar",
+                    voice_name="silero-v5_5_ru-aidar",
                     input_type="TEXT",
                 )
 
@@ -363,7 +363,7 @@ class TestProcessValidation:
                 await engine.process(
                     text="hello",
                     locale="ru_RU",
-                    voice="invalid_voice",
+                    voice_name="invalid_voice",
                     input_type="TEXT",
                 )
 
@@ -421,7 +421,7 @@ class TestProcessValidation:
                 await engine.process(
                     text="hello",
                     locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
+                    voice_name="silero-v5_5_ru-aidar",
                     input_type="INVALID",
                 )
 
@@ -445,8 +445,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -476,7 +476,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -504,8 +504,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -538,7 +538,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -564,8 +564,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -594,7 +594,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -612,8 +612,8 @@ class TestProcessValidation:
         models_dir = make_models_dir(tmp_path, sample_rates=[8000, 24000])
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -659,7 +659,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -674,8 +674,8 @@ class TestProcessValidation:
         models_dir = make_models_dir(tmp_path, sample_rates=[24000, 48000])
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -721,7 +721,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -747,8 +747,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -782,7 +782,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -808,8 +808,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -843,7 +843,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -858,8 +858,8 @@ class TestProcessValidation:
         models_dir = make_models_dir(tmp_path, sample_rates=[24000])
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -905,7 +905,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -931,8 +931,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -966,7 +966,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -999,8 +999,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1034,7 +1034,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1060,8 +1060,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1096,13 +1096,13 @@ class TestProcessValidation:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
             await engine.process(
                 text="world",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1127,8 +1127,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1156,7 +1156,7 @@ class TestProcessValidation:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1180,8 +1180,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1220,7 +1220,7 @@ class TestProcessValidation:
                 result = await engine.process(
                     text="hello",
                     locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
+                    voice_name="silero-v5_5_ru-aidar",
                     input_type="TEXT",
                 )
 
@@ -1250,8 +1250,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1290,7 +1290,7 @@ class TestProcessValidation:
                 result = await engine.process(
                     text="hello",
                     locale="ru_RU",
-                    voice="silero-v5_5_ru-aidar",
+                    voice_name="silero-v5_5_ru-aidar",
                     input_type="TEXT",
                 )
 
@@ -1327,8 +1327,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1345,7 +1345,7 @@ class TestProcessValidation:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1379,8 +1379,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1397,7 +1397,7 @@ class TestProcessValidation:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1436,8 +1436,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1454,7 +1454,7 @@ class TestProcessValidation:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1497,8 +1497,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru", hash_prefix="a1b2c3d4")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1515,7 +1515,7 @@ class TestProcessValidation:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1556,8 +1556,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1574,7 +1574,7 @@ class TestProcessValidation:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1600,8 +1600,8 @@ class TestProcessValidation:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1630,7 +1630,7 @@ class TestProcessValidation:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1673,8 +1673,8 @@ class TestCachedModel:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1702,7 +1702,7 @@ class TestCachedModel:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1759,15 +1759,15 @@ class TestModelEviction:
         model_ru = Model(name="v5_5_ru", language="ru")
         locale_en = Locale(name="en_US")
         locale_ru = Locale(name="ru_RU")
-        voice_en = VoiceConfig(
-            voice_name="silero-v3_en-en_0",
+        voice_en = Voice(
+            name="silero-v3_en-en_0",
             speaker="en_0",
             model="v3_en",
             gender="male",
             locale="en_US",
         )
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1800,7 +1800,7 @@ class TestModelEviction:
             await engine.process(
                 text="hello",
                 locale="en_US",
-                voice="silero-v3_en-en_0",
+                voice_name="silero-v3_en-en_0",
                 input_type="TEXT",
             )
             assert mock_pkg.call_count == 1
@@ -1808,7 +1808,7 @@ class TestModelEviction:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
             assert mock_pkg.call_count == 2
@@ -1816,7 +1816,7 @@ class TestModelEviction:
             await engine.process(
                 text="hello",
                 locale="en_US",
-                voice="silero-v3_en-en_0",
+                voice_name="silero-v3_en-en_0",
                 input_type="TEXT",
             )
             assert mock_pkg.call_count == 3
@@ -1840,8 +1840,8 @@ class TestModelEviction:
         )
         model_config = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1870,7 +1870,7 @@ class TestModelEviction:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
             assert mock_pkg.call_count == 1
@@ -1878,7 +1878,7 @@ class TestModelEviction:
             await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
             assert mock_pkg.call_count == 1
@@ -1907,8 +1907,8 @@ class TestWarmup:
         )
         model_config = Model(name="v5_5_ru", language="ru", warmup=True)
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -1940,7 +1940,7 @@ class TestWarmup:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 
@@ -1967,8 +1967,8 @@ class TestWarmup:
         warmup_model = Model(name="v5_5_ru", language="ru", warmup=True)
         process_model = Model(name="v5_5_ru", language="ru")
         locale_ru = Locale(name="ru_RU")
-        voice_ru = VoiceConfig(
-            voice_name="silero-v5_5_ru-aidar",
+        voice_ru = Voice(
+            name="silero-v5_5_ru-aidar",
             speaker="aidar",
             model="v5_5_ru",
             gender="male",
@@ -2001,7 +2001,7 @@ class TestWarmup:
             result = await engine.process(
                 text="hello",
                 locale="ru_RU",
-                voice="silero-v5_5_ru-aidar",
+                voice_name="silero-v5_5_ru-aidar",
                 input_type="TEXT",
             )
 

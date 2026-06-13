@@ -3,7 +3,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from src.tts.exceptions import TTSEngineError
-from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, TTSResult, VoiceConfig
+from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, TTSResult, Voice
 
 
 class TestModel:
@@ -40,33 +40,33 @@ class TestModel:
             model.language = "fr"
 
 
-class TestVoiceConfig:
-    def test_voice_config_has_all_fields(self):
-        """VoiceConfig dataclass has voice_name, speaker, model, gender, locale fields."""
-        vc = VoiceConfig(
-            voice_name="silero-v3_en-en_0",
+class TestVoice:
+    def test_voice_has_all_fields(self):
+        """Voice dataclass has name, speaker, model, gender, locale fields."""
+        voice = Voice(
+            name="silero-v3_en-en_0",
             speaker="en_0",
             model="v3_en",
             gender="male",
             locale="en_US",
         )
-        assert vc.voice_name == "silero-v3_en-en_0"
-        assert vc.speaker == "en_0"
-        assert vc.model == "v3_en"
-        assert vc.gender == "male"
-        assert vc.locale == "en_US"
+        assert voice.name == "silero-v3_en-en_0"
+        assert voice.speaker == "en_0"
+        assert voice.model == "v3_en"
+        assert voice.gender == "male"
+        assert voice.locale == "en_US"
 
-    def test_voice_config_is_frozen(self):
-        """VoiceConfig dataclass is immutable (frozen)."""
-        vc = VoiceConfig(
-            voice_name="silero-v3_en-en_0",
+    def test_voice_is_frozen(self):
+        """Voice dataclass is immutable (frozen)."""
+        voice = Voice(
+            name="silero-v3_en-en_0",
             speaker="en_0",
             model="v3_en",
             gender="male",
             locale="en_US",
         )
         with pytest.raises(FrozenInstanceError):
-            vc.speaker = "en_1"
+            voice.speaker = "en_1"
 
 
 class TestLocale:
@@ -88,8 +88,8 @@ class TestTTSConfigModel:
         models = [Model(name="v3_en", language="en")]
         locales = [Locale(name="en_US")]
         voices = [
-            VoiceConfig(
-                voice_name="silero-v3_en-en_0",
+            Voice(
+                name="silero-v3_en-en_0",
                 speaker="en_0",
                 model="v3_en",
                 gender="male",

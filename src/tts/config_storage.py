@@ -4,16 +4,16 @@ from pathlib import Path
 import yaml
 from loguru import logger
 
-from src.tts.models import Locale, Model, TTSConfigModel, VoiceConfig
+from src.tts.models import Locale, Model, TTSConfigModel, Voice
 
 
 class SileroTTSConfigStorage(ABC):
     @abstractmethod
-    def has_locale(self, locale: str) -> bool:
+    def has_locale(self, locale_name: str) -> bool:
         ...
 
     @abstractmethod
-    def has_voice(self, locale: str, voice_name: str) -> bool:
+    def has_voice(self, locale_name: str, voice_name: str) -> bool:
         ...
 
     @abstractmethod
@@ -21,11 +21,11 @@ class SileroTTSConfigStorage(ABC):
         ...
 
     @abstractmethod
-    def get_voices(self) -> list[VoiceConfig]:
+    def get_voices(self) -> list[Voice]:
         ...
 
     @abstractmethod
-    def get_voice_config(self, locale: str, voice_name: str) -> VoiceConfig:
+    def get_voice(self, locale_name: str, voice_name: str) -> Voice:
         ...
 
     @abstractmethod
@@ -48,12 +48,12 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
 
         self._models: dict[str, Model] = {m.name: m for m in config_model.models}
 
-        self._locales: dict[str, tuple[Locale, dict[str, VoiceConfig]]] = {
+        self._locales: dict[str, tuple[Locale, dict[str, Voice]]] = {
             locale.name: (locale, {}) for locale in config_model.locales
         }
-        for vc in config_model.voices:
-            if vc.locale in self._locales:
-                self._locales[vc.locale][1][vc.voice_name] = vc
+        for voice in config_model.voices:
+            if voice.locale in self._locales:
+                self._locales[voice.locale][1][voice.name] = voice
 
     def _load_config_model(self, config_path: str | Path) -> TTSConfigModel:
         logger.debug("Loading Silero-To-Mary configuration from '{path}'.", path=config_path)
@@ -73,18 +73,18 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
         ]
 
         locales_list: list[Locale] = []
-        voices_list: list[VoiceConfig] = []
+        voices_list: list[Voice] = []
 
         for locale_name, loc in data.get("locales", {}).items():
             locales_list.append(Locale(name=locale_name))
-            for voice_name, v in loc.get("voices", {}).items():
-                speaker = v.get("speaker", "").strip() or voice_name
+            for voice_name, voice_data in loc.get("voices", {}).items():
+                speaker = voice_data.get("speaker", "").strip() or voice_name
                 voices_list.append(
-                    VoiceConfig(
-                        voice_name=voice_name,
+                    Voice(
+                        name=voice_name,
                         speaker=speaker,
-                        model=v["model"],
-                        gender=v["gender"],
+                        model=voice_data["model"],
+                        gender=voice_data["gender"],
                         locale=locale_name,
                     )
                 )
@@ -97,8 +97,8 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
         enabled_models = [m for m in config.models if m.enabled]
         enabled_model_names = {m.name for m in enabled_models}
 
-        filtered_voices = [vc for vc in config.voices if vc.model in enabled_model_names]
-        locales_with_enabled_voices = {vc.locale for vc in filtered_voices}
+        filtered_voices = [voice for voice in config.voices if voice.model in enabled_model_names]
+        locales_with_enabled_voices = {voice.locale for voice in filtered_voices}
 
         filtered_locales = [
             locale for locale in config.locales if locale.name in locales_with_enabled_voices
@@ -108,20 +108,20 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
             models=enabled_models, locales=filtered_locales, voices=filtered_voices
         )
 
-    def has_locale(self, locale: str) -> bool:
-        return locale in self._locales
+    def has_locale(self, locale_name: str) -> bool:
+        return locale_name in self._locales
 
-    def has_voice(self, locale: str, voice_name: str) -> bool:
-        return locale in self._locales and voice_name in self._locales[locale][1]
+    def has_voice(self, locale_name: str, voice_name: str) -> bool:
+        return locale_name in self._locales and voice_name in self._locales[locale_name][1]
 
     def get_locales(self) -> list[Locale]:
         return [locale for locale, _ in self._locales.values()]
 
-    def get_voices(self) -> list[VoiceConfig]:
-        return [vc for _, voices in self._locales.values() for vc in voices.values()]
+    def get_voices(self) -> list[Voice]:
+        return [voice for _, voices in self._locales.values() for voice in voices.values()]
 
-    def get_voice_config(self, locale: str, voice_name: str) -> VoiceConfig:
-        return self._locales[locale][1][voice_name]
+    def get_voice(self, locale_name: str, voice_name: str) -> Voice:
+        return self._locales[locale_name][1][voice_name]
 
     def get_model_info(self, model_name: str) -> Model:
         return self._models[model_name]

@@ -1,6 +1,6 @@
 import pytest
 
-from src.tts.models import Locale, Model, TTSConfigModel, VoiceConfig
+from src.tts.models import Locale, Model, TTSConfigModel, Voice
 
 
 class TestSileroTTSYamlConfigStorageInit:
@@ -14,8 +14,8 @@ class TestSileroTTSYamlConfigStorageInit:
             models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
@@ -41,8 +41,8 @@ class TestHasVoice:
             models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
@@ -99,8 +99,8 @@ class TestGetLocales:
             models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU"), Locale(name="de_DE")],
             voices=[
-                VoiceConfig(
-                    voice_name="aidar",
+                Voice(
+                    name="aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
@@ -120,7 +120,7 @@ class TestGetVoices:
     """Tests for get_voices() method."""
 
     def test_get_voices_returns_list(self):
-        """get_voices should return a list of VoiceConfig objects."""
+        """get_voices should return a list of Voice objects."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(models=[], locales=[], voices=[])
@@ -129,16 +129,16 @@ class TestGetVoices:
         result = storage.get_voices()
         assert isinstance(result, list)
 
-    def test_get_voices_returns_voice_configs(self):
-        """get_voices should return list of VoiceConfig objects."""
+    def test_get_voices_returns_voice_objects(self):
+        """get_voices should return list of Voice objects."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
             models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
@@ -150,7 +150,7 @@ class TestGetVoices:
 
         result = storage.get_voices()
         assert len(result) == 1
-        assert result[0].voice_name == "silero-v5_5_ru-aidar"
+        assert result[0].name == "silero-v5_5_ru-aidar"
         assert result[0].gender == "male"
         assert result[0].locale == "ru_RU"
 
@@ -162,15 +162,15 @@ class TestGetVoices:
             models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
                     locale="ru_RU",
                 ),
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-baya",
+                Voice(
+                    name="silero-v5_5_ru-baya",
                     speaker="baya",
                     model="v5_5_ru",
                     gender="female",
@@ -182,8 +182,8 @@ class TestGetVoices:
 
         result = storage.get_voices()
         assert len(result) == 2
-        assert result[0].voice_name == "silero-v5_5_ru-aidar"
-        assert result[1].voice_name == "silero-v5_5_ru-baya"
+        assert result[0].name == "silero-v5_5_ru-aidar"
+        assert result[1].name == "silero-v5_5_ru-baya"
 
     def test_get_voices_from_all_locales(self):
         """get_voices should include voices from all locales."""
@@ -193,15 +193,15 @@ class TestGetVoices:
             models=[Model(name="v5_5_ru", language="ru"), Model(name="v3_en", language="en")],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
                     locale="ru_RU",
                 ),
-                VoiceConfig(
-                    voice_name="silero-v3_en-en_0",
+                Voice(
+                    name="silero-v3_en-en_0",
                     speaker="en_0",
                     model="v3_en",
                     gender="male",
@@ -215,19 +215,19 @@ class TestGetVoices:
         assert len(result) == 2
 
 
-class TestGetVoiceConfig:
-    """Tests for get_voice_config() method."""
+class TestGetVoice:
+    """Tests for get_voice() method."""
 
-    def test_get_voice_config_returns_correct_config(self):
-        """get_voice_config should return VoiceConfig for the given locale and voice."""
+    def test_get_voice_returns_correct_config(self):
+        """get_voice should return Voice for the given locale and voice."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
             models=[Model(name="v5_5_ru", language="ru")],
             locales=[Locale(name="ru_RU")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
@@ -237,10 +237,10 @@ class TestGetVoiceConfig:
         )
         storage = SileroTTSYamlConfigStorage(config_model)
 
-        vc = storage.get_voice_config("ru_RU", "silero-v5_5_ru-aidar")
-        assert vc.speaker == "aidar"
-        assert vc.model == "v5_5_ru"
-        assert vc.gender == "male"
+        voice = storage.get_voice("ru_RU", "silero-v5_5_ru-aidar")
+        assert voice.speaker == "aidar"
+        assert voice.model == "v5_5_ru"
+        assert voice.gender == "male"
 
 
 class TestYamlConstructor:
@@ -272,7 +272,7 @@ locales:
         assert storage.has_voice("ru_RU", "silero-v5_5_ru-aidar") is True
 
     def test_loaded_voices_have_voice_configs(self, tmp_path):
-        """get_voices should return VoiceConfigs after loading from YAML."""
+        """get_voices should return Voice objects after loading from YAML."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_yml = tmp_path / "config.yml"
@@ -295,7 +295,7 @@ locales:
 
         voices = storage.get_voices()
         assert len(voices) == 1
-        assert voices[0].voice_name == "silero-v5_5_ru-aidar"
+        assert voices[0].name == "silero-v5_5_ru-aidar"
         assert voices[0].gender == "male"
         assert voices[0].locale == "ru_RU"
 
@@ -319,8 +319,8 @@ locales:
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        vc = storage.get_voice_config("ru_RU", "silero-v5_5_ru-aidar")
-        assert vc.speaker == "silero-v5_5_ru-aidar"
+        voice = storage.get_voice("ru_RU", "silero-v5_5_ru-aidar")
+        assert voice.speaker == "silero-v5_5_ru-aidar"
 
     def test_empty_speaker_defaults_to_voice_name(self, tmp_path):
         """YAML with speaker: '' should default speaker to voice_name."""
@@ -343,8 +343,8 @@ locales:
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        vc = storage.get_voice_config("ru_RU", "silero-v5_5_ru-aidar")
-        assert vc.speaker == "silero-v5_5_ru-aidar"
+        voice = storage.get_voice("ru_RU", "silero-v5_5_ru-aidar")
+        assert voice.speaker == "silero-v5_5_ru-aidar"
 
 
 class TestEmptyConfig:
@@ -491,9 +491,9 @@ locales:
         assert storage.has_voice("en_US", "silero-v3_en-en_0") is True
 
         voices = storage.get_voices()
-        assert not any(vc.locale == "ru_RU" for vc in voices)
-        assert any(vc.locale == "en_US" for vc in voices)
-        assert any(vc.voice_name == "silero-v3_en-en_0" for vc in voices)
+        assert not any(voice.locale == "ru_RU" for voice in voices)
+        assert any(voice.locale == "en_US" for voice in voices)
+        assert any(voice.name == "silero-v3_en-en_0" for voice in voices)
 
 
 class TestGetModelInfo:
@@ -526,8 +526,8 @@ class TestGetModels:
             ],
             locales=[Locale(name="ru_RU")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
@@ -696,15 +696,15 @@ class TestDisabledModel:
             ],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
                     locale="ru_RU",
                 ),
-                VoiceConfig(
-                    voice_name="silero-v3_en-en_0",
+                Voice(
+                    name="silero-v3_en-en_0",
                     speaker="en_0",
                     model="v3_en",
                     gender="male",
@@ -716,9 +716,9 @@ class TestDisabledModel:
         storage = SileroTTSYamlConfigStorage(config_model)
 
         result = storage.get_voices()
-        assert not any(vc.locale == "ru_RU" for vc in result)
-        assert any(vc.locale == "en_US" for vc in result)
-        assert any(vc.voice_name == "silero-v3_en-en_0" for vc in result)
+        assert not any(voice.locale == "ru_RU" for voice in result)
+        assert any(voice.locale == "en_US" for voice in result)
+        assert any(voice.name == "silero-v3_en-en_0" for voice in result)
 
     def test_disabled_model_orphaned_locale_excluded_from_get_locales(self):
         """get_locales should exclude locales where all voices reference disabled models."""
@@ -731,15 +731,15 @@ class TestDisabledModel:
             ],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
                     locale="ru_RU",
                 ),
-                VoiceConfig(
-                    voice_name="silero-v3_en-en_0",
+                Voice(
+                    name="silero-v3_en-en_0",
                     speaker="en_0",
                     model="v3_en",
                     gender="male",
@@ -765,15 +765,15 @@ class TestDisabledModel:
             ],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
                     locale="ru_RU",
                 ),
-                VoiceConfig(
-                    voice_name="silero-v3_en-en_0",
+                Voice(
+                    name="silero-v3_en-en_0",
                     speaker="en_0",
                     model="v3_en",
                     gender="male",
@@ -798,15 +798,15 @@ class TestDisabledModel:
             ],
             locales=[Locale(name="ru_RU"), Locale(name="en_US")],
             voices=[
-                VoiceConfig(
-                    voice_name="silero-v5_5_ru-aidar",
+                Voice(
+                    name="silero-v5_5_ru-aidar",
                     speaker="aidar",
                     model="v5_5_ru",
                     gender="male",
                     locale="ru_RU",
                 ),
-                VoiceConfig(
-                    voice_name="silero-v3_en-en_0",
+                Voice(
+                    name="silero-v3_en-en_0",
                     speaker="en_0",
                     model="v3_en",
                     gender="male",

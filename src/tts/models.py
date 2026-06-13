@@ -12,8 +12,8 @@ class Model:
 
 
 @dataclass(frozen=True)
-class VoiceConfig:
-    voice_name: str
+class Voice:
+    name: str
     speaker: str
     model: str
     gender: str
@@ -29,7 +29,7 @@ class Locale:
 class TTSConfigModel:
     models: list[Model]
     locales: list[Locale]
-    voices: list[VoiceConfig]
+    voices: list[Voice]
 
 
 @dataclass(frozen=True)

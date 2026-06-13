@@ -228,13 +228,13 @@ class SileroTTSEngine:
         self,
         text: str,
         locale: str,
-        voice: str,
+        voice_name: str,
         input_type: str,
     ) -> TTSResult:
         if not self._storage.has_locale(locale):
             raise TTSEngineError(f"Unsupported locale: {locale}")
-        if not self._storage.has_voice(locale, voice):
-            raise TTSEngineError(f"Invalid voice: {voice}")
+        if not self._storage.has_voice(locale, voice_name):
+            raise TTSEngineError(f"Invalid voice: {voice_name}")
         if input_type not in self.get_input_types():
             raise TTSEngineError(f"Invalid input type: {input_type}")
 
@@ -242,14 +242,14 @@ class SileroTTSEngine:
         if not text:
             raise TTSEngineError("Text is empty or whitespace")
 
-        voice_config = self._storage.get_voice_config(locale, voice)
-        model_name = voice_config.model
+        voice = self._storage.get_voice(locale, voice_name)
+        model_name = voice.model
 
         logger.info(
             "TTS processing. Text length: {text_length}. Locale: {locale}. Voice: {voice}. Input type: {input_type}. Model: {model_name}.",
             text_length=len(text),
             locale=locale,
-            voice=voice,
+            voice=voice_name,
             input_type=input_type,
             model_name=model_name,
         )
@@ -292,7 +292,7 @@ class SileroTTSEngine:
 
         logger.debug("Chunks count for TTS processing: {chunks_count}", chunks_count=len(chunks))
 
-        speaker = voice_config.speaker
+        speaker = voice.speaker
 
         async def process_chunk(chunk: str):
             async with cached.semaphore:
