@@ -35,4 +35,4 @@ Update `CONTEXT.md` to document `Model.name` in the Model core concept section.
 
 ## Blocked by
 
-- `.scratch/model-core-concept/add-model-name-field.md`
+- `.scratch/model-core-concept/01-add-model-name-field.md`

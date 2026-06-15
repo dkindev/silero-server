@@ -33,7 +33,7 @@ class SileroTTSConfigStorage(ABC):
         ...
 
     @abstractmethod
-    def get_models(self) -> dict[str, Model]:
+    def get_models(self) -> list[Model]:
         ...
 
 
@@ -126,5 +126,5 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
     def get_model(self, model_name: str) -> Model:
         return self._models[model_name]
 
-    def get_models(self) -> dict[str, Model]:
-        return self._models.copy()
+    def get_models(self) -> list[Model]:
+        return list(self._models.values())

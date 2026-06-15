@@ -496,9 +496,7 @@ class SileroTTSEngine:
                 return
 
             models = self._storage.get_models()
-            to_warm = [model for _, model in models.items() if model.warmup][
-                : self._config.max_models
-            ]
+            to_warm = [model for model in models if model.warmup][: self._config.max_models]
 
             logger.debug("Models to warm up: {count}.", count=len(to_warm))
 

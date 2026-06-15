@@ -516,7 +516,7 @@ class TestGetModel:
 
 class TestGetModels:
     def test_get_models_returns_all_enabled_models(self):
-        """get_models() returns dict of all enabled model names to Model objects."""
+        """get_models() returns list of all enabled Model objects."""
         from src.tts.config_storage import SileroTTSYamlConfigStorage
 
         config_model = TTSConfigModel(
@@ -539,11 +539,13 @@ class TestGetModels:
         storage = SileroTTSYamlConfigStorage(config_model)
         result = storage.get_models()
 
-        assert isinstance(result, dict)
-        assert "v5_5_ru" in result
-        assert result["v5_5_ru"].warmup is True
-        assert "v3_en" in result
-        assert result["v3_en"].warmup is False
+        model1 = [model for model in result if model.name == "v5_5_ru"]
+        model2 = [model for model in result if model.name == "v3_en"]
+
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert model1 is not None
+        assert model2 is not None
 
 
 class TestYamlWarmupField:
@@ -571,9 +573,8 @@ locales:
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        models = storage.get_models()
 
-        assert models["v5_5_ru"].warmup is True
+        assert storage.get_model("v5_5_ru").warmup is True
 
     def test_yaml_without_warmup_defaults_to_false(self, tmp_path):
         """YAML without warmup field should default to False."""
@@ -596,9 +597,8 @@ locales:
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        models = storage.get_models()
 
-        assert models["v5_5_ru"].warmup is False
+        assert storage.get_model("v5_5_ru").warmup is False
 
 
 class TestYamlHashPrefixField:
@@ -626,9 +626,8 @@ locales:
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        models = storage.get_models()
 
-        assert models["v5_5_ru"].hash_prefix == "a1b2c3d4"
+        assert storage.get_model("v5_5_ru").hash_prefix == "a1b2c3d4"
 
     def test_yaml_without_hash_prefix_defaults_to_none(self, tmp_path):
         """YAML without hash_prefix should default to None."""
@@ -651,9 +650,8 @@ locales:
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        models = storage.get_models()
 
-        assert models["v5_5_ru"].hash_prefix is None
+        assert storage.get_model("v5_5_ru").hash_prefix is None
 
     def test_yaml_empty_hash_prefix_defaults_to_none(self, tmp_path):
         """YAML with empty hash_prefix should default to None."""
@@ -677,9 +675,8 @@ locales:
         )
 
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        models = storage.get_models()
 
-        assert models["v5_5_ru"].hash_prefix is None
+        assert storage.get_model("v5_5_ru").hash_prefix is None
 
 
 class TestDisabledModel:
