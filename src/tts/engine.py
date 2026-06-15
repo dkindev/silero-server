@@ -246,7 +246,7 @@ class SileroTTSEngine:
         model_name = voice.model
 
         model = self._storage.get_model(model_name)
-        if model:
+        if not model:
             raise TTSEngineError(f"Unsupported model: {model_name}")
 
         logger.info(
@@ -348,7 +348,7 @@ class SileroTTSEngine:
                 self._evict_oldest_model()
 
                 # Load and warm up the model
-                cached = await self._warmup_tts_model(model.name)
+                cached = await self._warmup_tts_model(model)
 
         return cached
 
