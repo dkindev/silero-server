@@ -2,8 +2,9 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
+from src.config import Settings
 from src.tts.exceptions import TTSEngineError
-from src.tts.models import Locale, Model, TTSConfig, TTSConfigModel, TTSResult, Voice
+from src.tts.models import Model, TTSConfig, TTSConfigModel, TTSResult, Voice
 
 
 class TestModel:
@@ -42,68 +43,68 @@ class TestModel:
 
 class TestVoice:
     def test_voice_has_all_fields(self):
-        """Voice dataclass has name, speaker, model, gender, locale fields."""
+        """Voice dataclass has id, name, speaker, model, locale fields."""
         voice = Voice(
-            name="silero-v3_en-en_0",
+            id="en_US-v3_en-en_0",
+            name="en_0",
             speaker="en_0",
             model="v3_en",
-            gender="male",
             locale="en_US",
         )
-        assert voice.name == "silero-v3_en-en_0"
+        assert voice.id == "en_US-v3_en-en_0"
+        assert voice.name == "en_0"
         assert voice.speaker == "en_0"
         assert voice.model == "v3_en"
-        assert voice.gender == "male"
+        assert voice.locale == "en_US"
+
+    def test_voice_can_be_created_without_gender(self):
+        """Voice can be constructed with only the 5 essential fields — no gender required."""
+        voice = Voice(
+            id="en_US-v3_en-en_0",
+            name="en_0",
+            speaker="en_0",
+            model="v3_en",
+            locale="en_US",
+        )
+        assert voice.id == "en_US-v3_en-en_0"
+        assert voice.name == "en_0"
+        assert voice.speaker == "en_0"
+        assert voice.model == "v3_en"
         assert voice.locale == "en_US"
 
     def test_voice_is_frozen(self):
         """Voice dataclass is immutable (frozen)."""
         voice = Voice(
-            name="silero-v3_en-en_0",
+            id="en_US-v3_en-en_0",
+            name="en_0",
             speaker="en_0",
             model="v3_en",
-            gender="male",
             locale="en_US",
         )
         with pytest.raises(FrozenInstanceError):
             voice.speaker = "en_1"
 
 
-class TestLocale:
-    def test_locale_has_name_field(self):
-        """Locale dataclass has name field."""
-        locale = Locale(name="en_US")
-        assert locale.name == "en_US"
-
-    def test_locale_is_frozen(self):
-        """Locale dataclass is immutable (frozen)."""
-        locale = Locale(name="en_US")
-        with pytest.raises(FrozenInstanceError):
-            locale.name = "ru_RU"
-
-
 class TestTTSConfigModel:
-    def test_tts_config_model_has_models_locales_and_voices(self):
-        """TTSConfigModel dataclass has models list, locales list, voices list."""
+    def test_tts_config_model_has_models_and_voices(self):
+        """TTSConfigModel dataclass has models list and voices list."""
         models = [Model(name="v3_en", language="en")]
-        locales = [Locale(name="en_US")]
         voices = [
             Voice(
-                name="silero-v3_en-en_0",
+                id="en_US-v3_en-en_0",
+                name="en_0",
                 speaker="en_0",
                 model="v3_en",
-                gender="male",
                 locale="en_US",
             )
         ]
-        config = TTSConfigModel(models=models, locales=locales, voices=voices)
+        config = TTSConfigModel(models=models, voices=voices)
         assert config.models == models
-        assert config.locales == locales
         assert config.voices == voices
 
     def test_tts_config_model_is_frozen(self):
         """TTSConfigModel dataclass is immutable (frozen)."""
-        config = TTSConfigModel(models=[], locales=[], voices=[])
+        config = TTSConfigModel(models=[], voices=[])
         with pytest.raises(FrozenInstanceError):
             config.models = []
 
@@ -125,9 +126,7 @@ class TestTTSConfig:
 
     def test_tts_config_accepts_models_yml_url_and_hash(self):
         """TTSConfig accepts models_yml_url and models_yml_hash."""
-        from src.config import Settings
-
-        settings = Settings.model_validate({})
+        settings = Settings()
         config = TTSConfig(
             device="cpu",
             sample_rate=48000,
@@ -135,11 +134,11 @@ class TestTTSConfig:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
-            models_yml_url=settings.TTS_MODELS_YML_URL,
-            models_yml_hash=settings.TTS_MODELS_YML_HASH,
+            models_yml_url=str(settings.tts.models_yml_url),
+            models_yml_hash=settings.tts.models_yml_hash,
         )
-        assert config.models_yml_url == settings.TTS_MODELS_YML_URL
-        assert config.models_yml_hash == settings.TTS_MODELS_YML_HASH
+        assert str(config.models_yml_url) == str(settings.tts.models_yml_url)
+        assert config.models_yml_hash == settings.tts.models_yml_hash
 
     def test_tts_config_models_yml_hash_accepts_none(self):
         """TTSConfig.models_yml_hash accepts None (skip validation)."""
@@ -182,10 +181,14 @@ class TestExceptions:
 
 
 class TestTTSResult:
-    def test_tts_result_has_audio_sample_rate_model(self):
-        """TTSResult dataclass has audio, sample_rate, model fields."""
-        audio = b"RIFF\x00\x00\x00WAVE"
-        result = TTSResult(audio=audio, sample_rate=48000, model="v3_en")
+    def test_tts_result_has_all_fields(self):
+        """TTSResult dataclass has audio, sample_rate, model, bytes_per_sample, channels."""
+        audio = b"\x00\x00\x00\x00"
+        result = TTSResult(
+            audio=audio, sample_rate=48000, model="v3_en", bytes_per_sample=2, channels=1
+        )
         assert result.audio == audio
         assert result.sample_rate == 48000
         assert result.model == "v3_en"
+        assert result.bytes_per_sample == 2
+        assert result.channels == 1

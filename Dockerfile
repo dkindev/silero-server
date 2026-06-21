@@ -36,19 +36,17 @@ RUN set -eux; \
     useradd -r --gid silero --uid $UID --home-dir /app --shell /bin/bash silero
 
 COPY --from=builder /app/.venv /app/.venv
-COPY silero-to-mary-config.yml .
+COPY data/ ./data
+COPY config.yml .
 COPY src/ ./src
 RUN chown -R silero:silero .
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
 
-EXPOSE 8000
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)" || exit 1
+EXPOSE 10200
 
 COPY --chmod=555 docker-entrypoint.sh /usr/local/bin
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "src.main:app", "--bind", "0.0.0.0:8000"]
+CMD ["python", "-m", "src.main"]

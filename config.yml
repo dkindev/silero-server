@@ -1,0 +1,19 @@
+uri: tcp://127.0.0.1:10200
+zeroconf: silero-tts
+env_type: development
+
+torch:
+  device: cpu
+  num_threads: 4
+  num_interop_threads: 1
+  flush_denormal: true
+
+tts:
+  sample_rate: 48000
+  max_models: 2
+  max_concurrent_per_model: 2
+  max_chunk_chars: 140
+  models_dir: models/silero
+  models_config_path: data/models.yml
+  models_yml_url: https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml
+  models_yml_hash: ""

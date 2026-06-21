@@ -24,21 +24,17 @@ class InterceptHandler(logging.Handler):
 
 
 def setup_logging():
-    IS_PRODUCTION = get_settings().TTS_ENV_TYPE == "production"
+    IS_PRODUCTION = get_settings().env_type == "production"
 
     logger.remove()
-    logger.configure(extra={"request_id": "-"})
 
     dev_format = (
         "<green>{time:HH:mm:ss.SSS}</green> | "
         "<level>{level: <8}</level> | "
-        "ReqID: <cyan>{extra[request_id]}</cyan> | "
         "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
     )
 
-    prod_format = (
-        "{time:YYYY-MM-DD HH:mm:ss} | {level} | {extra[request_id]} | {name}:{function} | {message}"
-    )
+    prod_format = "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function} | {message}"
 
     logger.add(
         sys.stderr,

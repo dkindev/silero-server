@@ -1,4 +1,4 @@
-A simple, robust, and performant Mary-TTS compatible REST API that wraps the Silero TTS engine, enabling any client (web, mobile, desktop, embedded) to generate speech audio over HTTP/HTTPS with minimal latency and operational overhead.
+A simple, robust, and performant Wyoming protocol TTS server that wraps the Silero TTS engine, enabling Home Assistant and other Wyoming clients to generate speech audio over TCP with minimal latency and operational overhead.
 
 ## Agent skills
 

@@ -1,0 +1,22 @@
+models:
+  v5_5_ru:
+    language: ru
+    warmup: true
+    hash_prefix: 50081637b602126ee06cb3bc8a744d25651d2da149ee8864b9a379bfdd934437
+    locales:
+      ru_RU:
+        voices:
+          - name: aidar
+          - name: eugene
+          - name: baya
+          - name: kseniya
+          - name: xenia
+  v3_en:
+    language: en
+    locales:
+      en_US:
+        voices:
+          - name: henry
+            speaker: en_2
+          - name: sophia
+            speaker: en_3

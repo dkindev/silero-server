@@ -1,274 +1,55 @@
-import pytest
-from pydantic import ValidationError
+from pydantic_settings import YamlConfigSettingsSource
 
 from src.config import Settings
 
 
-def test_settings_tts_torch_device_default():
-    """Test that TTS_TORCH_DEVICE defaults to 'cpu'."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_TORCH_DEVICE == "cpu"
-
-
-def test_settings_tts_torch_num_threads_default():
-    """Test that TTS_TORCH_NUM_THREADS defaults to 4."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_TORCH_NUM_THREADS == 4
-
-
-def test_settings_tts_torch_num_interop_threads_default():
-    """Test that TTS_TORCH_NUM_INTEROP_THREADS defaults to 1."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_TORCH_NUM_INTEROP_THREADS == 1
-
-
-def test_settings_tts_torch_flush_denormal_default():
-    """Test that TTS_TORCH_FLUSH_DENORMAL defaults to True."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_TORCH_FLUSH_DENORMAL is True
-
-
-def test_tts_torch_num_threads_zero_fails():
-    """Test that TTS_TORCH_NUM_THREADS=0 raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_TORCH_NUM_THREADS": 0})
-
-
-def test_tts_torch_num_interop_threads_zero_fails():
-    """Test that TTS_TORCH_NUM_INTEROP_THREADS=0 raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_TORCH_NUM_INTEROP_THREADS": 0})
-
-
-def test_settings_tts_models_dir_default():
-    """Test that TTS_MODELS_DIR defaults to '.models/silero'."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_MODELS_DIR == ".models/silero"
-
-
-def test_settings_has_all_tts_fields():
-    """Test that Settings has all TTS_* fields with correct defaults."""
-    settings = Settings.model_validate({})
-    assert hasattr(settings, "TTS_TORCH_DEVICE")
-    assert hasattr(settings, "TTS_TORCH_NUM_THREADS")
-    assert hasattr(settings, "TTS_TORCH_NUM_INTEROP_THREADS")
-    assert hasattr(settings, "TTS_TORCH_FLUSH_DENORMAL")
-    assert hasattr(settings, "TTS_SAMPLE_RATE")
-    assert hasattr(settings, "TTS_MAX_TEXT_LENGTH")
-    assert hasattr(settings, "TTS_ALLOWED_ORIGINS")
-    assert hasattr(settings, "TTS_CONFIG_PATH")
-    assert hasattr(settings, "TTS_MAX_MODELS")
-    assert hasattr(settings, "TTS_MAX_CONCURRENT_PER_MODEL")
-    assert hasattr(settings, "TTS_MODELS_DIR")
-    assert hasattr(settings, "TTS_MODELS_YML_URL")
-    assert hasattr(settings, "TTS_MODELS_YML_HASH")
-
-
-def test_settings_sample_rate_default():
-    """Test that TTS_SAMPLE_RATE defaults to 48000."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_SAMPLE_RATE == 48000
-
-
-def test_settings_max_text_length_default():
-    """Test that TTS_MAX_TEXT_LENGTH defaults to 1000."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_MAX_TEXT_LENGTH == 1000
-
-
-def test_settings_allowed_origins_default():
-    """Test that TTS_ALLOWED_ORIGINS defaults to '*'."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_ALLOWED_ORIGINS == "*"
-
-
-def test_settings_tts_device_renamed():
-    """Test that old tts_device name raises ValidationError (breaking change)."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"tts_device": "cpu"})
-
-
-def test_invalid_sample_rate_fails():
-    """Test that invalid TTS_SAMPLE_RATE values raise ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_SAMPLE_RATE": 44100})
-
-
-def test_sample_rate_from_string():
-    """Test that TTS_SAMPLE_RATE from env var (string) is coerced to int."""
-    settings = Settings.model_validate({"TTS_SAMPLE_RATE": "48000"})
-    assert settings.TTS_SAMPLE_RATE == 48000
-    assert isinstance(settings.TTS_SAMPLE_RATE, int)
-
-
-def test_valid_sample_rates():
-    """Test that all valid TTS_SAMPLE_RATE values are accepted."""
-    for rate in [8000, 16000, 22050, 24000, 48000]:
-        settings = Settings.model_validate({"TTS_SAMPLE_RATE": rate})
-        assert settings.TTS_SAMPLE_RATE == rate
-
-
-def test_settings_config_path_default():
-    """Test that TTS_CONFIG_PATH defaults to 'silero-to-mary-config.yml'."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_CONFIG_PATH == "silero-to-mary-config.yml"
-
-
-def test_settings_max_concurrent_default():
-    """Test that TTS_MAX_CONCURRENT_PER_MODEL defaults to 2."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_MAX_CONCURRENT_PER_MODEL == 2
-
-
-def test_valid_max_concurrent_values():
-    """Test that all valid TTS_MAX_CONCURRENT_PER_MODEL values are accepted."""
-    for val in [1, 5, 10]:
-        settings = Settings.model_validate({"TTS_MAX_CONCURRENT_PER_MODEL": val})
-        assert settings.TTS_MAX_CONCURRENT_PER_MODEL == val
-
-
-def test_invalid_max_concurrent_zero_fails():
-    """Test that TTS_MAX_CONCURRENT_PER_MODEL=0 raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_MAX_CONCURRENT_PER_MODEL": 0})
-
-
-def test_invalid_max_concurrent_negative_fails():
-    """Test that negative TTS_MAX_CONCURRENT_PER_MODEL raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_MAX_CONCURRENT_PER_MODEL": -1})
-
-
-def test_invalid_max_concurrent_above_range_fails():
-    """Test that TTS_MAX_CONCURRENT_PER_MODEL > 10 raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_MAX_CONCURRENT_PER_MODEL": 11})
-
-
-def test_invalid_config_path_nonexistent_fails(tmp_path):
-    """Test that non-existent TTS_CONFIG_PATH raises ValidationError."""
-    nonexistent = str(tmp_path / "nonexistent.yml")
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_CONFIG_PATH": nonexistent})
-
-
-def test_settings_max_models_default():
-    """Test that TTS_MAX_MODELS defaults to 2."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_MAX_MODELS == 2
-
-
-def test_valid_max_models_values():
-    """Test that valid TTS_MAX_MODELS values are accepted."""
-    for val in [1, 5, 20, 100]:
-        settings = Settings.model_validate({"TTS_MAX_MODELS": val})
-        assert settings.TTS_MAX_MODELS == val
-
-
-def test_invalid_max_models_zero_fails():
-    """Test that TTS_MAX_MODELS=0 raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_MAX_MODELS": 0})
-
-
-def test_invalid_max_models_negative_fails():
-    """Test that negative TTS_MAX_MODELS raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_MAX_MODELS": -1})
-
-
-def test_valid_device_values():
-    """Test that all valid TTS_TORCH_DEVICE values are accepted."""
-    for device in ["cpu", "cuda", "xpu"]:
-        settings = Settings.model_validate({"TTS_TORCH_DEVICE": device})
-        assert settings.TTS_TORCH_DEVICE == device
-
-
-def test_valid_device_case_insensitive():
-    """Test that TTS_TORCH_DEVICE is case-insensitive."""
-    for device, expected in [("CPU", "cpu"), ("CUDA", "cuda"), ("XPU", "xpu")]:
-        settings = Settings.model_validate({"TTS_TORCH_DEVICE": device})
-        assert settings.TTS_TORCH_DEVICE == expected
-
-
-def test_invalid_device_value_fails():
-    """Test that invalid TTS_TORCH_DEVICE value raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_TORCH_DEVICE": "vulkan"})
-
-
-def test_settings_tts_env_type_default():
-    """Test that TTS_ENV_TYPE defaults to 'development'."""
-    settings = Settings.model_validate({})
-    assert settings.TTS_ENV_TYPE == "development"
-
-
-def test_settings_tts_env_type_production():
-    """Test that TTS_ENV_TYPE=production is accepted."""
-    settings = Settings.model_validate({"TTS_ENV_TYPE": "production"})
-    assert settings.TTS_ENV_TYPE == "production"
-
-
-def test_invalid_tts_env_type_fails():
-    """Test that invalid TTS_ENV_TYPE value raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_ENV_TYPE": "staging"})
-
-
-def test_settings_models_yml_url_default():
-    """Test that TTS_MODELS_YML_URL defaults to the pinned Silero models URL."""
-    settings = Settings.model_validate({})
-    expected = "https://raw.githubusercontent.com/snakers4/silero-models/88959d6c73168cab4f1487f63754c7c7c96b78a8/models.yml"
-    assert settings.TTS_MODELS_YML_URL == expected
-
-
-def test_settings_models_yml_hash_default():
-    """Test that TTS_MODELS_YML_HASH defaults to the pinned hash."""
-    settings = Settings.model_validate({})
-    expected = "c981f239ed79b3924f952eb3a4dee3a03221d9867330c2b4054c767df77a86d8"
-    assert settings.TTS_MODELS_YML_HASH == expected
-
-
-def test_settings_models_yml_hash_invalid_fails():
-    """Test that non-SHA-256 TTS_MODELS_YML_HASH raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_MODELS_YML_HASH": "not-a-valid-hash"})
-
-
-def test_settings_models_yml_hash_too_short_fails():
-    """Test that too-short TTS_MODELS_YML_HASH raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate({"TTS_MODELS_YML_HASH": "abc123"})
-
-
-def test_settings_models_yml_hash_too_long_fails():
-    """Test that too-long TTS_MODELS_YML_HASH raises ValidationError."""
-    with pytest.raises(ValidationError):
-        Settings.model_validate(
-            {
-                "TTS_MODELS_YML_HASH": "c981f239ed79b3924f952eb3a4dee3a03221d9867330c2b4054c767df77a86d8ff"
-            }
+class TestTtsUri:
+    def test_default_uri(self):
+        """uri defaults to tcp://127.0.0.1:10200 (from Field default and config.yml)."""
+        settings = Settings()
+        assert settings.uri == "tcp://127.0.0.1:10200"
+
+    def test_uri_from_env_var(self, monkeypatch):
+        """uri is overridable via TTS_URI environment variable."""
+        monkeypatch.setenv("TTS_URI", "tcp://0.0.0.0:10201")
+        settings = Settings()
+        assert settings.uri == "tcp://0.0.0.0:10201"
+
+
+class TestTtsZeroconf:
+    def test_zeroconf_defaults_to_silero(self):
+        """zeroconf defaults to 'silero' (enabled)."""
+        settings = Settings()
+        assert settings.zeroconf == "silero"
+
+    def test_zeroconf_silero_is_truthy(self):
+        """Non-empty zeroconf evaluates as truthy (enabled)."""
+        settings = Settings()
+        assert settings.zeroconf
+
+    def test_zeroconf_from_env_var(self, monkeypatch):
+        """zeroconf is overridable via TTS_ZEROCONF environment variable."""
+        monkeypatch.setenv("TTS_ZEROCONF", "my_tts")
+        settings = Settings()
+        assert settings.zeroconf == "my_tts"
+
+
+class TestYamlConfigSource:
+    def test_config_yml_overrides_defaults(self):
+        """config.yml values take priority over Field defaults."""
+        settings = Settings()
+        assert settings.env_type == "development"
+        assert settings.torch.device == "cpu"
+        assert settings.torch.num_threads == 4
+        assert settings.tts.sample_rate == 48000
+        assert settings.tts.max_models == 2
+
+    def test_yaml_source_is_in_priority_chain(self):
+        """YamlConfigSettingsSource is present in the priority chain."""
+        sources = Settings.settings_customise_sources(Settings, None, None, None, None)
+        assert any(
+            issubclass(s, YamlConfigSettingsSource)
+            if isinstance(s, type)
+            else isinstance(s, YamlConfigSettingsSource)
+            for s in sources
         )
-
-
-def test_settings_models_yml_hash_empty_accepted():
-    """Test that empty TTS_MODELS_YML_HASH is accepted (skip validation)."""
-    settings = Settings.model_validate({"TTS_MODELS_YML_HASH": ""})
-    assert settings.TTS_MODELS_YML_HASH == ""
-
-
-def test_get_settings_importable_from_config():
-    """Test that get_settings can be imported from src.config."""
-    from src.config import get_settings
-
-    settings = get_settings()
-    assert isinstance(settings, Settings)
-
-
-def test_get_settings_is_cached():
-    """Test that get_settings returns the same cached instance."""
-    from src.config import get_settings
-
-    settings1 = get_settings()
-    settings2 = get_settings()
-    assert settings1 is settings2

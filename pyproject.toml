@@ -5,14 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "silero-server"
 version = "0.1.0"
-description = "A simple, robust, and performant REST API that wraps the Silero TTS engine"
+description = "A simple, robust, and performant Wyoming protocol TTS server that wraps the Silero TTS engine"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "Dmitry Kiselev", email = "dmitry@example.com"}]
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "torch==2.11.0",
@@ -28,11 +26,11 @@ dependencies = [
     "setuptools==81.0.0",
     "sympy==1.14.0",
     "typing-extensions==4.15.0",
-    "python-multipart>=0.0.6",
-    "gunicorn>=21.0.0",
     "scipy>=1.17.1",
     "loguru>=0.7.3",
     "razdel>=0.5.0",
+    "wyoming>=1.9.0",
+    "zeroconf>=0.149.16",
 ]
 
 [project.optional-dependencies]

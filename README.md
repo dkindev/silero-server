@@ -1,6 +1,6 @@
 # Silero TTS Server
 
-A simple, robust, and performant Mary-TTS compatible HTTP API that wraps the Silero TTS engine, enabling any client (web, mobile, desktop, embedded) to generate speech audio over HTTP/HTTPS with minimal latency and operational overhead.
+A simple, robust, and performant Wyoming protocol TTS server that wraps the Silero TTS engine, enabling Home Assistant and other Wyoming clients to generate speech audio over TCP with minimal latency and operational overhead.
 
 ## Quick Start
 
@@ -15,7 +15,7 @@ A simple, robust, and performant Mary-TTS compatible HTTP API that wraps the Sil
 2. **Create a virtual environment**
    ```bash
    python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   source .venv/bin/activate
    ```
 
 3. **Install dependencies**
@@ -30,14 +30,10 @@ A simple, robust, and performant Mary-TTS compatible HTTP API that wraps the Sil
 
 5. **Run the application**
    ```bash
-   uvicorn src.main:app --reload
+   python -m src.main
    ```
 
-   The API will be available at `http://localhost:8000`
-
-6. **Access API documentation**
-   - Swagger UI: `http://localhost:8000/docs`
-   - ReDoc: `http://localhost:8000/redoc`
+   The server listens on `tcp://127.0.0.1:10200` by default.
 
 ### Docker
 
@@ -48,79 +44,93 @@ A simple, robust, and performant Mary-TTS compatible HTTP API that wraps the Sil
 
 2. **Run the container**
    ```bash
-   docker run -p 8000:8000 silero-server:latest
+   docker run -p 10200:10200 \
+     -e TTS_ENV_TYPE=production \
+     -v ./data:/app/data \
+     -v ./models:/app/models \
+     silero-server:latest
    ```
 
-   > **Note:** This image runs on CPU only. CUDA/GPU support is not yet containerized.
-
-## API Endpoints
-
-### Process
-
-Synthesizes text to speech audio. Supports GET and POST.
-
-**Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `INPUT_TEXT` | string | Yes | — | Text to synthesize |
-| `LOCALE` | string | Yes | — | Mary-TTS locale (e.g., `ru_RU`) |
-| `VOICE` | string | Yes | — | Voice name |
-| `INPUT_TYPE` | string | No | `TEXT` | Input format: `TEXT`, `SSML` |
-| `OUTPUT_TYPE` | string | No | `AUDIO` | Output format: `AUDIO` (others rejected) |
-| `AUDIO` | string | No | `WAVE_FILE` | Audio format: `WAVE_FILE` (others rejected) |
-
-**Validation:**
-- Input text must not exceed the configured max length (default 1000 chars) — `400 Bad Request`
-- Audio must be `WAVE_FILE` — `400 Bad Request`
-- Locale and voice must exist — `400 Bad Request`
-- Input type must be `TEXT` or `SSML` — `400 Bad Request`
-- Output type must be `AUDIO` — `406 Not Acceptable`
-
-**Response:** WAV audio streamed with `Content-Type: audio/wav`.
-
-### Locales
-
-Returns all supported Mary-TTS locales.
-
-- **Endpoint**: `GET /locales`
-- **Response**: Plain text, one locale per line (e.g., `ru_RU`)
-- **Status Code**: 200
-
-### Voices
-
-Returns all available voices.
-
-- **Endpoint**: `GET /voices`
-- **Response**: Plain text, one voice per line in format `{voice_name} {locale} {gender}`
-- **Status Code**: 200
-
-### Health Check
-- **Endpoint**: `GET /health`
-- **Response**: `{"status": "ok"}`
-- **Status Code**: 200
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TTS_TORCH_DEVICE` | `cpu` | `cpu`, `cuda`, or `xpu`. Falls back to `cpu` at runtime if requested device is unavailable. |
-| `TTS_TORCH_NUM_THREADS` | `4` | PyTorch intra-op thread count (`torch.set_num_threads`). Must be ≥ 1. |
-| `TTS_TORCH_NUM_INTEROP_THREADS` | `1` | PyTorch inter-op thread count (`torch.set_num_interop_threads`). Must be ≥ 1. |
-| `TTS_TORCH_FLUSH_DENORMAL` | `true` | Flush denormal floats for performance (`torch.set_flush_denormal`). Only called when `hasattr` passes. |
-| `TTS_SAMPLE_RATE` | `48000` | Output audio sample rate (Hz). Supported: 8000, 16000, 22050, 24000, 48000 |
-| `TTS_MAX_TEXT_LENGTH` | `1000` | Max input characters. |
-| `TTS_ALLOWED_ORIGINS` | `*` | CORS allowed origins. |
-| `TTS_CONFIG_PATH` | `silero-to-mary-config.yml` | Path to voice/locale mapping config. |
-| `TTS_MAX_MODELS` | `2` | Max models cached in memory. Oldest evicted when limit reached. |
-| `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent chunks for inferencing per model. |
-| `TTS_MAX_CHUNK_CHARS` | `140` | Max characters per text chunk. Longer text is split automatically. |
-| `TTS_MODELS_DIR` | `.models/silero` | Directory for downloaded Silero .pt model files. |
-| `TTS_ENV_TYPE` | `development` | Application environment: `development` or `production`. Controls error detail level, log format, log level, and file logging. |
+   The server exposes port `10200` for Wyoming TCP connections.
 
 ## Configuration
 
-Voice and locale mappings are defined in a YAML config file (default `silero-to-mary-config.yml`). The config has two top-level sections: `models` and `locales`.
+Configuration is resolved with the following priority (highest first):
+
+1. **CLI arguments** — `--uri`, `--torch_device`, `--tts_sample_rate`, etc.
+2. **Environment variables** — `TTS_URI`, `TTS_TORCH_DEVICE`, `TTS_SAMPLE_RATE`, etc.
+3. **config.yml** — YAML file at the project root
+4. **Defaults** — Pydantic `Field(default=...)`
+
+### CLI Arguments
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--uri` | str | `tcp://127.0.0.1:10200` | Server URI (Wyoming TCP) |
+| `--zeroconf` | str | `silero` | Zeroconf discovery name |
+| `--env_type` | str | `development` | `development` or `production` |
+| `--torch_device` | str | `cpu` | PyTorch device (`cpu`, `cuda`, `xpu`) |
+| `--torch_num_threads` | int | `4` | Intra-op thread count |
+| `--torch_num_interop_threads` | int | `1` | Inter-op thread count |
+| `--torch_flush_denormal` | bool | `true` | Flush denormal floats for performance |
+| `--tts_sample_rate` | int | `48000` | Output sample rate (8000, 16000, 24000, 48000) |
+| `--tts_max_models` | int | `2` | Max models cached in memory |
+| `--tts_max_concurrent_per_model` | int | `2` | Max concurrent chunks per model |
+| `--tts_max_chunk_chars` | int | `140` | Max characters per text chunk |
+| `--tts_models_config_path` | str | `data/models.yml` | Path to the voice/model mapping config |
+| `--tts_models_dir` | str | `models/silero` | Directory for downloaded model files |
+| `--tts_models_yml_url` | str | *(see config.yml)* | URL to the Silero models registry |
+| `--tts_models_yml_hash` | str | `""` | SHA-256 hash of the models registry |
+
+### Environment Variables
+
+All env vars use the `TTS_` prefix:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TTS_ENV_TYPE` | `development` | `development` or `production`. Controls log level, format, and file logging. |
+| `TTS_URI` | `tcp://127.0.0.1:10200` | Wyoming server URI |
+| `TTS_ZEROCONF` | `silero` | Zeroconf discovery name. Empty string disables. |
+| `TTS_TORCH_DEVICE` | `cpu` | `cpu`, `cuda`, or `xpu`. Falls back to `cpu` at runtime if unavailable. |
+| `TTS_TORCH_NUM_THREADS` | `4` | PyTorch intra-op thread count |
+| `TTS_TORCH_NUM_INTEROP_THREADS` | `1` | PyTorch inter-op thread count |
+| `TTS_TORCH_FLUSH_DENORMAL` | `true` | Flush denormal floats for performance |
+| `TTS_SAMPLE_RATE` | `48000` | Output audio sample rate (Hz) |
+| `TTS_MAX_MODELS` | `2` | Max models cached in memory (oldest evicted) |
+| `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent synthesis chunks per model |
+| `TTS_MAX_CHUNK_CHARS` | `140` | Max characters per text chunk |
+| `TTS_MODELS_CONFIG_PATH` | `data/models.yml` | Path to the voice/locale mapping config |
+| `TTS_MODELS_DIR` | `models/silero` | Directory for downloaded model files |
+| `TTS_MODELS_YML_URL` | *(see below)* | URL to Silero models.yml registry |
+| `TTS_MODELS_YML_HASH` | `""` | SHA-256 hash for integrity verification |
+
+### config.yml
+
+```yaml
+uri: tcp://127.0.0.1:10200
+zeroconf: silero
+env_type: development
+
+torch:
+  device: cpu
+  num_threads: 4
+  num_interop_threads: 1
+  flush_denormal: true
+
+tts:
+  sample_rate: 48000
+  max_models: 2
+  max_concurrent_per_model: 2
+  max_chunk_chars: 140
+  models_dir: models/silero
+  models_config_path: data/models.yml
+  models_yml_url: https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml
+  models_yml_hash: ""
+```
+
+## Voice and Model Configuration
+
+Voice and locale mappings are defined in a YAML config file (default `data/models.yml`). The config has a `models` top-level section containing model entries.
 
 ### Models
 
@@ -129,65 +139,87 @@ models:
   v5_5_ru:
     language: ru
     warmup: true
-    hash_prefix: a1b2c3d4
+    hash_prefix: 50081637b602126ee06cb3bc8a744d25651d2da149ee8864b9a379bfdd934437
+    locales:
+      ru_RU:
+        voices:
+          - name: aidar
+          - name: eugene
+          - name: baya
+          - name: kseniya
+          - name: xenia
   v3_en:
     language: en
-    enabled: false
+    locales:
+      en_US:
+        voices:
+          - name: henry
+            speaker: en_2
+          - name: sophia
+            speaker: en_3
 ```
 
 Each model key (e.g., `v5_5_ru`) is the model name. Supported fields:
 
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `language` | Yes | — | Silero language identifier (`ru`, `en`, `de`, etc.) |
+| `language` | Yes | — | Silero language identifier (`ru`, `en`, etc.) |
 | `enabled` | No | `true` | `false` to disable the model and exclude its voices |
 | `warmup` | No | `false` | `true` to preload at startup; `false` for lazy loading |
-| `hash_prefix` | No | — | SHA-256 hash prefix for download integrity verification; empty or omitted skips verification |
+| `hash_prefix` | No | — | SHA-256 hash prefix for download integrity verification |
+| `locales` | Yes | — | Map of locale codes to voice lists |
 
-### Locales and Voices
-
-```yaml
-locales:
-  ru_RU:
-    voices:
-      aidar:
-        model: v5_5_ru
-        gender: male
-      custom_name:
-        speaker: en_0
-        model: v3_en
-        gender: female
-```
-
-Each locale key follows Mary-TTS format (`{language}_{COUNTRY}`, e.g., `ru_RU`). A locale is available in the API only when at least one of its voices references an enabled model.
-
-Each voice key is the voice name. Supported fields:
+Each voice entry has the following fields:
 
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `model` | Yes | — | References a model key from the `models:` section |
-| `gender` | Yes | — | Speaker gender label (e.g., `male`, `female`) |
-| `speaker` | No | voice name | Silero's native speaker identifier; must match a speaker known to the model |
+| `name` | Yes | — | Voice name |
+| `speaker` | No | voice name | Silero's native speaker identifier |
+| `model` | No | parent model | Explicit model reference (usually inherited from parent) |
+
+Voices are identified in the Wyoming protocol by their computed ID: `{locale}-{model}-{name}` (e.g., `ru_RU-v5_5_ru-aidar`).
+
+## Wyoming Protocol
+
+This server implements the **Wyoming protocol** — a TCP-based protocol used by Home Assistant for satellite and voice pipeline integration. It is **not** an HTTP REST API.
+
+### How it works
+
+1. **Discovery**: Clients connect over TCP. The server responds to `Describe` events with an `Info` event listing all supported voices and languages.
+2. **Synthesis**: Clients send a `Synthesize` event with a voice name and text. The server streams audio back as `AudioStart` → `AudioChunk(s)` → `AudioStop` events.
+3. **Streaming**: Clients can also stream text incrementally via `SynthesizeStart`/`SynthesizeChunk`/`SynthesizeStop` events.
+
+### Supported Input Types
+
+- `TEXT` — plain text
+- `SSML` — Speech Synthesis Markup Language
+
+### Audio Output
+
+- Format: raw PCM (WAV-compatible)
+- Sample rate: configurable (8000, 16000, 24000, 48000 Hz)
+- Bit depth: 16-bit signed integer
+- Channels: mono (1 channel)
 
 ## Customization
 
-### Adding a new language
+### Adding a new model
 
-1. Add a model entry under `models:` with the Silero language identifier.
-2. Add a locale entry under `locales:` with one or more voices referencing the new model.
+1. Add a model entry under `models:` in `data/models.yml` with the Silero language identifier.
+2. Add locales with voices referencing the new model.
 
 ### Adding or renaming voices
 
-Add or edit entries under `locales.*.voices`. Set `speaker` to the Silero native speaker name only if it differs from the voice name.
+Add or edit entries under `locales.*.voices` in `data/models.yml`. Set `speaker` to the Silero native speaker name only if it differs from the voice name.
 
 ### Disabling a model
 
-Set `enabled: false` on the model entry. Its voices are automatically excluded from API responses.
+Set `enabled: false` on the model entry. Its voices are automatically excluded from discovery.
 
 ### Performance tuning
 
-| Variable | Effect |
-|----------|--------|
+| Setting | Effect |
+|---------|--------|
 | `TTS_MAX_MODELS` | Maximum models cached in memory (oldest evicted) |
 | `TTS_MAX_CONCURRENT_PER_MODEL` | Max concurrent synthesis chunks per model |
 | `TTS_MAX_CHUNK_CHARS` | Max characters per text chunk before splitting |
@@ -198,11 +230,11 @@ Set `TTS_TORCH_DEVICE` to `cpu`, `cuda`, or `xpu`. Falls back to `cpu` if the re
 
 ### Sample rate
 
-Set `TTS_SAMPLE_RATE` to any of 8000, 16000, 22050, 24000, or 48000 Hz. The engine automatically selects the best-supported rate from the model.
+Set `TTS_SAMPLE_RATE` to any of 8000, 16000, 24000, or 48000 Hz. The engine automatically selects the best-supported rate from the model's capabilities.
 
 ### Custom text preprocessing
 
-Write a subclass of `TextPreprocessor` for a locale and register it in the `_TEXT_PREPROCESSOR_BUILDERS` dict in `src/deps.py`.
+Write a subclass of `TextPreprocessor` and register it in the `_TEXT_PREPROCESSOR_BUILDERS` dict in `src/main.py`. Currently `ru_RU` uses `RuTextPreprocessor` (with `razdel` for Russian sentence splitting); all other locales use the base `TextPreprocessor`.
 
 ## Development
 
@@ -215,22 +247,15 @@ pytest tests/
 ### Linting and Formatting
 
 ```bash
-# Check code with Ruff
 ruff check src tests
-
-# Format code with Ruff
 ruff format src tests
 ```
 
 ### Pre-commit Hooks
 
-Install pre-commit hooks to automatically lint and format code before commits:
-
 ```bash
 pre-commit install
 ```
-
-This will run Ruff linting and formatting on staged files before each commit.
 
 ## CI/CD
 
@@ -243,4 +268,4 @@ See `.github/workflows/ci.yml` for details.
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License — see LICENSE file for details.

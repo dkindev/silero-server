@@ -1,4 +1,3 @@
-import io
 from dataclasses import dataclass
 
 
@@ -13,22 +12,16 @@ class Model:
 
 @dataclass(frozen=True)
 class Voice:
+    id: str
     name: str
     speaker: str
     model: str
-    gender: str
     locale: str
-
-
-@dataclass(frozen=True)
-class Locale:
-    name: str
 
 
 @dataclass(frozen=True)
 class TTSConfigModel:
     models: list[Model]
-    locales: list[Locale]
     voices: list[Voice]
 
 
@@ -46,6 +39,8 @@ class TTSConfig:
 
 @dataclass(frozen=True)
 class TTSResult:
-    audio: io.BytesIO
+    audio: bytes
     sample_rate: int
     model: str
+    bytes_per_sample: int
+    channels: int
