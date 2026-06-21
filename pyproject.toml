@@ -33,6 +33,11 @@ dependencies = [
     "zeroconf>=0.149.16",
 ]
 
+[project.urls]
+Homepage = "https://github.com/dkindev/silero-server"
+Repository = "https://github.com/dkindev/silero-server"
+Issues = "https://github.com/dkindev/silero-server/issues"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
@@ -52,6 +57,7 @@ torch = [{ index = "pytorch-cpu" }]
 
 [tool.setuptools]
 packages = ["src"]
+package-dir = {"" = "."}
 
 [tool.ruff]
 line-length = 100

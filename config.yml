@@ -1,6 +1,7 @@
 uri: tcp://127.0.0.1:10200
 zeroconf: silero-tts
 env_type: development
+streaming: true
 
 torch:
   device: cpu

@@ -52,6 +52,8 @@ def create_engine(settings: Settings) -> SileroTTSEngine:
 
 async def main():
     settings = get_settings()
+    logger.debug(settings)
+
     server = AsyncServer.from_uri(settings.uri)
 
     if settings.zeroconf:
@@ -77,12 +79,7 @@ async def main():
 
     logger.info("Starting server")
     server_task = asyncio.create_task(
-        server.run(
-            partial(
-                SileroWyomingHandler,
-                engine,
-            )
-        )
+        server.run(partial(SileroWyomingHandler, engine, settings.streaming))
     )
     logger.info(f"Server started on {settings.uri}")
 

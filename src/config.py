@@ -10,6 +10,8 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
+from src import __metadata__
+
 
 class TorchSettings(BaseModel):
     device: str = Field(
@@ -143,6 +145,12 @@ class Settings(BaseSettings):
     )
     """Zeroconf discovery name. Empty string means disabled. Set to a name (e.g. 'silero-tts') to enable."""
 
+    streaming: bool = Field(
+        default=True,
+        description="Enable audio streaming.",
+    )
+    """Enable audio streaming."""
+
     torch: TorchSettings = Field(default_factory=TorchSettings)
     tts: TtsSettings = Field(default_factory=TtsSettings)
 
@@ -199,7 +207,7 @@ class CliArgsSource(PydanticBaseSettingsSource):
                 kwargs["choices"] = allowed_values
                 kwargs["type"] = type(allowed_values[0]) if allowed_values else str
             elif annotation is bool:
-                kwargs["action"] = "store_true"
+                kwargs["action"] = argparse.BooleanOptionalAction
             else:
                 kwargs["type"] = str
                 if annotation is int:
@@ -211,7 +219,7 @@ class CliArgsSource(PydanticBaseSettingsSource):
 
     def _parse_cli_args(self) -> dict[str, Any]:
         parser = argparse.ArgumentParser(
-            description="A simple, robust, and performant Wyoming protocol TTS server that wraps the Silero TTS engine.",
+            description=__metadata__["summary"],
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
 

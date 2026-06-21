@@ -68,6 +68,7 @@ Configuration is resolved with the following priority (highest first):
 |------|------|---------|-------------|
 | `--uri` | str | `tcp://127.0.0.1:10200` | Server URI (Wyoming TCP) |
 | `--zeroconf` | str | `silero` | Zeroconf discovery name |
+| `--streaming` / `--no-streaming` | bool | `true` | Enable audio streaming |
 | `--env_type` | str | `development` | `development` or `production` |
 | `--torch_device` | str | `cpu` | PyTorch device (`cpu`, `cuda`, `xpu`) |
 | `--torch_num_threads` | int | `4` | Intra-op thread count |
@@ -91,6 +92,7 @@ All env vars use the `TTS_` prefix:
 | `TTS_ENV_TYPE` | `development` | `development` or `production`. Controls log level, format, and file logging. |
 | `TTS_URI` | `tcp://127.0.0.1:10200` | Wyoming server URI |
 | `TTS_ZEROCONF` | `silero` | Zeroconf discovery name. Empty string disables. |
+| `TTS_STREAMING` | `true` | Enable audio streaming |
 | `TTS_TORCH_DEVICE` | `cpu` | `cpu`, `cuda`, or `xpu`. Falls back to `cpu` at runtime if unavailable. |
 | `TTS_TORCH_NUM_THREADS` | `4` | PyTorch intra-op thread count |
 | `TTS_TORCH_NUM_INTEROP_THREADS` | `1` | PyTorch inter-op thread count |
@@ -110,6 +112,7 @@ All env vars use the `TTS_` prefix:
 uri: tcp://127.0.0.1:10200
 zeroconf: silero
 env_type: development
+streaming: true
 
 torch:
   device: cpu
