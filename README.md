@@ -73,7 +73,7 @@ Configuration is resolved with the following priority (highest first):
 | `--torch_device` | str | `cpu` | PyTorch device (`cpu`, `cuda`, `xpu`) |
 | `--torch_num_threads` | int | `4` | Intra-op thread count |
 | `--torch_num_interop_threads` | int | `1` | Inter-op thread count |
-| `--torch_flush_denormal` | bool | `true` | Flush denormal floats for performance |
+| `--torch_flush_denormal` / `--no-torch_flush_denormal` | bool | `true` | Flush denormal floats for performance |
 | `--tts_sample_rate` | int | `48000` | Output sample rate (8000, 16000, 24000, 48000) |
 | `--tts_max_models` | int | `2` | Max models cached in memory |
 | `--tts_max_concurrent_per_model` | int | `2` | Max concurrent chunks per model |
