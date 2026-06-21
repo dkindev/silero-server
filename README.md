@@ -23,12 +23,7 @@ A simple, robust, and performant Wyoming protocol TTS server that wraps the Sile
    uv sync --extra dev
    ```
 
-4. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-
-5. **Run the application**
+4. **Run the application**
    ```bash
    python -m src.main
    ```

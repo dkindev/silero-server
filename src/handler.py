@@ -108,8 +108,9 @@ class SileroWyomingHandler(AsyncEventHandler):
             if SynthesizeStop.is_type(event.type):
                 return await self._handle_synthesize_stop(event)
         except Exception as err:
+            logger.exception(err)
             await self.write_event(Error(text=str(err), code=err.__class__.__name__).event())
-            raise
+            return False
 
         return True
 
