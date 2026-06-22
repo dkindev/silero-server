@@ -69,12 +69,14 @@ class SileroWyomingHandler(AsyncEventHandler):
         self,
         engine: SileroTTSEngine,
         supports_synthesize_streaming: bool,
+        throw_detailed_errors: bool,
         *args,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.engine = engine
         self.supports_synthesize_streaming = supports_synthesize_streaming
+        self.throw_detailed_errors = throw_detailed_errors
         self.is_streaming: bool | None = None
         self._synthesize: Synthesize | None = None
 
@@ -110,7 +112,15 @@ class SileroWyomingHandler(AsyncEventHandler):
                 return await self._handle_synthesize_stop(event)
         except Exception as err:
             logger.exception(err)
-            await self.write_event(Error(text=str(err), code=err.__class__.__name__).event())
+
+            error = (
+                Error(text=str(err), code=err.__class__.__name__)
+                if self.throw_detailed_errors
+                else Error(text="Internal Server Error")
+            )
+
+            await self.write_event(error.event())
+
             return False
 
         return True

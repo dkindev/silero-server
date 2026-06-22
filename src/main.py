@@ -77,7 +77,14 @@ async def main():
 
     logger.info(f"Starting server on {settings.uri}")
     server_task = asyncio.create_task(
-        server.run(partial(SileroWyomingHandler, engine, settings.streaming))
+        server.run(
+            partial(
+                SileroWyomingHandler,
+                engine,
+                settings.streaming,
+                settings.env_type == "development",
+            )
+        )
     )
 
     loop = asyncio.get_running_loop()
