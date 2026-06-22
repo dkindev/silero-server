@@ -2,7 +2,7 @@ import hashlib
 
 import yaml
 
-from src.tts.models import Model, Voice
+from src.tts.models import Model, TextFormat, Voice
 
 
 def hash_models_yml(yml_path: str) -> str:
@@ -63,6 +63,6 @@ def make_merged_yaml(tmp_path, models_data: dict) -> str:
     return str(config_yml)
 
 
-async def collect_chunks(engine, text, voice_id, input_type="TEXT"):
+async def collect_chunks(engine, text, voice_id, input_type=TextFormat.TEXT):
     """Collect all chunks from synthesize_pcm_chunks into a list."""
     return [chunk async for chunk in engine.synthesize_pcm_chunks(text, voice_id, input_type)]

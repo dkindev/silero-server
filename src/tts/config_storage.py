@@ -14,11 +14,11 @@ class SileroTTSConfigStorage(ABC):
         ...
 
     @abstractmethod
-    def get_voice(self, voice_id: str) -> Voice:
+    def get_voice(self, voice_id: str) -> Voice | None:
         ...
 
     @abstractmethod
-    def get_model(self, model_name: str) -> Model:
+    def get_model(self, model_name: str) -> Model | None:
         ...
 
     @abstractmethod
@@ -94,11 +94,11 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
     def get_voices(self) -> list[Voice]:
         return list(self._voices_by_id.values())
 
-    def get_voice(self, voice_id: str) -> Voice:
-        return self._voices_by_id[voice_id]
+    def get_voice(self, voice_id: str) -> Voice | None:
+        return self._voices_by_id.get(voice_id)
 
-    def get_model(self, model_name: str) -> Model:
-        return self._models[model_name]
+    def get_model(self, model_name: str) -> Model | None:
+        return self._models.get(model_name)
 
     def get_models(self) -> list[Model]:
         return list(self._models.values())

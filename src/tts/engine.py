@@ -15,7 +15,7 @@ from loguru import logger
 
 from src.tts.config_storage import SileroTTSConfigStorage
 from src.tts.exceptions import TTSEngineError
-from src.tts.models import Model, TTSConfig, TTSResult
+from src.tts.models import Model, TextFormat, TTSConfig, TTSResult
 from src.tts.preprocessing import TextPreprocessor
 
 BYTES_PER_SAMPLE = 2
@@ -68,7 +68,7 @@ def _resolve_device(device_str: str) -> torch.device:
 
 
 def _run_tts_sync(
-    cached_model: CachedModel, text: str, speaker: str, type: str = "TEXT"
+    cached_model: CachedModel, text: str, speaker: str, type: TextFormat = TextFormat.TEXT
 ) -> torch.Tensor:
     with torch.inference_mode():
         logger.debug(
@@ -83,7 +83,7 @@ def _run_tts_sync(
             cached_model.model.apply_tts(
                 ssml_text=text, speaker=speaker, sample_rate=cached_model.sample_rate
             )
-            if type == "SSML"
+            if type == TextFormat.SSML
             else cached_model.model.apply_tts(
                 text=text, speaker=speaker, sample_rate=cached_model.sample_rate
             )
@@ -215,51 +215,46 @@ class SileroTTSEngine:
         self,
         text: str,
         voice_id: str,
-        input_type: str,
+        text_format: TextFormat,
     ) -> AsyncIterator[TTSResult]:
-        if input_type not in self.get_input_types():
-            raise TTSEngineError(f"Invalid input type: {input_type}")
-
-        try:
-            voice = self._storage.get_voice(voice_id)
-        except KeyError:
-            raise TTSEngineError(f"Invalid voice: {voice_id}") from None
-
-        locale_name = voice.locale
-        model_name = voice.model
-        speaker = voice.speaker
-
-        model = self._storage.get_model(model_name)
-        if not model:
-            raise TTSEngineError(f"Unsupported model: {model_name}")
+        if text_format not in self.get_supported_text_formats():
+            raise TTSEngineError(f"Invalid text format: {text_format}")
 
         text = text.strip()
         if not text:
             raise TTSEngineError("Text is empty or whitespace")
 
+        voice = self._storage.get_voice(voice_id)
+        if not voice:
+            raise TTSEngineError(f"Unsupported voice: {voice_id}")
+
+        model = self._storage.get_model(voice.model)
+        if not model:
+            raise TTSEngineError(f"Unsupported model: {voice.model}")
+
         logger.info(
-            "Synthesizing TTS. Text length: {text_length}. Voice: {voice_id}. Input type: {input_type}. Model: {model_name}",
+            "Synthesizing TTS. Text length: {text_length}. Voice: {voice_id}. Text format: {text_format}. Model: {model_name}",
             text_length=len(text),
             voice_id=voice_id,
-            input_type=input_type,
-            model_name=model_name,
+            text_format=text_format.value,
+            model_name=model.name,
         )
 
         cached = await self._get_tts_model(model)
 
-        text_preprocessor = self._text_preprocessor_factory(locale_name)
+        text_preprocessor = self._text_preprocessor_factory(voice.locale)
         if not text_preprocessor:
-            raise TTSEngineError(f"Text preprocessor not found for locale: '{locale_name}'")
+            raise TTSEngineError(f"Text preprocessor not found for locale: '{voice.locale}'")
 
         logger.debug(
             "Text preprocessor '{text_preprocessor}' found for locale '{locale}'",
             text_preprocessor=text_preprocessor.__class__.__name__,
-            locale=locale_name,
+            locale=voice.locale,
         )
 
         chunks = (
             text_preprocessor.process_ssml(text, self._config.max_chunk_chars, cached.model.symbols)
-            if input_type == "SSML"
+            if text_format == TextFormat.SSML
             else text_preprocessor.process_text(
                 text, self._config.max_chunk_chars, cached.model.symbols
             )
@@ -271,7 +266,9 @@ class SileroTTSEngine:
 
         async def process_chunk(chunk: str):
             async with cached.semaphore:
-                tensor = await asyncio.to_thread(_run_tts_sync, cached, chunk, speaker, input_type)
+                tensor = await asyncio.to_thread(
+                    _run_tts_sync, cached, chunk, voice.speaker, text_format
+                )
 
                 try:
                     audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
@@ -285,7 +282,7 @@ class SileroTTSEngine:
             yield TTSResult(
                 audio=pcm_bytes,
                 sample_rate=cached.sample_rate,
-                model=model_name,
+                model=model.name,
                 bytes_per_sample=BYTES_PER_SAMPLE,
                 channels=CHANNELS,
             )
@@ -518,6 +515,6 @@ class SileroTTSEngine:
         """Return the config storage."""
         return self._storage
 
-    def get_input_types(self) -> tuple[str, ...]:
-        """Return supported input types."""
-        return ("TEXT", "SSML")
+    def get_supported_text_formats(self) -> tuple[TextFormat, ...]:
+        """Return supported text formats."""
+        return tuple(TextFormat)

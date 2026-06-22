@@ -1,5 +1,3 @@
-import pytest
-
 from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.models import Model, TTSConfigModel, Voice
 
@@ -575,8 +573,8 @@ class TestDisabledModel:
         assert any(v.locale == "en_US" for v in result)
         assert any(v.name == "en_0" for v in result)
 
-    def test_disabled_model_get_model_raises_key_error(self):
-        """get_model should raise KeyError for a disabled model."""
+    def test_disabled_model_get_model_returns_none(self):
+        """get_model should return None for a disabled model."""
 
         config_model = TTSConfigModel(
             models=[
@@ -587,5 +585,4 @@ class TestDisabledModel:
 
         storage = SileroTTSYamlConfigStorage(config_model)
 
-        with pytest.raises(KeyError):
-            storage.get_model("v5_5_ru")
+        assert storage.get_model("v5_5_ru") is None

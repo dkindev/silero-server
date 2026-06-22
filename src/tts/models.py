@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum, unique
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,12 @@ class TTSConfig:
     models_dir: str
     models_yml_url: str
     models_yml_hash: str | None = None
+
+
+@unique
+class TextFormat(Enum):
+    TEXT = "text"
+    SSML = "ssml"
 
 
 @dataclass(frozen=True)

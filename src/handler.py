@@ -16,6 +16,7 @@ from wyoming.tts import (
 
 from src import __metadata__, __project_urls__
 from src.tts.engine import SileroTTSEngine
+from src.tts.models import TextFormat
 
 
 def _get_language_from_locale_string(locale_str: str) -> str | None:
@@ -150,17 +151,41 @@ class SileroWyomingHandler(AsyncEventHandler):
     async def _synthesize_pcm_chunks(self, synthesize: Synthesize) -> bool:
         logger.debug(synthesize)
 
-        text = " ".join(synthesize.text.strip().splitlines())
+        text = synthesize.text.strip()
+        if not text:
+            await self.write_event(Error(text="Text is empty or whitespace").event())
+            return False
 
         voice_id = synthesize.voice.name if synthesize.voice else None
-        if voice_id is None:
-            raise ValueError("No voice specified in Synthesize event")
+        if not voice_id:
+            await self.write_event(Error(text="No voice specified in Synthesize event").event())
+            return False
 
-        if self.engine.get_storage().get_voice(voice_id) is None:
-            raise ValueError("No supported voice")
+        if not self.engine.get_storage().get_voice(voice_id):
+            await self.write_event(Error(text=f"Unsupported voice: {voice_id}").event())
+            return False
+
+        text_format = TextFormat.TEXT
+
+        # todo: add text_format field in next Wyoming protocol release
+        # see https://github.com/OHF-Voice/wyoming/issues/38
+        if hasattr(synthesize, "text_format"):
+            req_text_format: str = synthesize.text_format
+
+            supported_formats = [
+                supported_format.value
+                for supported_format in self.engine.get_supported_text_formats()
+            ]
+            if req_text_format in supported_formats:
+                text_format = TextFormat(req_text_format)
+            else:
+                await self.write_event(
+                    Error(text=f"Unsupported text format: {req_text_format}").event()
+                )
+                return False
 
         send_start = True
-        async for result in self.engine.synthesize_pcm_chunks(text, voice_id, "TEXT"):
+        async for result in self.engine.synthesize_pcm_chunks(text, voice_id, text_format):
             if send_start:
                 await self.write_event(
                     AudioStart(

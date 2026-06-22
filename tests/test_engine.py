@@ -7,7 +7,7 @@ import torch
 from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.engine import BYTES_PER_SAMPLE, CHANNELS, SileroTTSEngine
 from src.tts.exceptions import TTSEngineError
-from src.tts.models import TTSConfig, TTSConfigModel, TTSResult
+from src.tts.models import TextFormat, TTSConfig, TTSConfigModel, TTSResult
 from src.tts.preprocessing import TextPreprocessor
 from tests.helpers import (
     collect_chunks,
@@ -140,7 +140,7 @@ class TestGetInputTypes:
             text_preprocessor_factory=lambda _: TextPreprocessor(),
         )
 
-        result = engine.get_input_types()
+        result = engine.get_supported_text_formats()
         assert isinstance(result, tuple)
 
     def test_get_input_types_includes_text_and_ssml(self, tmp_path, default_tts_config):
@@ -153,9 +153,10 @@ class TestGetInputTypes:
             text_preprocessor_factory=lambda _: TextPreprocessor(),
         )
 
-        assert "TEXT" in engine.get_input_types()
-        assert "SSML" in engine.get_input_types()
-        assert len(engine.get_input_types()) == 2
+        result = engine.get_supported_text_formats()
+        assert TextFormat.TEXT in result
+        assert TextFormat.SSML in result
+        assert len(result) == 2
 
 
 class TestSynthesizeValidation:
@@ -197,7 +198,7 @@ class TestSynthesizeValidation:
         with pytest.raises(TTSEngineError) as exc_info:
             await collect_chunks(engine, "hello", "invalid_voice_id")
 
-        assert "Invalid voice: invalid_voice_id" in str(exc_info.value)
+        assert "Unsupported voice: invalid_voice_id" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_synthesize_invalid_input_type_raises_error(
@@ -233,7 +234,8 @@ class TestSynthesizeValidation:
         )
 
         with pytest.raises(TTSEngineError):
-            await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar", input_type="INVALID")
+            async for _ in engine.synthesize_pcm_chunks("hello", "ru_RU-v5_5_ru-aidar", "INVALID"):
+                pass
 
     @pytest.mark.asyncio
     async def test_synthesize_successful_returns_tts_results(self, tmp_path, mock_package_importer):
