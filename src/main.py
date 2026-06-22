@@ -73,15 +73,12 @@ async def main():
 
     engine = create_engine(settings)
 
-    logger.info("Warming up engine")
     await engine.warmup()
-    logger.info("Engine has been warmed up")
 
-    logger.info("Starting server")
+    logger.info(f"Starting server on {settings.uri}")
     server_task = asyncio.create_task(
         server.run(partial(SileroWyomingHandler, engine, settings.streaming))
     )
-    logger.info(f"Server started on {settings.uri}")
 
     loop = asyncio.get_running_loop()
     loop.add_signal_handler(signal.SIGINT, server_task.cancel)

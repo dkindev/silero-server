@@ -72,7 +72,7 @@ def _run_tts_sync(
 ) -> torch.Tensor:
     with torch.inference_mode():
         logger.debug(
-            "TTS inferencing. Speaker: {speaker}. Sample rate: {sample_rate}. Type: {type}. Text: {text}",
+            "Synthesizing TTS. Speaker: {speaker}. Sample rate: {sample_rate}. Type: {type}. Text: {text}",
             speaker=speaker,
             sample_rate=cached_model.sample_rate,
             type=type,
@@ -98,7 +98,7 @@ def _run_tts_sync(
             torch.xpu.synchronize(device=audio.device)
 
         logger.debug(
-            "TTS has been successfully inferenced on device '{device}'. Tensor shape: [{shape}]",
+            "TTS synthesized on device '{device}'. Tensor shape: [{shape}]",
             device=device_type,
             shape=audio.shape[0],
         )
@@ -238,7 +238,7 @@ class SileroTTSEngine:
             raise TTSEngineError("Text is empty or whitespace")
 
         logger.info(
-            "TTS processing. Text length: {text_length}. Voice: {voice_id}. Input type: {input_type}. Model: {model_name}",
+            "Synthesizing TTS. Text length: {text_length}. Voice: {voice_id}. Input type: {input_type}. Model: {model_name}",
             text_length=len(text),
             voice_id=voice_id,
             input_type=input_type,
@@ -292,8 +292,14 @@ class SileroTTSEngine:
 
     async def shutdown(self):
         """Clears the model cache and forces VRAM to be released."""
+        if not self._cached_models:
+            return
+
         async with self._get_lock():
-            logger.debug(
+            if not self._cached_models:
+                return
+
+            logger.info(
                 "Cleaning engine resources. Models count: {count}",
                 count=len(self._cached_models),
             )
@@ -306,7 +312,7 @@ class SileroTTSEngine:
             gc.collect()
             _clear_torch_cache_on_device(self._device)
 
-            logger.debug("Engine resources have been cleared")
+            logger.info("Engine resources have been cleared")
 
     async def _get_tts_model(self, model: Model) -> CachedModel:
         async with self._get_lock():
@@ -383,7 +389,9 @@ class SileroTTSEngine:
 
         model_path = os.path.join(lang_dir, f"{model.name}.pt")
         if os.path.isfile(model_path):
-            logger.debug("Model '{model}' found in '{path}'.", model=model.name, path=model_path)
+            logger.debug(
+                "Model '{model}' found at path '{path}'", model=model.name, path=model_path
+            )
             return model_path, sample_rates, example_text, speakers
 
         package_url = latest.get("package")
@@ -469,6 +477,8 @@ class SileroTTSEngine:
             if self._cached_models:
                 return
 
+            logger.info("Warming up engine")
+
             models = self._storage.get_models()
             to_warm = [model for model in models if model.warmup][: self._config.max_models]
 
@@ -476,6 +486,8 @@ class SileroTTSEngine:
 
             for model in to_warm:
                 await self._warmup_tts_model(model)
+
+            logger.info("Engine has been warmed up")
 
     async def _warmup_tts_model(self, model: Model) -> CachedModel:
         cached, example_text, speakers = await self._load_tts_model_async(model)
