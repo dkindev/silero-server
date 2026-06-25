@@ -8,7 +8,7 @@ from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.engine import BYTES_PER_SAMPLE, CHANNELS, SileroTTSEngine
 from src.tts.exceptions import TTSEngineError
 from src.tts.models import TextFormat, TTSConfig, TTSConfigModel, TTSResult
-from src.tts.preprocessing import TextPreprocessor
+from src.tts.preprocessing import SimpleTextSentenizer
 from tests.helpers import (
     collect_chunks,
     hash_models_yml,
@@ -52,7 +52,7 @@ class TestSileroTTSEngineInit:
             engine = SileroTTSEngine(
                 config=config,
                 storage=storage,
-                text_preprocessor_factory=lambda _: TextPreprocessor(),
+                text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
             )
             results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -84,7 +84,7 @@ models:
         engine = SileroTTSEngine(
             config=default_tts_config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
 
         assert engine is not None
@@ -117,7 +117,7 @@ models:
         engine = SileroTTSEngine(
             config=default_tts_config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
 
         voices = engine.get_storage().get_voices()
@@ -137,7 +137,7 @@ class TestGetInputTypes:
         engine = SileroTTSEngine(
             config=default_tts_config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
 
         result = engine.get_supported_text_formats()
@@ -150,7 +150,7 @@ class TestGetInputTypes:
         engine = SileroTTSEngine(
             config=default_tts_config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
 
         result = engine.get_supported_text_formats()
@@ -192,7 +192,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=default_tts_config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
 
         with pytest.raises(TTSEngineError) as exc_info:
@@ -230,7 +230,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=default_tts_config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
 
         with pytest.raises(TTSEngineError):
@@ -261,7 +261,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
 
         results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
@@ -304,7 +304,7 @@ class TestSynthesizeValidation:
             engine = SileroTTSEngine(
                 config=config,
                 storage=storage,
-                text_preprocessor_factory=lambda _: TextPreprocessor(),
+                text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
             )
             results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -346,7 +346,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
         results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -389,7 +389,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
         results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -431,7 +431,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
         results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -473,7 +473,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
         results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -516,7 +516,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
         results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -558,7 +558,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
         results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -607,7 +607,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
         results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -651,7 +651,7 @@ class TestSynthesizeValidation:
             engine = SileroTTSEngine(
                 config=config,
                 storage=storage,
-                text_preprocessor_factory=lambda _: TextPreprocessor(),
+                text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
             )
             await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
             await collect_chunks(engine, "world", "ru_RU-v5_5_ru-aidar")
@@ -684,7 +684,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
         await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -726,7 +726,7 @@ class TestSynthesizeValidation:
             engine = SileroTTSEngine(
                 config=config,
                 storage=storage,
-                text_preprocessor_factory=lambda _: TextPreprocessor(),
+                text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
             )
             results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -776,7 +776,7 @@ class TestSynthesizeValidation:
             engine = SileroTTSEngine(
                 config=config,
                 storage=storage,
-                text_preprocessor_factory=lambda _: TextPreprocessor(),
+                text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
             )
             results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
@@ -819,7 +819,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
 
         with pytest.raises(TTSEngineError) as exc_info:
@@ -859,7 +859,7 @@ class TestSynthesizeValidation:
         engine = SileroTTSEngine(
             config=config,
             storage=storage,
-            text_preprocessor_factory=lambda _: TextPreprocessor(),
+            text_sentenizer_factory=lambda locale, fmt: SimpleTextSentenizer(),
         )
 
         with pytest.raises(TTSEngineError) as exc_info:

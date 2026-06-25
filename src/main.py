@@ -11,19 +11,40 @@ from src.handler import SileroWyomingHandler
 from src.logger import setup_logging
 from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.engine import SileroTTSEngine
-from src.tts.models import TTSConfig
-from src.tts.preprocessing import RuTextPreprocessor, TextPreprocessor
+from src.tts.models import TextFormat, TTSConfig
+from src.tts.preprocessing import (
+    RuSimpleTextSentenizer,
+    SimpleTextSentenizer,
+    SsmlSentenizer,
+    TextSentenizer,
+)
 
 setup_logging()
 
-_TEXT_PREPROCESSOR_BUILDERS: dict[str, type[TextPreprocessor]] = {
-    "ru_RU": RuTextPreprocessor,
+
+_TEXT_SENTENIZER_BUILDERS: dict[str, type[TextSentenizer]] = {
+    "default__text": SimpleTextSentenizer,
+    "default__ssml": lambda: SsmlSentenizer(text_sentenizer_in_tags=SimpleTextSentenizer()),
+    "ru_RU__text": RuSimpleTextSentenizer,
+    "ru_RU__ssml": lambda: SsmlSentenizer(text_sentenizer_in_tags=RuSimpleTextSentenizer()),
 }
 
 
-def build_text_preprocessor(locale: str) -> TextPreprocessor:
-    builder = _TEXT_PREPROCESSOR_BUILDERS.get(locale)
-    return builder() if builder is not None else TextPreprocessor()
+def build_text_sentenizer(locale: str, format: TextFormat) -> TextSentenizer:
+    builder = _TEXT_SENTENIZER_BUILDERS.get(f"{locale}__{format.value}")
+
+    if builder is None:
+        builder = _TEXT_SENTENIZER_BUILDERS.get(f"default__{format.value}")
+
+    if builder is None:
+        logger.warning(
+            "Text sentenizer not found in factory. Locale: {locale}. Format: {format}",
+            locale=locale,
+            format=format.value,
+        )
+        return None
+
+    return builder()
 
 
 def create_engine(settings: Settings) -> SileroTTSEngine:
@@ -46,7 +67,7 @@ def create_engine(settings: Settings) -> SileroTTSEngine:
     return SileroTTSEngine(
         config=config,
         storage=storage,
-        text_preprocessor_factory=build_text_preprocessor,
+        text_sentenizer_factory=build_text_sentenizer,
     )
 
 

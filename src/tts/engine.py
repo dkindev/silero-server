@@ -16,7 +16,7 @@ from loguru import logger
 from src.tts.config_storage import SileroTTSConfigStorage
 from src.tts.exceptions import TTSEngineError
 from src.tts.models import Model, TextFormat, TTSConfig, TTSResult
-from src.tts.preprocessing import TextPreprocessor
+from src.tts.preprocessing import TextSentenizer
 
 BYTES_PER_SAMPLE = 2
 CHANNELS = 1
@@ -75,7 +75,7 @@ def _run_tts_sync(
             "Synthesizing TTS. Speaker: {speaker}. Sample rate: {sample_rate}. Type: {type}. Text: {text}",
             speaker=speaker,
             sample_rate=cached_model.sample_rate,
-            type=type,
+            type=type.value,
             text=text,
         )
 
@@ -201,7 +201,7 @@ class SileroTTSEngine:
         self,
         config: TTSConfig,
         storage: SileroTTSConfigStorage,
-        text_preprocessor_factory: Callable[[str], TextPreprocessor],
+        text_sentenizer_factory: Callable[[str, TextFormat], TextSentenizer],
     ):
         self._config = config
         self._storage = storage
@@ -209,7 +209,7 @@ class SileroTTSEngine:
         self._cached_models: OrderedDict[str, CachedModel] = OrderedDict()
         self._device = _resolve_device(config.device)
         self._lock: asyncio.Lock | None = None
-        self._text_preprocessor_factory = text_preprocessor_factory
+        self._text_sentenizer_factory = text_sentenizer_factory
 
     async def synthesize_pcm_chunks(
         self,
@@ -242,22 +242,18 @@ class SileroTTSEngine:
 
         cached = await self._get_tts_model(model)
 
-        text_preprocessor = self._text_preprocessor_factory(voice.locale)
-        if not text_preprocessor:
-            raise TTSEngineError(f"Text preprocessor not found for locale: '{voice.locale}'")
+        text_sentenizer = self._text_sentenizer_factory(voice.locale, text_format)
+        if not text_sentenizer:
+            raise TTSEngineError(f"Text sentenizer not found for locale: '{voice.locale}'")
 
         logger.debug(
-            "Text preprocessor '{text_preprocessor}' found for locale '{locale}'",
-            text_preprocessor=text_preprocessor.__class__.__name__,
+            "Text sentenizer '{text_sentenizer}' found for locale '{locale}'",
+            text_sentenizer=text_sentenizer.__class__.__name__,
             locale=voice.locale,
         )
 
-        chunks = (
-            text_preprocessor.process_ssml(text, self._config.max_chunk_chars, cached.model.symbols)
-            if text_format == TextFormat.SSML
-            else text_preprocessor.process_text(
-                text, self._config.max_chunk_chars, cached.model.symbols
-            )
+        chunks = text_sentenizer.text_to_sentences(
+            text=text, max_chunk_chars=self._config.max_chunk_chars
         )
         if not chunks:
             raise TTSEngineError("The text is empty or contains only invalid characters")
