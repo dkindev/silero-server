@@ -78,7 +78,7 @@ class TtsSettings(BaseModel):
 
     max_chunk_chars: int = Field(
         default=140,
-        ge=1,
+        ge=10,
         validation_alias=AliasChoices("max_chunk_chars", "TTS_MAX_CHUNK_CHARS"),
         description="Maximum character count per text chunk for TTS processing.",
     )
