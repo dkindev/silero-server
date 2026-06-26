@@ -73,7 +73,7 @@ Configuration is resolved with the following priority (highest first):
 | `--tts_max_models` | int | `2` | Max models cached in memory |
 | `--tts_max_concurrent_per_model` | int | `2` | Max concurrent chunks per model |
 | `--tts_max_chunk_chars` | int | `140` | Max characters per text chunk |
-| `--tts_models_config_path` | str | `data/models.yml` | Path to the voice/model mapping config |
+| `--tts_data_yml_path` | str | `data/data.yml` | Path to the voice/model mapping config |
 | `--tts_models_dir` | str | `models/silero` | Directory for downloaded model files |
 | `--tts_models_yml_url` | str | *(see config.yml)* | URL to the Silero models registry |
 | `--tts_models_yml_hash` | str | `""` | SHA-256 hash of the models registry |
@@ -96,7 +96,7 @@ All env vars use the `TTS_` prefix:
 | `TTS_MAX_MODELS` | `2` | Max models cached in memory (oldest evicted) |
 | `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent synthesis chunks per model |
 | `TTS_MAX_CHUNK_CHARS` | `140` | Max characters per text chunk |
-| `TTS_MODELS_CONFIG_PATH` | `data/models.yml` | Path to the voice/locale mapping config |
+| `TTS_DATA_YML_PATH` | `data/data.yml` | Path to the voice/model mapping config |
 | `TTS_MODELS_DIR` | `models/silero` | Directory for downloaded model files |
 | `TTS_MODELS_YML_URL` | *(see below)* | URL to Silero models.yml registry |
 | `TTS_MODELS_YML_HASH` | `""` | SHA-256 hash for integrity verification |
@@ -121,14 +121,14 @@ tts:
   max_concurrent_per_model: 2
   max_chunk_chars: 140
   models_dir: models/silero
-  models_config_path: data/models.yml
+  data_yml_path: data/data.yml
   models_yml_url: https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml
   models_yml_hash: ""
 ```
 
 ## Voice and Model Configuration
 
-Voice and locale mappings are defined in a YAML config file (default `data/models.yml`). The config has a `models` top-level section containing model entries.
+Voice and locale mappings are defined in a YAML config file (default `data/data.yml`). The config has a `models` top-level section containing model entries.
 
 ### Models
 
@@ -203,12 +203,12 @@ This server implements the **Wyoming protocol** — a TCP-based protocol used by
 
 ### Adding a new model
 
-1. Add a model entry under `models:` in `data/models.yml` with the Silero language identifier.
+1. Add a model entry under `models:` in `data/data.yml` with the Silero language identifier.
 2. Add locales with voices referencing the new model.
 
 ### Adding or renaming voices
 
-Add or edit entries under `locales.*.voices` in `data/models.yml`. Set `speaker` to the Silero native speaker name only if it differs from the voice name.
+Add or edit entries under `locales.*.voices` in `data/data.yml`. Set `speaker` to the Silero native speaker name only if it differs from the voice name.
 
 ### Disabling a model
 

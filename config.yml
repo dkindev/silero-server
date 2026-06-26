@@ -15,6 +15,6 @@ tts:
   max_concurrent_per_model: 2
   max_chunk_chars: 140
   models_dir: models/silero
-  models_config_path: data/models.yml
+  data_yml_path: data/data.yml
   models_yml_url: https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml
   models_yml_hash: ""

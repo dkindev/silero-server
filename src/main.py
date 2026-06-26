@@ -23,6 +23,7 @@ setup_logging()
 
 
 _TEXT_SENTENIZER_BUILDERS: dict[str, type[TextSentenizer]] = {
+    # key: "{locale}__{text_format}"
     "default__text": SimpleTextSentenizer,
     "default__ssml": lambda: SsmlSentenizer(text_sentenizer_in_tags=SimpleTextSentenizer()),
     "ru_RU__text": RuSimpleTextSentenizer,
@@ -63,7 +64,7 @@ def create_engine(settings: Settings) -> SileroTTSEngine:
         models_yml_url=settings.tts.models_yml_url,
         models_yml_hash=settings.tts.models_yml_hash,
     )
-    storage = SileroTTSYamlConfigStorage(settings.tts.models_config_path)
+    storage = SileroTTSYamlConfigStorage(settings.tts.data_yml_path)
     return SileroTTSEngine(
         config=config,
         storage=storage,

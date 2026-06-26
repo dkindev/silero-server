@@ -84,11 +84,11 @@ class TtsSettings(BaseModel):
     )
     """Maximum character count per text chunk for TTS processing."""
 
-    models_config_path: str = Field(
-        default="data/models.yml",
-        validation_alias=AliasChoices("models_config_path", "TTS_MODELS_CONFIG_PATH"),
+    data_yml_path: str = Field(
+        default="data/data.yml",
+        validation_alias=AliasChoices("data_yml_path", "TTS_DATA_YML_PATH"),
     )
-    """Local path to the models configuration file models.yml"""
+    """Local path to the voice/model mapping configuration file data.yml"""
 
     models_dir: str = Field(
         default="models/silero",
