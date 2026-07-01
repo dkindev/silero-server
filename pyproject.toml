@@ -9,6 +9,7 @@ description = "A simple, robust, and performant Wyoming protocol TTS server that
 readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "Dmitry Kiselev", email = "dmitry@example.com"}]
+keywords = ["wyoming", "silero", "tts"]
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0.0",
@@ -57,7 +58,8 @@ exclude = [
     "__pycache__",
     "build",
     ".dist",
-    ".models"
+    "models",
+    "data"
 ]
 
 [tool.ruff.lint]
