@@ -242,6 +242,19 @@ class SileroTTSEngine:
 
         cached = await self._get_tts_model(model)
 
+        async def process_chunk(chunk: str):
+            async with cached.semaphore:
+                tensor = await asyncio.to_thread(
+                    _run_tts_sync, cached, chunk, voice.speaker, text_format
+                )
+
+                try:
+                    audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
+                except Exception as e:
+                    raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
+
+                return (audio_np * 32767).astype(np.int16).tobytes()
+
         text_sentenizer = self._text_sentenizer_factory(voice.locale, text_format)
         if not text_sentenizer:
             raise TTSEngineError(f"Text sentenizer not found for locale: '{voice.locale}'")
@@ -255,23 +268,6 @@ class SileroTTSEngine:
         chunks = text_sentenizer.text_to_sentences(
             text=text, max_chunk_chars=self._config.max_chunk_chars
         )
-        if not chunks:
-            raise TTSEngineError("The text is empty or contains only invalid characters")
-
-        logger.debug("Chunks count for TTS processing: {chunks_count}", chunks_count=len(chunks))
-
-        async def process_chunk(chunk: str):
-            async with cached.semaphore:
-                tensor = await asyncio.to_thread(
-                    _run_tts_sync, cached, chunk, voice.speaker, text_format
-                )
-
-                try:
-                    audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
-                except Exception as e:
-                    raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
-
-                return (audio_np * 32767).astype(np.int16).tobytes()
 
         for chunk in chunks:
             pcm_bytes = await process_chunk(chunk)

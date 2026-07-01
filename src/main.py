@@ -13,8 +13,8 @@ from src.tts.config_storage import SileroTTSYamlConfigStorage
 from src.tts.engine import SileroTTSEngine
 from src.tts.models import TextFormat, TTSConfig
 from src.tts.preprocessing import (
-    RuSimpleTextSentenizer,
-    SimpleTextSentenizer,
+    PlainTextSentenizer,
+    RuPlainTextSentenizer,
     SsmlSentenizer,
     TextSentenizer,
 )
@@ -24,10 +24,10 @@ setup_logging()
 
 _TEXT_SENTENIZER_BUILDERS: dict[str, type[TextSentenizer]] = {
     # key: "{locale}__{text_format}"
-    "default__text": SimpleTextSentenizer,
-    "default__ssml": lambda: SsmlSentenizer(text_sentenizer_in_tags=SimpleTextSentenizer()),
-    "ru_RU__text": RuSimpleTextSentenizer,
-    "ru_RU__ssml": lambda: SsmlSentenizer(text_sentenizer_in_tags=RuSimpleTextSentenizer()),
+    "default__text": PlainTextSentenizer,
+    "default__ssml": lambda: SsmlSentenizer(text_sentenizer_in_tags=PlainTextSentenizer()),
+    "ru_RU__text": RuPlainTextSentenizer,
+    "ru_RU__ssml": lambda: SsmlSentenizer(text_sentenizer_in_tags=RuPlainTextSentenizer()),
 }
 
 

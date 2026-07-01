@@ -1,38 +1,41 @@
+from collections.abc import Iterator
+
 from razdel import sentenize
 
-from src.tts.preprocessing.text_sentenizer import SimpleTextSentenizer
+from src.tts.preprocessing.text_sentenizer import PlainTextSentenizer
 
 
-class RuSimpleTextSentenizer(SimpleTextSentenizer):
+class RuPlainTextSentenizer(PlainTextSentenizer):
     """Represents a class for generating sentences from Russian text."""
 
-    def text_to_sentences(self, text: str, max_chunk_chars: int) -> list[str]:
-        """Generate a sentences from an simple text."""
+    def text_to_sentences(self, text: str, max_chunk_chars: int) -> Iterator[str]:
+        """Generate a sentences from an plain text."""
         if not text:
-            return []
+            return
 
         if max_chunk_chars <= 0:
-            raise ValueError("max_chunk_chars cannot be negative")
+            raise ValueError("max_chunk_chars cannot be negative or zero")
 
         if len(text) <= max_chunk_chars:
-            return [text]
+            yield text
+            return
 
-        sentences = [s.text for s in sentenize(text)]
+        pre_chunks = RuPlainTextSentenizer.sentenize_by_nlp(
+            sentence=text, max_chars=max_chunk_chars
+        )
+        yield from self._assembly_small_chunks(chunks=pre_chunks, max_chunk_chars=max_chunk_chars)
 
-        pre_chunks = []
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if not sentence:
+    @staticmethod
+    def sentenize_by_nlp(sentence: str, max_chars: int) -> Iterator[str]:
+        for chunk in sentenize(sentence):
+            chunk_text = chunk.text.strip()
+            if not chunk_text:
                 continue
 
-            # If the sentence is of normal size, leave it.
-            if len(sentence) <= max_chunk_chars:
-                pre_chunks.append(sentence)
+            if len(chunk_text) <= max_chars:
+                yield chunk_text
             else:
                 # If the sentence is long, try to cut it into minor characters.
-                for chunk in SimpleTextSentenizer.sentenize_by_minor_characters(
-                    sentence, max_chunk_chars
-                ):
-                    pre_chunks.append(chunk)
-
-        return self._assembly_small_chunks(chunks=pre_chunks, max_chunk_chars=max_chunk_chars)
+                yield from PlainTextSentenizer.sentenize_by_minor_characters(
+                    sentence=chunk_text, max_chars=max_chars
+                )
