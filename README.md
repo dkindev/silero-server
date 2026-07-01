@@ -30,6 +30,11 @@ A simple, robust, and performant Wyoming protocol TTS server that wraps the Sile
 
    The server listens on `tcp://127.0.0.1:10200` by default.
 
+5. **Test with HTTP server**
+    ```bash
+    uv run --with "wyoming[http]" python -m wyoming.http.tts_server --uri tcp://127.0.0.1:10200
+    ```
+
 ### Docker
 
 1. **Build the image**
