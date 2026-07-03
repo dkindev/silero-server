@@ -1,36 +1,65 @@
 import re
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator, Iterator
+
+from src.tts.models import NormalizationOptions
 
 
 class TextNormalizer(ABC):
     """Represents the class to normalize raw text."""
 
     @abstractmethod
-    def normalize_text(self, text: str, available_chars: str | None = None) -> str:
+    def normalize_text(
+        self, chunks: Iterator[str], options: NormalizationOptions
+    ) -> AsyncIterator[str]:
         """Return a normalized string from raw text."""
         ...
 
 
-class SimpleTextNormalizer(TextNormalizer):
-    """Represents the class to normalize simple text."""
+class PlainTextNormalizer(TextNormalizer):
+    """Represents the class to normalize plain text."""
 
-    def normalize_text(self, text: str, available_chars: str | None = None) -> str:
-        """Return a normalized string from raw text."""
-        normalized_text = text.strip()
-        if not normalized_text:
-            return normalized_text
+    async def normalize_text(
+        self, chunks: Iterator[str], options: NormalizationOptions
+    ) -> AsyncIterator[str]:
+        """Return a normalized string from plain text."""
+        if chunks is None:
+            raise TypeError("chunks cannot be None")
 
-        if available_chars:
-            joined_pattern = "".join(re.escape(sym) for sym in available_chars)
-            pattern = rf"[^{joined_pattern} ]"
-            normalized_text = re.sub(pattern, "", normalized_text, flags=re.IGNORECASE)
+        available_chars_re = None
 
-        return normalized_text
+        # ignore unavailable symbols
+        if options and options.silero_model is not None:
+            if hasattr(options.silero_model, "symbols"):
+                joined_pattern = "".join(re.escape(sym) for sym in options.silero_model.symbols)
+                available_chars_re = rf"[^{joined_pattern} ]"
+
+        for chunk in chunks:
+            normalized_chunk = chunk.strip()
+            if not normalized_chunk:
+                continue
+
+            if available_chars_re:
+                normalized_chunk = re.sub(
+                    available_chars_re, "", normalized_chunk, flags=re.IGNORECASE
+                )
+
+            yield normalized_chunk
 
 
 class SsmlNormalizer(TextNormalizer):
     """Represents the class to normalize SSML."""
 
-    def normalize_text(self, text: str, available_chars: str | None = None) -> str:
+    async def normalize_text(
+        self, chunks: Iterator[str], options: NormalizationOptions
+    ) -> AsyncIterator[str]:
         """Return a normalized SSML from raw SSML string."""
-        return text.strip()
+        if chunks is None:
+            raise TypeError("chunks cannot be None")
+
+        for chunk in chunks:
+            normalized_chunk = chunk.strip()
+            if not normalized_chunk:
+                continue
+
+            yield normalized_chunk

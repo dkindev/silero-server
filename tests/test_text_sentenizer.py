@@ -1,4 +1,4 @@
-from src.tts.preprocessing import PlainTextSentenizer, SimpleTextNormalizer, SsmlSentenizer
+from src.tts.preprocessing import PlainTextSentenizer, SsmlSentenizer
 
 
 class TestSsmlSentenizer:
@@ -93,15 +93,3 @@ class TestSimpleTextSentenizer:
         text = "superlongword"
         chunks = list(PlainTextSentenizer().text_to_sentences(text, 5))
         assert chunks == ["super", "longw", "ord"]
-
-    def test_strips_unsupported_characters(self):
-        text = "hello! world?"
-        normalized = SimpleTextNormalizer().normalize_text(text, "abcdefghijklmnopqrstuvwxyz ")
-        chunks = list(PlainTextSentenizer().text_to_sentences(normalized, 100))
-        assert chunks == ["hello world"]
-
-    def test_empty_after_normalization_returns_empty(self):
-        text = "12345"
-        normalized = SimpleTextNormalizer().normalize_text(text, "abcdefghijklmnopqrstuvwxyz ")
-        chunks = list(PlainTextSentenizer().text_to_sentences(normalized, 100))
-        assert chunks == []

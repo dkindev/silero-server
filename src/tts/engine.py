@@ -4,7 +4,7 @@ import hashlib
 import os
 import urllib.request
 from collections import OrderedDict
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any
 
@@ -15,8 +15,8 @@ from loguru import logger
 
 from src.tts.config_storage import SileroTTSConfigStorage
 from src.tts.exceptions import TTSEngineError
-from src.tts.models import Model, TextFormat, TTSConfig, TTSResult
-from src.tts.preprocessing import TextSentenizer
+from src.tts.models import Model, NormalizationOptions, TextFormat, TTSConfig, TTSResult, Voice
+from src.tts.preprocessing import TextNormalizerFactory, TextSentenizerFactory
 
 BYTES_PER_SAMPLE = 2
 CHANNELS = 1
@@ -68,14 +68,14 @@ def _resolve_device(device_str: str) -> torch.device:
 
 
 def _run_tts_sync(
-    cached_model: CachedModel, text: str, speaker: str, type: TextFormat = TextFormat.TEXT
+    cached_model: CachedModel, text: str, speaker: str, text_format: TextFormat = TextFormat.TEXT
 ) -> torch.Tensor:
     with torch.inference_mode():
         logger.debug(
             "Synthesizing TTS. Speaker: {speaker}. Sample rate: {sample_rate}. Type: {type}. Text: {text}",
             speaker=speaker,
             sample_rate=cached_model.sample_rate,
-            type=type.value,
+            type=text_format.value,
             text=text,
         )
 
@@ -83,7 +83,7 @@ def _run_tts_sync(
             cached_model.model.apply_tts(
                 ssml_text=text, speaker=speaker, sample_rate=cached_model.sample_rate
             )
-            if type == TextFormat.SSML
+            if text_format == TextFormat.SSML
             else cached_model.model.apply_tts(
                 text=text, speaker=speaker, sample_rate=cached_model.sample_rate
             )
@@ -104,6 +104,28 @@ def _run_tts_sync(
         )
 
         return audio
+
+
+async def _process_chunk(
+    chunk: str, cached_model: CachedModel, voice: Voice, text_format: TextFormat
+) -> TTSResult:
+    async with cached_model.semaphore:
+        tensor = await asyncio.to_thread(
+            _run_tts_sync, cached_model, chunk, voice.speaker, text_format
+        )
+
+        try:
+            audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
+        except Exception as e:
+            raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
+
+        return TTSResult(
+            audio=(audio_np * 32767).astype(np.int16).tobytes(),
+            sample_rate=cached_model.sample_rate,
+            model=voice.model,
+            bytes_per_sample=BYTES_PER_SAMPLE,
+            channels=CHANNELS,
+        )
 
 
 def _clear_cached_model(cached_model: CachedModel):
@@ -201,7 +223,8 @@ class SileroTTSEngine:
         self,
         config: TTSConfig,
         storage: SileroTTSConfigStorage,
-        text_sentenizer_factory: Callable[[str, TextFormat], TextSentenizer],
+        text_sentenizer_factory: TextSentenizerFactory,
+        text_normalizer_factory: TextNormalizerFactory,
     ):
         self._config = config
         self._storage = storage
@@ -210,6 +233,7 @@ class SileroTTSEngine:
         self._device = _resolve_device(config.device)
         self._lock: asyncio.Lock | None = None
         self._text_sentenizer_factory = text_sentenizer_factory
+        self._text_normalizer_factory = text_normalizer_factory
 
     async def synthesize_pcm_chunks(
         self,
@@ -225,11 +249,11 @@ class SileroTTSEngine:
             raise TTSEngineError("Text is empty or whitespace")
 
         voice = self._storage.get_voice(voice_id)
-        if not voice:
+        if voice is None:
             raise TTSEngineError(f"Unsupported voice: {voice_id}")
 
         model = self._storage.get_model(voice.model)
-        if not model:
+        if model is None:
             raise TTSEngineError(f"Unsupported model: {voice.model}")
 
         logger.info(
@@ -242,42 +266,46 @@ class SileroTTSEngine:
 
         cached = await self._get_tts_model(model)
 
-        async def process_chunk(chunk: str):
-            async with cached.semaphore:
-                tensor = await asyncio.to_thread(
-                    _run_tts_sync, cached, chunk, voice.speaker, text_format
-                )
-
-                try:
-                    audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
-                except Exception as e:
-                    raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
-
-                return (audio_np * 32767).astype(np.int16).tobytes()
-
-        text_sentenizer = self._text_sentenizer_factory(voice.locale, text_format)
-        if not text_sentenizer:
-            raise TTSEngineError(f"Text sentenizer not found for locale: '{voice.locale}'")
+        text_sentenizer = self._text_sentenizer_factory.create_text_sentenizer(
+            voice=voice, format=text_format
+        )
+        if text_sentenizer is None:
+            raise TTSEngineError(
+                f"Text sentenizer not found for '{voice.locale}' locale and '{text_format.value}' format"
+            )
 
         logger.debug(
-            "Text sentenizer '{text_sentenizer}' found for locale '{locale}'",
+            "Convert text into sentences using '{text_sentenizer}'",
             text_sentenizer=text_sentenizer.__class__.__name__,
-            locale=voice.locale,
         )
 
-        chunks = text_sentenizer.text_to_sentences(
+        sentences = text_sentenizer.text_to_sentences(
             text=text, max_chunk_chars=self._config.max_chunk_chars
         )
 
-        for chunk in chunks:
-            pcm_bytes = await process_chunk(chunk)
-            yield TTSResult(
-                audio=pcm_bytes,
-                sample_rate=cached.sample_rate,
-                model=model.name,
-                bytes_per_sample=BYTES_PER_SAMPLE,
-                channels=CHANNELS,
+        text_normalizer = self._text_normalizer_factory.create_text_normalizer(
+            voice=voice, format=text_format
+        )
+        if text_normalizer is None:
+            for sentence in sentences:
+                yield await _process_chunk(
+                    chunk=sentence, cached_model=cached, voice=voice, text_format=text_format
+                )
+        else:
+            logger.debug(
+                "Normalize text using '{text_normalizer}'",
+                text_normalizer=text_normalizer.__class__.__name__,
             )
+
+            chunks = text_normalizer.normalize_text(
+                chunks=sentences,
+                options=NormalizationOptions(voice=voice, model=model, silero_model=cached.model),
+            )
+
+            async for chunk in chunks:
+                yield await _process_chunk(
+                    chunk=chunk, cached_model=cached, voice=voice, text_format=text_format
+                )
 
     async def shutdown(self):
         """Clears the model cache and forces VRAM to be released."""

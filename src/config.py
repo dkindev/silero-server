@@ -11,6 +11,7 @@ from pydantic_settings import (
 )
 
 from src import __metadata__
+from src.tts.models import NormalizationType
 
 
 class TorchSettings(BaseModel):
@@ -24,7 +25,7 @@ class TorchSettings(BaseModel):
     num_threads: int = Field(
         default=4,
         ge=1,
-        validation_alias=AliasChoices("num_threads", "TTS_TORCH_NUM_THREADS"),
+        validation_alias=AliasChoices("num_threads", "TTS_TORCH_NUM_THREADS", "OMP_NUM_THREADS"),
         description="Number of PyTorch intra-op threads (torch.set_num_threads).",
     )
     """Number of PyTorch intra-op threads (torch.set_num_threads)."""
@@ -43,6 +44,88 @@ class TorchSettings(BaseModel):
         description="Flush denormal floats for performance (torch.set_flush_denormal).",
     )
     """Flush denormal floats for performance (torch.set_flush_denormal)."""
+
+
+class NormalizationPromt(BaseModel):
+    text: str = Field(default="", description="System prompt for normalization")
+    """System prompt for normalization"""
+
+    model: str = Field(
+        default="",
+        description="System LLM model name for normalization",
+    )
+    """System LLM model name for normalization"""
+
+
+class BaseNormalizationSettings(BaseModel):
+    type: NormalizationType | None = Field(
+        default=NormalizationType.SIMPLE, description="Normalizer type (simple, llm)"
+    )
+    """Normalizer type (simple, llm)"""
+
+    promts: dict[str, NormalizationPromt] | None = Field(
+        default_factory=dict, description="A dictionary of prompts indexed by locale"
+    )
+    """A dictionary of prompts indexed by locale"""
+
+    # model_config = {"use_enum_values": True}
+
+
+class TextNormalizationSettings(BaseNormalizationSettings):
+    enabled: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("enabled", "TTS_NORM_TEXT_ENABLED"),
+        description="Enable plain text normalization",
+    )
+    """Enable plain text normalization"""
+
+
+class SsmlNormalizationSettings(BaseNormalizationSettings):
+    enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("enabled", "TTS_NORM_SSML_ENABLED"),
+        description="Enable SSML markup normalization",
+    )
+    """Enable SSML markup normalization"""
+
+
+class NormalizationSettings(BaseModel):
+    timeout: float = Field(
+        default=5,
+        ge=1,
+        validation_alias=AliasChoices("timeout", "TTS_NORM_TIMEOUT"),
+        description="Timeout for input text normalization",
+    )
+    """Timeout for input text normalization"""
+
+    max_concurrent_chunks_per_request: int = Field(
+        default=2,
+        ge=1,
+        validation_alias=AliasChoices(
+            "max_concurrent_chunks_per_request", "TTS_NORM_MAX_CONCURRENT_PER_REQUEST"
+        ),
+        description="Maximum concurrent chunks per request for normalization.",
+    )
+    """Maximum concurrent chunks per request for normalization."""
+
+    text: TextNormalizationSettings = Field(default_factory=TextNormalizationSettings)
+    ssml: SsmlNormalizationSettings = Field(default_factory=SsmlNormalizationSettings)
+
+
+class OpenAiSettings(BaseModel):
+    base_url: str = Field(
+        default="",
+        validation_alias=AliasChoices("base_url", "TTS_OPENAI_BASE_URL", "OPENAI_BASE_URL"),
+        description="Base URL for OpenAI-compatible API",
+    )
+    """Base URL for OpenAI-compatible API"""
+
+    api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("api_key", "TTS_OPENAI_API_KEY", "OPENAI_API_KEY"),
+        description="API key for OpenAI-compatible API",
+    )
+    """API key for OpenAI-compatible API"""
 
 
 class TtsSettings(BaseModel):
@@ -111,6 +194,8 @@ class TtsSettings(BaseModel):
     )
     """SHA-256 hash of the Silero models.yml file for integrity verification. Set empty to skip validation."""
 
+    normalization: NormalizationSettings = Field(default_factory=NormalizationSettings)
+
     @field_validator("models_yml_hash")
     @classmethod
     def models_yml_hash_must_be_valid(cls, v: str) -> str:
@@ -152,6 +237,7 @@ class Settings(BaseSettings):
     """Enable audio streaming."""
 
     torch: TorchSettings = Field(default_factory=TorchSettings)
+    open_ai: OpenAiSettings = Field(default_factory=OpenAiSettings)
     tts: TtsSettings = Field(default_factory=TtsSettings)
 
     model_config = SettingsConfigDict(
@@ -192,6 +278,9 @@ class CliArgsSource(PydanticBaseSettingsSource):
         self, parser: argparse.ArgumentParser, model_cls: type[BaseModel], prefix: str = ""
     ):
         for field_name, field_info in model_cls.model_fields.items():
+            if field_name == "normalization":
+                continue
+
             cli_name = f"{prefix}{field_name}"
             help_text = field_info.description or ""
             annotation = field_info.annotation

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, unique
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,18 @@ class Voice:
     locale: str
 
 
+@unique
+class TextFormat(Enum):
+    TEXT = "text"
+    SSML = "ssml"
+
+
+@unique
+class NormalizationType(Enum):
+    SIMPLE = "simple"
+    LLM = "llm"
+
+
 @dataclass(frozen=True)
 class TTSConfigModel:
     models: list[Model]
@@ -36,12 +49,22 @@ class TTSConfig:
     models_dir: str
     models_yml_url: str
     models_yml_hash: str | None = None
+    normalization_type: NormalizationType | None = None
 
 
-@unique
-class TextFormat(Enum):
-    TEXT = "text"
-    SSML = "ssml"
+@dataclass(frozen=True)
+class NormalizationOptions:
+    voice: Voice
+    model: Model
+    silero_model: Any
+
+
+@dataclass(frozen=True)
+class OpenAiNormalizationConfig:
+    timeout: float
+    max_concurrent_chunks_per_request: int
+    default_model: str
+    default_promt: str
 
 
 @dataclass(frozen=True)

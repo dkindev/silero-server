@@ -21,6 +21,7 @@ dependencies = [
     "razdel>=0.5.0",
     "wyoming>=1.9.0",
     "zeroconf>=0.149.16",
+    "openai>=2.43.0",
 ]
 
 [project.urls]

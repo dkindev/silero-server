@@ -9,6 +9,10 @@ torch:
   num_interop_threads: 1
   flush_denormal: true
 
+open_ai:
+  base_url: ""
+  api_key: ""
+
 tts:
   sample_rate: 48000
   max_models: 2
@@ -18,3 +22,22 @@ tts:
   data_yml_path: data/data.yml
   models_yml_url: https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml
   models_yml_hash: ""
+  normalization:
+    timeout: 5
+    max_concurrent_chunks_per_request: 2
+    text:
+      enabled: true
+      type: simple
+      promts:
+        ru_RU:
+          text: |
+            Ты — инструмент подготовки текста для русского TTS.
+            Твоя единственная задача — заменить цифры словами, раскрыть сокращения (т.е., т.д.) и перевести латиницу в кириллическое звучание (Apple -> Эппл).
+            
+            ЖЕСТКОЕ ПРАВИЛО:
+            1. Обычные русские слова изменяться НЕ ДОЛЖНЫ. Не меняй их падежи, склонения, времена и окончания. Оставляй их ровно в том виде, в каком они написаны.
+            2. Не занимайся лемматизацией и не пересказывай текст.
+            3. Выдавай ТОЛЬКО обработанный текст, без каких-либо комментариев.
+          model: qwen3.5:4b
+    ssml:
+      enabled: false

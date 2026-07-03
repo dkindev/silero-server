@@ -13,9 +13,8 @@ models and produces raw PCM audio output.
 _Avoid_: Speech generator, voice synthesizer
 
 **Model**:
-A named, language-specific Silero TTS model entry in the YAML config. Models can
-be enabled, disabled, or pre-warmed at startup. Each model supports one or more
-speakers.
+A named, language-specific Silero TTS model. Models can be enabled, disabled, 
+or pre-warmed at startup. Each model supports one or more speakers.
 _Avoid_: Neural network, PyTorch model
 
 **Speaker**:
@@ -25,16 +24,13 @@ different models.
 _Avoid_: Voice (when meaning a speaker profile)
 
 **Locale**:
-A language-region string (e.g., `ru_RU`, `en_US`) that groups voices. The
-language code is extracted from the locale for the Wyoming protocol. A locale is
+A language-region string (e.g., `ru_RU`, `en_US`) that groups voices. A locale is
 available only when at least one voice backed by an enabled model carries it.
 _Avoid_: Language (when referring to the locale as a whole)
 
 **Voice**:
 A named, locale-specific voice backed by a model speaker. Each voice has a
-unique ID in the format `{locale}-{model}-{name}` (e.g.,
-`ru_RU-v5_5_ru-aidar`), which identifies it in the Wyoming protocol. Each voice
-belongs to exactly one locale and references one model.
+unique ID, belongs to exactly one locale and references one model.
 _Avoid_: Speaker (when meaning a named voice)
 
 **Chunk**:
@@ -43,11 +39,9 @@ Multiple chunks are synthesized separately and streamed as a single audio
 response.
 _Avoid_: Segment, fragment
 
-**Wyoming**:
-A TCP-based protocol for Home Assistant integration. The server advertises
-supported locales and voices via Wyoming Info events, accepts synthesis
-requests, and streams audio back as Wyoming audio events.
-_Avoid_: REST API, HTTP
+**Text normalization**:
+The preprocessing step applied to text before TTS synthesis that ensures clean input by stripping whitespace and removing characters unavailable in the active model.
+_Avoid_: Preprocessing, text cleaning, normalization (alone)
 
 ## Relationships
 
@@ -57,8 +51,8 @@ _Avoid_: REST API, HTTP
 - A **Voice** belongs to exactly one **Locale**, references exactly one
   **Model**, and maps to exactly one **Speaker**
 - The **TTS Engine** loads a **Model**, selects a **Speaker**, splits text into
-  **Chunks**, and outputs PCM audio
-- The server advertises supported **Locales** and **Voices** over the **Wyoming**
+  **Chunks**, applies **Text normalization** to each chunk, and outputs PCM audio
+- The server advertises supported **Voices** over the **Wyoming**
   protocol
 
 ## Example dialogue
@@ -75,7 +69,5 @@ _Avoid_: REST API, HTTP
 
 ## Flagged ambiguities
 
-- "Mary-TTS compatible REST API" was used to describe this project —
-  resolved: this is a **Wyoming protocol server**, not an HTTP REST API
 - "Model" was used to mean both a config entry and the loaded neural network —
   resolved: **Model** is a configuration concept

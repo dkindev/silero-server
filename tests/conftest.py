@@ -3,7 +3,8 @@ import unittest.mock
 import pytest
 import torch
 
-from src.tts.models import TTSConfig
+from src.config import NormalizationSettings
+from src.tts.models import NormalizationOptions, TTSConfig
 
 # ---------------------------------------------------------------------------
 # Fixtures — shared by all test files
@@ -51,3 +52,35 @@ def mock_package_importer(mock_importer):
         return_value=mock_importer,
     ):
         yield
+
+
+@pytest.fixture
+def normalization_options(mock_model):
+    """Return NormalizationOptions with a voice, model, and silero model."""
+    from tests.helpers import make_model, make_voice
+
+    return NormalizationOptions(
+        voice=make_voice(voice_id="test-voice", name="Test Voice"),
+        model=make_model(),
+        silero_model=mock_model,
+    )
+
+
+@pytest.fixture
+def default_normalization_settings():
+    """Return NormalizationSettings with all defaults."""
+    return NormalizationSettings()
+
+
+@pytest.fixture
+def mock_openai_client():
+    """AsyncMock(spec=AsyncOpenAI) with chat.completions.create returning a fake response."""
+    from openai import AsyncOpenAI
+
+    client = unittest.mock.AsyncMock(spec=AsyncOpenAI)
+    response = unittest.mock.MagicMock()
+    response.choices = [
+        unittest.mock.MagicMock(message=unittest.mock.MagicMock(content="normalized text"))
+    ]
+    client.chat.completions.create = unittest.mock.AsyncMock(return_value=response)
+    return client

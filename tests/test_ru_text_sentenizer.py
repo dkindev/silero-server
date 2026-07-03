@@ -1,4 +1,4 @@
-from src.tts.preprocessing import RuPlainTextSentenizer, SimpleTextNormalizer
+from src.tts.preprocessing import RuPlainTextSentenizer
 
 
 class TestRuSimpleTextSentenizer:
@@ -34,19 +34,3 @@ class TestRuSimpleTextSentenizer:
         text = "супердлинноеслово"
         chunks = list(RuPlainTextSentenizer().text_to_sentences(text, 5))
         assert chunks == ["супер", "длинн", "оесло", "во"]
-
-    def test_strips_unsupported_characters(self):
-        text = "привет! мир?"
-        normalized = SimpleTextNormalizer().normalize_text(
-            text, "абвгдежзийклмнопрстуфхцчшщъыьэюяё "
-        )
-        chunks = list(RuPlainTextSentenizer().text_to_sentences(normalized, 100))
-        assert chunks == ["привет мир"]
-
-    def test_empty_after_normalization_returns_empty(self):
-        text = "12345"
-        normalized = SimpleTextNormalizer().normalize_text(
-            text, "абвгдежзийклмнопрстуфхцчшщъыьэюяё "
-        )
-        chunks = list(RuPlainTextSentenizer().text_to_sentences(normalized, 100))
-        assert chunks == []
