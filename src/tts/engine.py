@@ -106,26 +106,77 @@ def _run_tts_sync(
         return audio
 
 
-async def _process_chunk(
-    chunk: str, cached_model: CachedModel, voice: Voice, text_format: TextFormat
-) -> TTSResult:
-    async with cached_model.semaphore:
-        tensor = await asyncio.to_thread(
-            _run_tts_sync, cached_model, chunk, voice.speaker, text_format
-        )
+async def _synthesize_pcm_chunks(
+    sentences: AsyncIterator[str], cached_model: CachedModel, voice: Voice, text_format: TextFormat
+) -> AsyncIterator[TTSResult]:
+    result_dict = {}
+    tasks = []
+    events = {}
 
+    next_index_to_yield = 0
+    chunk_index = 0
+
+    async def _process_chunk(
+        index: int,
+        chunk: str,
+    ) -> TTSResult:
         try:
-            audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
-        except Exception as e:
-            raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
+            async with cached_model.semaphore:
+                tensor = await asyncio.to_thread(
+                    _run_tts_sync, cached_model, chunk, voice.speaker, text_format
+                )
 
-        return TTSResult(
-            audio=(audio_np * 32767).astype(np.int16).tobytes(),
-            sample_rate=cached_model.sample_rate,
-            model=voice.model,
-            bytes_per_sample=BYTES_PER_SAMPLE,
-            channels=CHANNELS,
-        )
+                try:
+                    audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
+                except Exception as e:
+                    raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
+
+                result_dict[index] = TTSResult(
+                    audio=(audio_np * 32767).astype(np.int16).tobytes(),
+                    sample_rate=cached_model.sample_rate,
+                    model=voice.model,
+                    bytes_per_sample=BYTES_PER_SAMPLE,
+                    channels=CHANNELS,
+                )
+        finally:
+            events[index].set()
+
+    try:
+        async for sentence in sentences:
+            events[chunk_index] = asyncio.Event()
+
+            tasks.append(
+                asyncio.create_task(
+                    _process_chunk(
+                        index=chunk_index,
+                        chunk=sentence,
+                    )
+                )
+            )
+
+            if chunk_index == 0:
+                # Send Chunk #0 with micro-pause
+                await asyncio.sleep(0.001)
+
+            chunk_index += 1
+
+            while next_index_to_yield in events and events[next_index_to_yield].is_set():
+                yield result_dict.pop(next_index_to_yield)
+                events.pop(next_index_to_yield)
+                next_index_to_yield += 1
+
+        total_chunks = chunk_index
+
+        if total_chunks == 0:
+            return
+
+        for i in range(next_index_to_yield, total_chunks):
+            await events[i].wait()
+            yield result_dict.pop(i)
+    finally:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
 
 
 def _clear_cached_model(cached_model: CachedModel):
@@ -266,6 +317,27 @@ class SileroTTSEngine:
 
         cached = await self._get_tts_model(model)
 
+        sentences = self._text_to_sentences(
+            text=text,
+            voice=voice,
+            text_format=text_format,
+            normalization_options=NormalizationOptions(
+                voice=voice, model=model, silero_model=cached.model
+            ),
+        )
+
+        async for chunk in _synthesize_pcm_chunks(
+            sentences=sentences, cached_model=cached, voice=voice, text_format=text_format
+        ):
+            yield chunk
+
+    async def _text_to_sentences(
+        self,
+        text: str,
+        voice: Voice,
+        text_format: TextFormat,
+        normalization_options: NormalizationOptions,
+    ) -> AsyncIterator[str]:
         text_sentenizer = self._text_sentenizer_factory.create_text_sentenizer(
             voice=voice, format=text_format
         )
@@ -288,11 +360,10 @@ class SileroTTSEngine:
             if self._text_normalizer_factory is not None
             else None
         )
+
         if text_normalizer is None:
             for sentence in sentences:
-                yield await _process_chunk(
-                    chunk=sentence, cached_model=cached, voice=voice, text_format=text_format
-                )
+                yield sentence
         else:
             logger.debug(
                 "Normalize text using '{text_normalizer}'",
@@ -301,13 +372,11 @@ class SileroTTSEngine:
 
             chunks = text_normalizer.normalize_text(
                 chunks=sentences,
-                options=NormalizationOptions(voice=voice, model=model, silero_model=cached.model),
+                options=normalization_options,
             )
 
             async for chunk in chunks:
-                yield await _process_chunk(
-                    chunk=chunk, cached_model=cached, voice=voice, text_format=text_format
-                )
+                yield chunk
 
     async def shutdown(self):
         """Clears the model cache and forces VRAM to be released."""
