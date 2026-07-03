@@ -64,7 +64,7 @@ def _create_wyoming_info(engine: SileroTTSEngine, streaming: bool) -> Info:
     )
 
 
-class SileroWyomingHandler(AsyncEventHandler):
+class SileroEventHandler(AsyncEventHandler):
     def __init__(
         self,
         engine: SileroTTSEngine,

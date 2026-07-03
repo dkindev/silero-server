@@ -283,8 +283,10 @@ class SileroTTSEngine:
             text=text, max_chunk_chars=self._config.max_chunk_chars
         )
 
-        text_normalizer = self._text_normalizer_factory.create_text_normalizer(
-            voice=voice, format=text_format
+        text_normalizer = (
+            self._text_normalizer_factory.create_text_normalizer(voice=voice, format=text_format)
+            if self._text_normalizer_factory is not None
+            else None
         )
         if text_normalizer is None:
             for sentence in sentences:

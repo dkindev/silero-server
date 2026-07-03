@@ -8,7 +8,7 @@ from openai import AsyncOpenAI
 from wyoming.server import AsyncServer, AsyncTcpServer
 
 from src.config import Settings, get_settings
-from src.handler import SileroWyomingHandler
+from src.handler import SileroEventHandler
 from src.logger import setup_logging
 from src.tts.config_storage import SileroTTSConfigStorage, SileroTTSYamlConfigStorage
 from src.tts.engine import SileroTTSEngine
@@ -116,7 +116,7 @@ async def main():
     server_task = asyncio.create_task(
         server.run(
             partial(
-                SileroWyomingHandler,
+                SileroEventHandler,
                 engine,
                 settings.streaming,
                 settings.env_type == "development",
