@@ -1,5 +1,5 @@
 from src.tts.config_storage import SileroTTSYamlConfigStorage
-from src.tts.models import Model, TTSConfigModel, Voice
+from src.tts.models import Model, NormalizationType, TextFormat, TTSConfigModel, Voice
 
 
 class TestSileroTTSYamlConfigStorageInit:
@@ -586,3 +586,183 @@ class TestDisabledModel:
         storage = SileroTTSYamlConfigStorage(config_model)
 
         assert storage.get_model("v5_5_ru") is None
+
+
+class TestGetPromt:
+    """Tests for get_promt() method."""
+
+    def test_get_promt_returns_promt(self, tmp_path):
+        """get_promt should return Promt for the given promt_id."""
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+promts:
+  - id: p1
+    text: "Say hello nicely"
+    model: gpt-4
+models: {}
+voices: []
+"""
+        )
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        promt = storage.get_promt("p1")
+        assert promt is not None
+        assert promt.id == "p1"
+        assert promt.text == "Say hello nicely"
+        assert promt.model == "gpt-4"
+
+    def test_get_promt_returns_none_for_missing_id(self, tmp_path):
+        """get_promt should return None for unknown promt_id."""
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+promts:
+  - id: p1
+    text: "Say hello nicely"
+    model: gpt-4
+models: {}
+voices: []
+"""
+        )
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        assert storage.get_promt("unknown") is None
+
+    def test_get_promt_from_empty_promts(self, tmp_path):
+        """get_promt should return None when promts list is empty."""
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+promts: []
+models: {}
+voices: []
+"""
+        )
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        assert storage.get_promt("p1") is None
+
+    def test_get_promt_from_missing_promts_key(self, tmp_path):
+        """get_promt should return None when promts key is absent."""
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models: {}
+voices: []
+"""
+        )
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        assert storage.get_promt("p1") is None
+
+
+class TestGetVoiceNormalization:
+    """Tests for get_voice_normalization() method."""
+
+    def test_get_voice_normalization_returns_normalization(self, tmp_path):
+        """get_voice_normalization should return VoiceNormalization for voice + text_format."""
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+    locales:
+      ru_RU:
+        voices:
+          - name: aidar
+            normalization:
+              text:
+                enabled: true
+                type: llm
+                promt_id: p1
+"""
+        )
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        vn = storage.get_voice_normalization("ru_RU-v5_5_ru-aidar", TextFormat.TEXT)
+        assert vn is not None
+        assert vn.voice_id == "ru_RU-v5_5_ru-aidar"
+        assert vn.text_format == TextFormat.TEXT
+        assert vn.type == NormalizationType.LLM
+        assert vn.enabled is True
+        assert vn.promt_id == "p1"
+
+    def test_get_voice_normalization_returns_none_for_unknown_voice(self, tmp_path):
+        """get_voice_normalization returns None for unknown voice_id."""
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+    locales:
+      ru_RU:
+        voices:
+          - name: aidar
+            normalization:
+              text:
+                enabled: true
+                type: llm
+"""
+        )
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        assert storage.get_voice_normalization("unknown-voice", TextFormat.TEXT) is None
+
+    def test_get_voice_normalization_returns_none_for_unknown_format(self, tmp_path):
+        """get_voice_normalization returns None for text_format not in normalization."""
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+    locales:
+      ru_RU:
+        voices:
+          - name: aidar
+            normalization:
+              text:
+                enabled: true
+                type: llm
+"""
+        )
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        assert storage.get_voice_normalization("ru_RU-v5_5_ru-aidar", TextFormat.SSML) is None
+
+    def test_get_voice_normalization_voice_without_normalization(self, tmp_path):
+        """get_voice_normalization returns None when voice has no normalization section."""
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+    locales:
+      ru_RU:
+        voices:
+          - name: aidar
+"""
+        )
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        assert storage.get_voice_normalization("ru_RU-v5_5_ru-aidar", TextFormat.TEXT) is None
+
+    def test_get_voice_normalization_disabled_entry(self, tmp_path):
+        """get_voice_normalization returns entry even if enabled=False."""
+        config_yml = tmp_path / "config.yml"
+        config_yml.write_text(
+            """
+models:
+  v5_5_ru:
+    language: ru
+    locales:
+      ru_RU:
+        voices:
+          - name: aidar
+            normalization:
+              text:
+                enabled: false
+                type: simple
+"""
+        )
+        storage = SileroTTSYamlConfigStorage(str(config_yml))
+        vn = storage.get_voice_normalization("ru_RU-v5_5_ru-aidar", TextFormat.TEXT)
+        assert vn is not None
+        assert vn.enabled is False
+        assert vn.type == NormalizationType.SIMPLE

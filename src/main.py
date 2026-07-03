@@ -27,9 +27,13 @@ def create_text_sentenizer_factory() -> TextSentenizerFactory:
 
 
 def create_text_normalizer_factory(
-    openai_client: AsyncOpenAI, settings: Settings
+    openai_client: AsyncOpenAI, settings: Settings, storage: SileroTTSConfigStorage
 ) -> TextNormalizerFactory:
-    return TextNormalizerFactory(openai_client=openai_client, settings=settings.tts.normalization)
+    return TextNormalizerFactory(
+        openai_client=openai_client,
+        settings=settings.tts.normalization,
+        storage=storage,
+    )
 
 
 def create_engine(
@@ -107,7 +111,7 @@ async def main():
 
     storage = create_storage(settings)
     text_sentenizer_factory = create_text_sentenizer_factory()
-    text_normalizer_factory = create_text_normalizer_factory(openai_client, settings)
+    text_normalizer_factory = create_text_normalizer_factory(openai_client, settings, storage)
     engine = create_engine(settings, storage, text_sentenizer_factory, text_normalizer_factory)
 
     await engine.warmup()

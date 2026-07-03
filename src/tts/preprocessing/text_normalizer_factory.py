@@ -4,7 +4,13 @@ from loguru import logger
 from openai import AsyncOpenAI
 
 from src.config import BaseNormalizationSettings, NormalizationSettings
-from src.tts.models import OpenAiNormalizationConfig, TextFormat, Voice
+from src.tts.config_storage import SileroTTSConfigStorage
+from src.tts.models import (
+    OpenAiNormalizationConfig,
+    TextFormat,
+    Voice,
+    VoiceNormalization,
+)
 from src.tts.preprocessing import (
     OpenAiTextNormalizer,
     PlainTextNormalizer,
@@ -14,36 +20,57 @@ from src.tts.preprocessing import (
 
 
 class TextNormalizerFactory:
-    def __init__(self, openai_client: AsyncOpenAI, settings: NormalizationSettings):
+    def __init__(
+        self,
+        openai_client: AsyncOpenAI,
+        settings: NormalizationSettings,
+        storage: SileroTTSConfigStorage,
+    ):
         self._settings = settings
+        self._storage = storage
+        self._openai_client = openai_client
 
         def _create_openai_normalizer(
-            voice: Voice, settings: BaseNormalizationSettings
+            voice: Voice,
+            voice_normalization: VoiceNormalization,
+            settings: BaseNormalizationSettings,
         ) -> TextNormalizer:
             if openai_client is None:
                 return None
 
-            if settings.promts is None:
-                return None
+            if voice_normalization is not None:
+                promt = storage.get_promt(promt_id=voice_normalization.promt_id)
 
-            default_promt = settings.promts.get(voice.locale)
-            if default_promt is None:
-                return None
+            if promt is not None:
+                promt_text = promt.text
+                promt_model = promt.model
+            else:
+                if settings.promts is None:
+                    return None
+
+                default_promt = settings.promts.get(voice.locale)
+                if default_promt is None:
+                    return None
+
+                promt_text = default_promt.text
+                promt_model = default_promt.model
 
             return OpenAiTextNormalizer(
                 client=openai_client,
                 config=OpenAiNormalizationConfig(
                     timeout=self._settings.timeout,
                     max_concurrent_chunks_per_request=self._settings.max_concurrent_chunks_per_request,
-                    default_model=default_promt.model,
-                    default_promt=default_promt.text,
+                    default_model=promt_model,
+                    default_promt=promt_text,
                 ),
             )
 
-        self._builders: dict[str, Callable[[Voice, BaseNormalizationSettings], TextNormalizer]] = {
+        self._builders: dict[
+            str, Callable[[Voice, VoiceNormalization, BaseNormalizationSettings], TextNormalizer]
+        ] = {
             # key: "{locale}__{text_format}__{normalization_type}"
-            "default__text__simple": lambda v, s: PlainTextNormalizer(),
-            "default__ssml__simple": lambda v, s: SsmlNormalizer(),
+            "default__text__simple": lambda v, vn, s: PlainTextNormalizer(),
+            "default__ssml__simple": lambda v, vn, s: SsmlNormalizer(),
             "default__text__llm": _create_openai_normalizer,
             "default__ssml__llm": _create_openai_normalizer,
         }
@@ -56,35 +83,57 @@ class TextNormalizerFactory:
 
     def _create_text_normalizer_factory(self, voice: Voice, format: TextFormat) -> TextNormalizer:
         settings = self._settings.text
-        if not settings.enabled:
-            return None
-
-        return self._create_text_normalizer(voice=voice, format=format, settings=settings)
+        return self._create_text_normalizer(
+            voice=voice,
+            format=format,
+            default_normalization_enabled=settings.enabled,
+            settings=settings,
+        )
 
     def _create_ssml_normalizer_factory(self, voice: Voice, format: TextFormat) -> TextNormalizer:
         settings = self._settings.ssml
-        if not settings.enabled:
-            return None
-
-        return self._create_text_normalizer(voice=voice, format=format, settings=settings)
+        return self._create_text_normalizer(
+            voice=voice,
+            format=format,
+            default_normalization_enabled=settings.enabled,
+            settings=settings,
+        )
 
     def _create_text_normalizer(
-        self, voice: Voice, format: TextFormat, settings: BaseNormalizationSettings
+        self,
+        voice: Voice,
+        format: TextFormat,
+        default_normalization_enabled: bool,
+        settings: BaseNormalizationSettings,
     ) -> TextNormalizer:
-        factory = self._builders.get(f"{voice.locale}__{format.value}__{settings.type.value}")
-        if factory is None:
-            factory = self._builders.get(f"default__{format.value}__{settings.type.value}")
+        voice_normalization = self._storage.get_voice_normalization(
+            voice_id=voice.id, text_format=format
+        )
+        if voice_normalization is not None:
+            if not voice_normalization.enabled:
+                return None
 
-        if factory is None:
+            type = voice_normalization.type
+        else:
+            if not default_normalization_enabled:
+                return None
+
+            type = settings.type
+
+        builder = self._builders.get(f"{voice.locale}__{format.value}__{type.value}")
+        if builder is None:
+            builder = self._builders.get(f"default__{format.value}__{type.value}")
+
+        if builder is None:
             logger.warning(
                 "Text normalizer not found in factory. Locale: {locale}. Format: {format}. Type: {type}",
                 locale=voice.locale,
                 format=format.value,
-                type=settings.type.value,
+                type=type.value,
             )
             return None
 
-        return factory(voice, settings)
+        return builder(voice, voice_normalization, settings)
 
     def create_text_normalizer(self, voice: Voice, format: TextFormat) -> TextNormalizer:
         if voice is None:

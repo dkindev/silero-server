@@ -84,3 +84,12 @@ def mock_openai_client():
     ]
     client.chat.completions.create = unittest.mock.AsyncMock(return_value=response)
     return client
+
+
+@pytest.fixture
+def mock_storage():
+    """Mock SileroTTSConfigStorage returning None for all lookups."""
+    storage = unittest.mock.MagicMock()
+    storage.get_voice_normalization.return_value = None
+    storage.get_promt.return_value = None
+    return storage

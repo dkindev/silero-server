@@ -58,7 +58,7 @@ class NormalizationPromt(BaseModel):
 
 
 class BaseNormalizationSettings(BaseModel):
-    type: NormalizationType | None = Field(
+    type: NormalizationType = Field(
         default=NormalizationType.SIMPLE, description="Normalizer type (simple, llm)"
     )
     """Normalizer type (simple, llm)"""

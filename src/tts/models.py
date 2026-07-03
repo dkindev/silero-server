@@ -4,6 +4,34 @@ from typing import Any
 
 
 @dataclass(frozen=True)
+class Promt:
+    id: str
+    text: str
+    model: str
+
+
+@unique
+class TextFormat(Enum):
+    TEXT = "text"
+    SSML = "ssml"
+
+
+@unique
+class NormalizationType(Enum):
+    SIMPLE = "simple"
+    LLM = "llm"
+
+
+@dataclass(frozen=True)
+class VoiceNormalization:
+    voice_id: str
+    text_format: TextFormat
+    type: NormalizationType
+    enabled: bool
+    promt_id: str | None = None
+
+
+@dataclass(frozen=True)
 class Model:
     name: str
     language: str
@@ -21,22 +49,12 @@ class Voice:
     locale: str
 
 
-@unique
-class TextFormat(Enum):
-    TEXT = "text"
-    SSML = "ssml"
-
-
-@unique
-class NormalizationType(Enum):
-    SIMPLE = "simple"
-    LLM = "llm"
-
-
 @dataclass(frozen=True)
 class TTSConfigModel:
     models: list[Model]
     voices: list[Voice]
+    promts: list[Promt] | None = None
+    voice_normalizations: list[VoiceNormalization] | None = None
 
 
 @dataclass(frozen=True)
