@@ -1,6 +1,6 @@
 # Silero TTS Server
 
-Wyoming protocol TTS server wrapping Silero models. Supports Home Assistant integration, streaming audio, and optional per-voice LLM normalization.
+[Wyoming protocol](https://github.com/OHF-Voice/wyoming) TTS server wrapping [Silero models](https://github.com/snakers4/silero-models). Supports Home Assistant integration, streaming audio, and optional per-voice LLM normalization.
 
 ## Quick Start
 
