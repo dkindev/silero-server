@@ -197,11 +197,11 @@ class TestTTSConfig:
             max_concurrent_per_model=2,
             max_chunk_chars=48000,
             models_dir=".models/silero",
-            models_yml_url=str(settings.tts.models_yml_url),
-            models_yml_hash=settings.tts.models_yml_hash,
+            models_yml_url=str(settings.models_yml_url),
+            models_yml_hash=settings.models_yml_hash,
         )
-        assert str(config.models_yml_url) == str(settings.tts.models_yml_url)
-        assert config.models_yml_hash == settings.tts.models_yml_hash
+        assert str(config.models_yml_url) == str(settings.models_yml_url)
+        assert config.models_yml_hash == settings.models_yml_hash
 
     def test_tts_config_models_yml_hash_accepts_none(self):
         """TTSConfig.models_yml_hash accepts None (skip validation)."""

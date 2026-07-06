@@ -66,8 +66,8 @@ class TestYamlConfigSource:
         assert settings.env_type == "development"
         assert settings.torch.device == "cpu"
         assert settings.torch.num_threads == 4
-        assert settings.tts.sample_rate == 48000
-        assert settings.tts.max_models == 2
+        assert settings.sample_rate == 48000
+        assert settings.max_models == 2
 
     def test_yaml_source_is_in_priority_chain(self):
         """YamlConfigSettingsSource is present in the priority chain."""

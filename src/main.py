@@ -19,7 +19,7 @@ setup_logging()
 
 
 def create_storage(settings: Settings) -> SileroTTSConfigStorage:
-    return SileroTTSYamlConfigStorage(settings.tts.data_yml_path)
+    return SileroTTSYamlConfigStorage(settings.data_yml_path)
 
 
 def create_text_sentenizer_factory() -> TextSentenizerFactory:
@@ -31,7 +31,7 @@ def create_text_normalizer_factory(
 ) -> TextNormalizerFactory:
     return TextNormalizerFactory(
         openai_client=openai_client,
-        settings=settings.tts.normalization,
+        settings=settings.normalization,
         storage=storage,
     )
 
@@ -49,13 +49,13 @@ def create_engine(
 
     config = TTSConfig(
         device=settings.torch.device,
-        sample_rate=settings.tts.sample_rate,
-        max_models=settings.tts.max_models,
-        max_concurrent_per_model=settings.tts.max_concurrent_per_model,
-        max_chunk_chars=settings.tts.max_chunk_chars,
-        models_dir=settings.tts.models_dir,
-        models_yml_url=settings.tts.models_yml_url,
-        models_yml_hash=settings.tts.models_yml_hash,
+        sample_rate=settings.sample_rate,
+        max_models=settings.max_models,
+        max_concurrent_per_model=settings.max_concurrent_per_model,
+        max_chunk_chars=settings.max_chunk_chars,
+        models_dir=settings.models_dir,
+        models_yml_url=settings.models_yml_url,
+        models_yml_hash=settings.models_yml_hash,
     )
 
     return SileroTTSEngine(
@@ -67,7 +67,7 @@ def create_engine(
 
 
 def create_openai_client(settings: Settings) -> AsyncOpenAI:
-    config = settings.open_ai
+    config = settings.openai
     if config is None:
         return None
 
@@ -75,8 +75,8 @@ def create_openai_client(settings: Settings) -> AsyncOpenAI:
         return None
 
     openai_client = AsyncOpenAI(
-        base_url=settings.open_ai.base_url,
-        api_key=settings.open_ai.api_key,
+        base_url=config.base_url,
+        api_key=config.api_key,
     )
 
     return openai_client

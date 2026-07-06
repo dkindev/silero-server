@@ -1,8 +1,10 @@
 import argparse
+import os
+import re
 from functools import lru_cache
-from typing import Any, Literal, get_args, get_origin
+from typing import Any, Literal
 
-from pydantic import AliasChoices, BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -17,7 +19,6 @@ from src.tts.models import NormalizationType
 class TorchSettings(BaseModel):
     device: str = Field(
         default="cpu",
-        validation_alias=AliasChoices("device", "TTS_TORCH_DEVICE"),
         description="Device to run TTS model on: 'cpu', 'cuda', etc. Falls back to 'cpu' at runtime if unavailable.",
     )
     """Device to run TTS model on: 'cpu', 'cuda', etc. Falls back to 'cpu' at runtime if unavailable."""
@@ -25,7 +26,6 @@ class TorchSettings(BaseModel):
     num_threads: int = Field(
         default=4,
         ge=1,
-        validation_alias=AliasChoices("num_threads", "TTS_TORCH_NUM_THREADS", "OMP_NUM_THREADS"),
         description="Number of PyTorch intra-op threads (torch.set_num_threads).",
     )
     """Number of PyTorch intra-op threads (torch.set_num_threads)."""
@@ -33,14 +33,12 @@ class TorchSettings(BaseModel):
     num_interop_threads: int = Field(
         default=1,
         ge=1,
-        validation_alias=AliasChoices("num_interop_threads", "TTS_TORCH_NUM_INTEROP_THREADS"),
         description="Number of PyTorch inter-op threads (torch.set_num_interop_threads).",
     )
     """Number of PyTorch inter-op threads (torch.set_num_interop_threads)."""
 
     flush_denormal: bool = Field(
         default=True,
-        validation_alias=AliasChoices("flush_denormal", "TTS_TORCH_FLUSH_DENORMAL"),
         description="Flush denormal floats for performance (torch.set_flush_denormal).",
     )
     """Flush denormal floats for performance (torch.set_flush_denormal)."""
@@ -68,13 +66,10 @@ class BaseNormalizationSettings(BaseModel):
     )
     """A dictionary of prompts indexed by locale"""
 
-    # model_config = {"use_enum_values": True}
-
 
 class TextNormalizationSettings(BaseNormalizationSettings):
     enabled: bool = Field(
         default=True,
-        validation_alias=AliasChoices("enabled", "TTS_NORM_TEXT_ENABLED"),
         description="Enable plain text normalization",
     )
     """Enable plain text normalization"""
@@ -83,7 +78,6 @@ class TextNormalizationSettings(BaseNormalizationSettings):
 class SsmlNormalizationSettings(BaseNormalizationSettings):
     enabled: bool = Field(
         default=False,
-        validation_alias=AliasChoices("enabled", "TTS_NORM_SSML_ENABLED"),
         description="Enable SSML markup normalization",
     )
     """Enable SSML markup normalization"""
@@ -93,7 +87,6 @@ class NormalizationSettings(BaseModel):
     timeout: float = Field(
         default=5,
         ge=1,
-        validation_alias=AliasChoices("timeout", "TTS_NORM_TIMEOUT"),
         description="Timeout for input text normalization",
     )
     """Timeout for input text normalization"""
@@ -101,9 +94,6 @@ class NormalizationSettings(BaseModel):
     max_concurrent_chunks_per_request: int = Field(
         default=2,
         ge=1,
-        validation_alias=AliasChoices(
-            "max_concurrent_chunks_per_request", "TTS_NORM_MAX_CONCURRENT_PER_REQUEST"
-        ),
         description="Maximum concurrent chunks per request for normalization.",
     )
     """Maximum concurrent chunks per request for normalization."""
@@ -115,100 +105,31 @@ class NormalizationSettings(BaseModel):
 class OpenAiSettings(BaseModel):
     base_url: str = Field(
         default="",
-        validation_alias=AliasChoices("base_url", "TTS_OPENAI_BASE_URL", "OPENAI_BASE_URL"),
         description="Base URL for OpenAI-compatible API",
     )
     """Base URL for OpenAI-compatible API"""
 
     api_key: str = Field(
         default="",
-        validation_alias=AliasChoices("api_key", "TTS_OPENAI_API_KEY", "OPENAI_API_KEY"),
         description="API key for OpenAI-compatible API",
     )
     """API key for OpenAI-compatible API"""
 
+    @model_validator(mode="after")
+    def fallback_to_standard_openai_envs(self) -> "OpenAiSettings":
+        # If after all sources (YAML, CLI, TTS_*) the fields remains empty
+        # use standart OpenAI envs
+        if not self.api_key:
+            standard_key = os.environ.get("OPENAI_API_KEY")
+            if standard_key:
+                self.api_key = standard_key
 
-class TtsSettings(BaseModel):
-    sample_rate: Literal[8000, 16000, 24000, 48000] = Field(
-        default=48000,
-        validation_alias=AliasChoices("sample_rate", "TTS_SAMPLE_RATE"),
-        description="Audio sample rate in Hz for TTS output.",
-    )
-    """Audio sample rate in Hz for TTS output."""
+        if not self.base_url:
+            standard_url = os.environ.get("OPENAI_BASE_URL")
+            if standard_url:
+                self.base_url = standard_url
 
-    @field_validator("sample_rate", mode="before")
-    @classmethod
-    def coerce_sample_rate(cls, v: object) -> object:
-        if isinstance(v, str):
-            return int(v)
-        return v
-
-    max_models: int = Field(
-        default=2,
-        ge=1,
-        validation_alias=AliasChoices("max_models", "TTS_MAX_MODELS"),
-        description="Maximum number of models to cache in memory. Oldest evicted when limit reached.",
-    )
-    """Maximum number of models to cache in memory. Oldest evicted when limit reached."""
-
-    max_concurrent_per_model: int = Field(
-        default=2,
-        ge=1,
-        validation_alias=AliasChoices("max_concurrent_per_model", "TTS_MAX_CONCURRENT_PER_MODEL"),
-        description="Maximum concurrent TTS requests per model.",
-    )
-    """Maximum concurrent TTS requests per model."""
-
-    max_chunk_chars: int = Field(
-        default=140,
-        ge=10,
-        validation_alias=AliasChoices("max_chunk_chars", "TTS_MAX_CHUNK_CHARS"),
-        description="Maximum character count per text chunk for TTS processing.",
-    )
-    """Maximum character count per text chunk for TTS processing."""
-
-    data_yml_path: str = Field(
-        default="data/data.yml",
-        validation_alias=AliasChoices("data_yml_path", "TTS_DATA_YML_PATH"),
-    )
-    """Local path to the voice/model mapping configuration file data.yml"""
-
-    models_dir: str = Field(
-        default="models/silero",
-        validation_alias=AliasChoices("models_dir", "TTS_MODELS_DIR"),
-        description="Directory for downloaded Silero .pt model files.",
-    )
-    """Directory for downloaded Silero .pt model files."""
-
-    models_yml_url: HttpUrl = Field(
-        default="https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml",
-        validation_alias=AliasChoices("models_yml_url", "TTS_MODELS_YML_URL"),
-        description="URL to the Silero models.yml registry file.",
-    )
-    """URL to the Silero models.yml registry file."""
-
-    models_yml_hash: str = Field(
-        default="",
-        validation_alias=AliasChoices("models_yml_hash", "TTS_MODELS_YML_HASH"),
-        description="SHA-256 hash of the Silero models.yml file for integrity verification. Set empty to skip validation.",
-    )
-    """SHA-256 hash of the Silero models.yml file for integrity verification. Set empty to skip validation."""
-
-    normalization: NormalizationSettings = Field(default_factory=NormalizationSettings)
-
-    @field_validator("models_yml_hash")
-    @classmethod
-    def models_yml_hash_must_be_valid(cls, v: str) -> str:
-        if v and not v.strip():
-            return ""
-        if v:
-            import re
-
-            if not re.fullmatch(r"[a-f0-9]{64}", v.lower()):
-                raise ValueError(
-                    "TTS_MODELS_YML_HASH must be a 64-character hex string or empty to skip validation"
-                )
-        return v
+        return self
 
 
 class Settings(BaseSettings):
@@ -224,6 +145,21 @@ class Settings(BaseSettings):
     )
     """URI for the Wyoming server."""
 
+    @field_validator("uri")
+    @classmethod
+    def validate_tcp_uri(cls, value: str) -> str:
+        pattern = r"^tcp://([a-zA-Z0-9.-]+):([0-9]{1,5})$"
+        match = re.match(pattern, value)
+        if not match:
+            raise ValueError(f"Invalid URI format: '{value}'. Expecting 'tcp://<host>:<port>'")
+        host, port_str = match.groups()
+        port = int(port_str)
+        if port < 1 or port > 65535:
+            raise ValueError(
+                f"The network port must be in the range from 1 to 65535. Passed: {port}"
+            )
+        return value
+
     zeroconf: str = Field(
         default="silero-tts",
         description="Zeroconf discovery name. Empty string means disabled. Set to a name (e.g. 'silero-tts') to enable.",
@@ -236,9 +172,82 @@ class Settings(BaseSettings):
     )
     """Enable audio streaming."""
 
+    sample_rate: Literal[8000, 16000, 24000, 48000] = Field(
+        default=48000,
+        description="Audio sample rate in Hz for TTS output.",
+    )
+    """Audio sample rate in Hz for TTS output."""
+
+    @field_validator("sample_rate", mode="before")
+    @classmethod
+    def coerce_sample_rate(cls, v: object) -> object:
+        if isinstance(v, str):
+            return int(v)
+        return v
+
+    max_models: int = Field(
+        default=2,
+        ge=1,
+        description="Maximum number of models to cache in memory. Oldest evicted when limit reached.",
+    )
+    """Maximum number of models to cache in memory. Oldest evicted when limit reached."""
+
+    max_concurrent_per_model: int = Field(
+        default=2,
+        ge=1,
+        description="Maximum concurrent TTS requests per model.",
+    )
+    """Maximum concurrent TTS requests per model."""
+
+    max_chunk_chars: int = Field(
+        default=140,
+        ge=10,
+        description="Maximum character count per text chunk for TTS processing.",
+    )
+    """Maximum character count per text chunk for TTS processing."""
+
+    data_yml_path: str = Field(
+        default="data/data.yml",
+    )
+    """Local path to the voice/model mapping configuration file data.yml"""
+
+    models_dir: str = Field(
+        default="models/silero",
+        description="Directory for downloaded Silero .pt model files.",
+    )
+    """Directory for downloaded Silero .pt model files."""
+
+    models_yml_url: HttpUrl = Field(
+        default="https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml",
+        description="URL to the Silero models.yml registry file.",
+    )
+    """URL to the Silero models.yml registry file."""
+
+    models_yml_hash: str = Field(
+        default="",
+        description="SHA-256 hash of the Silero models.yml file for integrity verification. Set empty to skip validation.",
+    )
+    """SHA-256 hash of the Silero models.yml file for integrity verification. Set empty to skip validation."""
+
+    @field_validator("models_yml_hash")
+    @classmethod
+    def models_yml_hash_must_be_valid(cls, v: str) -> str:
+        if v and not v.strip():
+            return ""
+        if v:
+            import re
+
+            if not re.fullmatch(r"[a-f0-9]{64}", v.lower()):
+                raise ValueError(
+                    "TTS_MODELS_YML_HASH must be a 64-character hex string or empty to skip validation"
+                )
+        return v
+
+    normalization: NormalizationSettings = Field(
+        default_factory=NormalizationSettings,
+    )
+    openai: OpenAiSettings = Field(default_factory=OpenAiSettings)
     torch: TorchSettings = Field(default_factory=TorchSettings)
-    open_ai: OpenAiSettings = Field(default_factory=OpenAiSettings)
-    tts: TtsSettings = Field(default_factory=TtsSettings)
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -246,6 +255,7 @@ class Settings(BaseSettings):
         yaml_file="config.yml",
         yaml_file_encoding="utf-8",
         env_prefix="TTS_",
+        env_nested_delimiter="__",
         extra="ignore",
     )
 
@@ -262,73 +272,102 @@ class Settings(BaseSettings):
         return (
             CliArgsSource(settings_cls),
             env_settings,
+            dotenv_settings,
             YamlConfigSettingsSource(settings_cls),
             init_settings,
         )
 
 
 class CliArgsSource(PydanticBaseSettingsSource):
+    _fields_to_skip = ["normalization"]
+
     def get_field_value(self, field, field_name):
         return None
 
     def __call__(self) -> dict[str, Any]:
         return self._parse_cli_args()
 
-    def _add_fields_to_parser(
-        self, parser: argparse.ArgumentParser, model_cls: type[BaseModel], prefix: str = ""
-    ):
-        for field_name, field_info in model_cls.model_fields.items():
-            if field_name == "normalization":
-                continue
-
-            cli_name = f"{prefix}{field_name}"
-            help_text = field_info.description or ""
-            annotation = field_info.annotation
-
-            if isinstance(annotation, type) and issubclass(annotation, BaseModel):
-                self._add_fields_to_parser(parser, annotation, prefix=f"{cli_name}_")
-                continue
-
-            kwargs: dict[str, Any] = {"default": None, "help": help_text}
-
-            if get_origin(annotation) is Literal:
-                allowed_values = get_args(annotation)
-                kwargs["choices"] = allowed_values
-                kwargs["type"] = type(allowed_values[0]) if allowed_values else str
-            elif annotation is bool:
-                kwargs["action"] = argparse.BooleanOptionalAction
-            else:
-                kwargs["type"] = str
-                if annotation is int:
-                    kwargs["metavar"] = "INT"
-                else:
-                    kwargs["metavar"] = "STR"
-
-            parser.add_argument(f"--{cli_name}", **kwargs)
-
-    def _parse_cli_args(self) -> dict[str, Any]:
+    def _parse_cli_args(self) -> dict[str, Any]:  # noqa: C901
         parser = argparse.ArgumentParser(
             description=__metadata__["summary"],
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
 
-        self._add_fields_to_parser(parser, Settings)
+        schema = Settings.model_json_schema()
+        properties = schema.get("properties", {})
+        definitions = schema.get("$defs", {})
+
+        cli_mapping: dict[str, list[str]] = {}
+
+        def _add_field(prefix: list[str], field_name: str, sub_info: dict[str, Any]):
+            full_prefix = "_".join(prefix) + "_" if prefix else ""
+            cli_name = f"{full_prefix}{field_name}"
+
+            for field_to_skip in self._fields_to_skip:
+                if cli_name.startswith(field_to_skip):
+                    return
+
+            help_text = sub_info.get("description", "")
+            type = sub_info.get("type")
+            if type is None:
+                return
+
+            if type == "boolean":
+                parser.add_argument(
+                    f"--{cli_name}", action=argparse.BooleanOptionalAction, help=help_text
+                )
+            elif "enum" in sub_info:
+                parser.add_argument(
+                    f"--{cli_name}", type=str, choices=sub_info["enum"], help=help_text
+                )
+            else:
+                parser.add_argument(f"--{cli_name}", metavar=type, type=str, help=help_text)
+
+            cli_mapping[cli_name] = prefix
+
+        def _add_fields(prefix: list[str], properties: dict[str, Any]):
+            for field_name, field_info in properties.items():
+                if "$ref" in field_info:
+                    ref_name = field_info["$ref"].split("/")[-1]
+                    sub_model = definitions.get(ref_name, {})
+                    sub_properties = sub_model.get("properties", {})
+
+                    if "enum" in sub_model:
+                        _add_field(prefix=prefix, field_name=field_name, sub_info=sub_model)
+                        continue
+
+                    if prefix is None:
+                        root_prefix = [field_name]
+                    else:
+                        root_prefix = prefix.copy()
+                        root_prefix.append(field_name)
+
+                    _add_fields(prefix=root_prefix, properties=sub_properties)
+                else:
+                    _add_field(prefix=prefix, field_name=field_name, sub_info=field_info)
+
+        _add_fields(prefix=None, properties=properties)
+
+        structured_data: dict[str, Any] = {}
 
         args, _ = parser.parse_known_args()
         raw_args = {k: v for k, v in vars(args).items() if v is not None}
-
-        structured_data: dict[str, Any] = {}
         for key, value in raw_args.items():
-            if key.startswith("torch_"):
-                if "torch" not in structured_data:
-                    structured_data["torch"] = {}
-                structured_data["torch"][key[6:]] = value
-            elif key.startswith("tts_"):
-                if "tts" not in structured_data:
-                    structured_data["tts"] = {}
-                structured_data["tts"][key[4:]] = value
-            else:
+            if key not in cli_mapping:
+                continue
+
+            prefix = cli_mapping[key]
+            if not prefix:
                 structured_data[key] = value
+            else:
+                data = structured_data
+                for prefix_part in prefix:
+                    if prefix_part not in data:
+                        data[prefix_part] = {}
+                    data = data[prefix_part]
+
+                sub_key = key[len("_".join(prefix)) + 1 :]
+                data[sub_key] = value
 
         return structured_data
 
