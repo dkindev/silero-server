@@ -19,23 +19,23 @@ class OpenAiTextNormalizer(TextNormalizer):
         if config.max_concurrent_chunks_per_request <= 0:
             raise ValueError("max_concurrent_chunks_per_request cannot be negative or zero")
 
-        self.options = config
-        self.client = client
+        self._options = config
+        self._client = client
 
     async def _normalize_text(self, text: str) -> str:
         try:
             response = await asyncio.wait_for(
-                self.client.chat.completions.create(
-                    model=self.options.default_model,
+                self._client.chat.completions.create(
+                    model=self._options.default_model,
                     messages=[
-                        {"role": "system", "content": self.options.default_promt},
+                        {"role": "system", "content": self._options.default_promt},
                         {"role": "user", "content": text},
                     ],
                     temperature=0.0,
                     reasoning_effort="none",
                     extra_body={"think": False},
                 ),
-                timeout=self.options.timeout,
+                timeout=self._options.timeout,
             )
 
             clean_text = response.choices[0].message.content.strip()
@@ -43,14 +43,14 @@ class OpenAiTextNormalizer(TextNormalizer):
             if not clean_text:
                 logger.warning(
                     "{model_name} returned an empty response. Using original text",
-                    model_name=self.options.default_model,
+                    model_name=self._options.default_model,
                 )
             else:
                 return clean_text
         except Exception:
             logger.exception(
                 "{model_name} normalization failed with error. Returning original text",
-                model_name=self.options.default_model,
+                model_name=self._options.default_model,
             )
 
         return text
@@ -64,7 +64,7 @@ class OpenAiTextNormalizer(TextNormalizer):
     ):
         logger.debug(
             "Send chunk {index} to {model_name}. Text: {text}",
-            model_name=self.options.default_model,
+            model_name=self._options.default_model,
             index=index,
             text=text,
         )
@@ -81,7 +81,7 @@ class OpenAiTextNormalizer(TextNormalizer):
         tasks = []
         events = {}
 
-        semaphore = asyncio.Semaphore(self.options.max_concurrent_chunks_per_request)
+        semaphore = asyncio.Semaphore(self._options.max_concurrent_chunks_per_request)
 
         async def normalize_chunk_concurrently(index: int, text: str):
             async with semaphore:

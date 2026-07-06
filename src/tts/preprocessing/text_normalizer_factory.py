@@ -35,11 +35,11 @@ class TextNormalizerFactory:
             voice_normalization: VoiceNormalization,
             settings: BaseNormalizationSettings,
         ) -> TextNormalizer:
-            if openai_client is None:
+            if self._openai_client is None:
                 return None
 
             if voice_normalization is not None:
-                promt = storage.get_promt(promt_id=voice_normalization.promt_id)
+                promt = self._storage.get_promt(promt_id=voice_normalization.promt_id)
 
             if promt is not None:
                 promt_text = promt.text
@@ -56,7 +56,7 @@ class TextNormalizerFactory:
                 promt_model = default_promt.model
 
             return OpenAiTextNormalizer(
-                client=openai_client,
+                client=self._openai_client,
                 config=OpenAiNormalizationConfig(
                     timeout=self._settings.timeout,
                     max_concurrent_chunks_per_request=self._settings.max_concurrent_chunks_per_request,

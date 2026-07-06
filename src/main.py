@@ -104,9 +104,6 @@ async def main():
 
     server = AsyncServer.from_uri(settings.uri)
 
-    if settings.zeroconf:
-        await register_zeroconf_server(settings.zeroconf, server)
-
     openai_client = create_openai_client(settings)
 
     storage = create_storage(settings)
@@ -114,10 +111,10 @@ async def main():
     text_normalizer_factory = create_text_normalizer_factory(openai_client, settings, storage)
     engine = create_engine(settings, storage, text_sentenizer_factory, text_normalizer_factory)
 
-    await engine.warmup()
-
     logger.info(f"Starting server on {settings.uri}")
-    server_task = asyncio.create_task(
+
+    tasks = [
+        engine.warmup(),
         server.run(
             partial(
                 SileroEventHandler,
@@ -125,8 +122,13 @@ async def main():
                 settings.streaming,
                 settings.env_type == "development",
             )
-        )
-    )
+        ),
+    ]
+
+    if settings.zeroconf:
+        tasks.append(register_zeroconf_server(settings.zeroconf, server))
+
+    server_task = asyncio.gather(*tasks)
 
     loop = asyncio.get_running_loop()
     loop.add_signal_handler(signal.SIGINT, server_task.cancel)
@@ -141,6 +143,9 @@ async def main():
 
         if openai_client is not None:
             await openai_client.close()
+
+        loop.remove_signal_handler(signal.SIGINT)
+        loop.remove_signal_handler(signal.SIGTERM)
 
 
 if __name__ == "__main__":
