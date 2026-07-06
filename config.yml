@@ -1,23 +1,85 @@
+# Application environment type.
+# CLI: --env_type
+# Env: TTS_ENV_TYPE
 env_type: development
 
+# URI for the Wyoming server (tcp://host:port).
+# CLI: --uri
+# Env: TTS_URI
 uri: tcp://127.0.0.1:10200
+
+# Zeroconf discovery name. Empty string disables.
+# CLI: --zeroconf
+# Env: TTS_ZEROCONF
 zeroconf: silero-tts
+
+# Enable audio streaming.
+# CLI: --streaming / --no-streaming
+# Env: TTS_STREAMING
 streaming: true
 
+# Audio sample rate in Hz (8000, 16000, 24000, 48000).
+# CLI: --sample_rate
+# Env: TTS_SAMPLE_RATE
 sample_rate: 48000
+
+# Maximum number of models to cache in memory.
+# CLI: --max_models
+# Env: TTS_MAX_MODELS
 max_models: 2
+
+# Maximum concurrent TTS requests per model.
+# CLI: --max_concurrent_per_model
+# Env: TTS_MAX_CONCURRENT_PER_MODEL
 max_concurrent_per_model: 2
+
+# Maximum character count per text chunk for TTS processing.
+# CLI: --max_chunk_chars
+# Env: TTS_MAX_CHUNK_CHARS
 max_chunk_chars: 140
+
+# Directory for downloaded Silero .pt model files.
+# CLI: --models_dir
+# Env: TTS_MODELS_DIR
 models_dir: models/silero
+
+# Local path to the voice/model mapping configuration file.
+# CLI: --data_yml_path
+# Env: TTS_DATA_YML_PATH
 data_yml_path: data/data.yml
+
+# URL to the Silero models.yml registry file.
+# CLI: --models_yml_url
+# Env: TTS_MODELS_YML_URL
 models_yml_url: https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml
+
+# SHA-256 hash of the Silero models.yml file for integrity verification.
+# CLI: --models_yml_hash
+# Env: TTS_MODELS_YML_HASH
 models_yml_hash: ""
+
+# Text normalization settings.
+# Env only (not available via CLI).
 normalization:
+  # Timeout for input text normalization.
+  # Env: TTS_NORMALIZATION__TIMEOUT
   timeout: 5
+
+  # Maximum concurrent chunks per request for normalization.
+  # Env: TTS_NORMALIZATION__MAX_CONCURRENT_CHUNKS_PER_REQUEST
   max_concurrent_chunks_per_request: 2
+
+  # Plain text normalization settings.
   text:
+    # Enable plain text normalization.
+    # Env: TTS_NORMALIZATION__TEXT_ENABLED
     enabled: true
+
+    # Normalizer type (simple, llm).
+    # Env: TTS_NORMALIZATION__TEXT_TYPE
     type: simple
+
+    # Per-locale LLM prompts for text normalization (config.yml only).
     promts:
       ru_RU:
         text: |
@@ -29,15 +91,50 @@ normalization:
           2. Не занимайся лемматизацией и не пересказывай текст.
           3. Выдавай ТОЛЬКО обработанный текст, без каких-либо комментариев.
         model: qwen3.5:4b
+
+  # SSML normalization settings.
   ssml:
+    # Enable SSML markup normalization.
+    # Env: TTS_NORMALIZATION__SSML_ENABLED
     enabled: false
 
+    # Normalizer type (simple, llm).
+    # Env: TTS_NORMALIZATION__SSML_TYPE
+    type: simple
+
+    # Per-locale LLM prompts for SSML normalization.
+    # promts:
+
+# PyTorch computing engine settings.
 torch:
+  # Device to run TTS model on (cpu, cuda, xpu).
+  # CLI: --torch_device
+  # Env: TTS_TORCH__DEVICE
   device: cpu
+
+  # Number of PyTorch intra-op threads.
+  # CLI: --torch_num_threads
+  # Env: TTS_TORCH__NUM_THREADS
   num_threads: 4
+
+  # Number of PyTorch inter-op threads.
+  # CLI: --torch_num_interop_threads
+  # Env: TTS_TORCH__NUM_INTEROP_THREADS
   num_interop_threads: 1
+
+  # Flush denormal floats for performance.
+  # CLI: --torch_flush_denormal / --no-torch_flush_denormal
+  # Env: TTS_TORCH__FLUSH_DENORMAL
   flush_denormal: true
 
+# OpenAI-compatible API settings for LLM-based normalization.
 openai:
+  # Base URL for OpenAI-compatible API.
+  # CLI: --openai_base_url
+  # Env: TTS_OPENAI__BASE_URL (fallback: OPENAI_BASE_URL)
   base_url: ""
+
+  # API key for OpenAI-compatible API.
+  # CLI: --openai_api_key
+  # Env: TTS_OPENAI__API_KEY (fallback: OPENAI_API_KEY)
   api_key: ""

@@ -1,6 +1,6 @@
 # Silero TTS Server
 
-A simple, robust, and performant Wyoming protocol TTS server that wraps the Silero TTS engine, enabling Home Assistant and other Wyoming clients to generate speech audio over TCP with minimal latency and operational overhead.
+Wyoming protocol TTS server wrapping Silero models. Supports Home Assistant integration, streaming audio, and optional per-voice LLM normalization.
 
 ## Quick Start
 
@@ -57,83 +57,16 @@ A simple, robust, and performant Wyoming protocol TTS server that wraps the Sile
 
 Configuration is resolved with the following priority (highest first):
 
-1. **CLI arguments** — `--uri`, `--torch_device`, `--tts_sample_rate`, etc.
-2. **Environment variables** — `TTS_URI`, `TTS_TORCH_DEVICE`, `TTS_SAMPLE_RATE`, etc.
+1. **CLI arguments** — `--uri`, `--torch_device`, `--sample_rate`, etc.
+2. **Environment variables** — `TTS_URI`, `TTS_TORCH__DEVICE`, `TTS_SAMPLE_RATE`, etc.
 3. **config.yml** — YAML file at the project root
-4. **Defaults** — Pydantic `Field(default=...)`
+4. **Defaults** — Default values in code
 
-### CLI Arguments
-
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--uri` | str | `tcp://127.0.0.1:10200` | Server URI (Wyoming TCP) |
-| `--zeroconf` | str | `silero` | Zeroconf discovery name |
-| `--streaming` / `--no-streaming` | bool | `true` | Enable audio streaming |
-| `--env_type` | str | `development` | `development` or `production` |
-| `--torch_device` | str | `cpu` | PyTorch device (`cpu`, `cuda`, `xpu`) |
-| `--torch_num_threads` | int | `4` | Intra-op thread count |
-| `--torch_num_interop_threads` | int | `1` | Inter-op thread count |
-| `--torch_flush_denormal` / `--no-torch_flush_denormal` | bool | `true` | Flush denormal floats for performance |
-| `--tts_sample_rate` | int | `48000` | Output sample rate (8000, 16000, 24000, 48000) |
-| `--tts_max_models` | int | `2` | Max models cached in memory |
-| `--tts_max_concurrent_per_model` | int | `2` | Max concurrent chunks per model |
-| `--tts_max_chunk_chars` | int | `140` | Max characters per text chunk |
-| `--tts_data_yml_path` | str | `data/data.yml` | Path to the voice/model mapping config |
-| `--tts_models_dir` | str | `models/silero` | Directory for downloaded model files |
-| `--tts_models_yml_url` | str | *(see config.yml)* | URL to the Silero models registry |
-| `--tts_models_yml_hash` | str | `""` | SHA-256 hash of the models registry |
-
-### Environment Variables
-
-All env vars use the `TTS_` prefix:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TTS_ENV_TYPE` | `development` | `development` or `production`. Controls log level, format, and file logging. |
-| `TTS_URI` | `tcp://127.0.0.1:10200` | Wyoming server URI |
-| `TTS_ZEROCONF` | `silero` | Zeroconf discovery name. Empty string disables. |
-| `TTS_STREAMING` | `true` | Enable audio streaming |
-| `TTS_TORCH_DEVICE` | `cpu` | `cpu`, `cuda`, or `xpu`. Falls back to `cpu` at runtime if unavailable. |
-| `TTS_TORCH_NUM_THREADS` | `4` | PyTorch intra-op thread count |
-| `TTS_TORCH_NUM_INTEROP_THREADS` | `1` | PyTorch inter-op thread count |
-| `TTS_TORCH_FLUSH_DENORMAL` | `true` | Flush denormal floats for performance |
-| `TTS_SAMPLE_RATE` | `48000` | Output audio sample rate (Hz) |
-| `TTS_MAX_MODELS` | `2` | Max models cached in memory (oldest evicted) |
-| `TTS_MAX_CONCURRENT_PER_MODEL` | `2` | Max concurrent synthesis chunks per model |
-| `TTS_MAX_CHUNK_CHARS` | `140` | Max characters per text chunk |
-| `TTS_DATA_YML_PATH` | `data/data.yml` | Path to the voice/model mapping config |
-| `TTS_MODELS_DIR` | `models/silero` | Directory for downloaded model files |
-| `TTS_MODELS_YML_URL` | *(see below)* | URL to Silero models.yml registry |
-| `TTS_MODELS_YML_HASH` | `""` | SHA-256 hash for integrity verification |
-
-### config.yml
-
-```yaml
-uri: tcp://127.0.0.1:10200
-zeroconf: silero
-env_type: development
-streaming: true
-
-torch:
-  device: cpu
-  num_threads: 4
-  num_interop_threads: 1
-  flush_denormal: true
-
-tts:
-  sample_rate: 48000
-  max_models: 2
-  max_concurrent_per_model: 2
-  max_chunk_chars: 140
-  models_dir: models/silero
-  data_yml_path: data/data.yml
-  models_yml_url: https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml
-  models_yml_hash: ""
-```
+See `config.yml` for full configuration reference with all fields, CLI argument names, and environment variable names.
 
 ## Voice and Model Configuration
 
-Voice and locale mappings are defined in a YAML config file (default `data/data.yml`). The config has a `models` top-level section containing model entries.
+Voice and model mappings are defined in `data/data.yml`. The file has two top-level sections: `models` and `promts`.
 
 ### Models
 
@@ -172,6 +105,17 @@ Each model key (e.g., `v5_5_ru`) is the model name. Supported fields:
 | `hash_prefix` | No | — | SHA-256 hash prefix for download integrity verification |
 | `locales` | Yes | — | Map of locale codes to voice lists |
 
+#### Adding a new model
+
+1. Add a model entry under `models:` in `data/data.yml` with the Silero language identifier.
+2. Add locales with voices referencing the new model.
+
+#### Disabling a model
+
+Set `enabled: false` on the model entry. Its voices are automatically excluded from discovery.
+
+### Voices
+
 Each voice entry has the following fields:
 
 | Field | Required | Default | Description |
@@ -179,18 +123,55 @@ Each voice entry has the following fields:
 | `name` | Yes | — | Voice name |
 | `speaker` | No | voice name | Silero's native speaker identifier |
 | `model` | No | parent model | Explicit model reference (usually inherited from parent) |
+| `normalization.text.enabled` | No | `true` | Override text normalization enabled state |
+| `normalization.text.type` | No | `simple` | Override normalization type (`simple`, `llm`) |
+| `normalization.text.promt_id` | No | — | Reference a custom LLM prompt from `promts` |
+| `normalization.ssml.enabled` | No | `false` | Override SSML normalization enabled state |
+| `normalization.ssml.type` | No | `simple` | Override SSML normalization type |
+| `normalization.ssml.promt_id` | No | — | Reference a custom LLM prompt for SSML |
 
-Voices are identified in the Wyoming protocol by their computed ID: `{locale}-{model}-{name}` (e.g., `ru_RU-v5_5_ru-aidar`).
+Voices are identified by their computed ID: `{locale}-{model}-{name}` (e.g., `ru_RU-v5_5_ru-aidar`).
 
-## Wyoming Protocol
+#### Adding or renaming voices
 
-This server implements the **Wyoming protocol** — a TCP-based protocol used by Home Assistant for satellite and voice pipeline integration. It is **not** an HTTP REST API.
+Add or edit entries under `locales.*.voices` in `data/data.yml`. Set `speaker` to the Silero native speaker name only if it differs from the voice name.
 
-### How it works
+#### Voice normalization
 
-1. **Discovery**: Clients connect over TCP. The server responds to `Describe` events with an `Info` event listing all supported voices and languages.
-2. **Synthesis**: Clients send a `Synthesize` event with a voice name and text. The server streams audio back as `AudioStart` → `AudioChunk(s)` → `AudioStop` events.
-3. **Streaming**: Clients can also stream text incrementally via `SynthesizeStart`/`SynthesizeChunk`/`SynthesizeStop` events.
+Per-voice override of the server-wide normalization settings (defined in `config.yml`). Override the normalization type, disable it entirely, or reference a custom LLM prompt.
+
+```yaml
+models:
+  v5_5_ru:
+    locales:
+      ru_RU:
+        voices:
+          - name: aidar
+            normalization:
+              text:
+                enabled: true
+                type: llm
+                promt_id: ru_text
+
+promts:
+  - id: ru_text
+    text: "Normalize Russian text for TTS..."
+    model: qwen3.5:4b
+```
+
+Without a `normalization` block on a voice, the server-wide defaults from `config.yml` apply.
+
+### Promts
+
+Reusable LLM prompt definitions referenced by `promt_id` in voice normalization.
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `id` | Yes | — | Unique identifier referenced by `promt_id` |
+| `text` | Yes | — | LLM prompt instruction text |
+| `model` | Yes | — | LLM model name (e.g., `qwen3.5:4b`) |
+
+## Audio
 
 ### Supported Input Types
 
@@ -203,41 +184,6 @@ This server implements the **Wyoming protocol** — a TCP-based protocol used by
 - Sample rate: configurable (8000, 16000, 24000, 48000 Hz)
 - Bit depth: 16-bit signed integer
 - Channels: mono (1 channel)
-
-## Customization
-
-### Adding a new model
-
-1. Add a model entry under `models:` in `data/data.yml` with the Silero language identifier.
-2. Add locales with voices referencing the new model.
-
-### Adding or renaming voices
-
-Add or edit entries under `locales.*.voices` in `data/data.yml`. Set `speaker` to the Silero native speaker name only if it differs from the voice name.
-
-### Disabling a model
-
-Set `enabled: false` on the model entry. Its voices are automatically excluded from discovery.
-
-### Performance tuning
-
-| Setting | Effect |
-|---------|--------|
-| `TTS_MAX_MODELS` | Maximum models cached in memory (oldest evicted) |
-| `TTS_MAX_CONCURRENT_PER_MODEL` | Max concurrent synthesis chunks per model |
-| `TTS_MAX_CHUNK_CHARS` | Max characters per text chunk before splitting |
-
-### Hardware selection
-
-Set `TTS_TORCH_DEVICE` to `cpu`, `cuda`, or `xpu`. Falls back to `cpu` if the requested device is unavailable.
-
-### Sample rate
-
-Set `TTS_SAMPLE_RATE` to any of 8000, 16000, 24000, or 48000 Hz. The engine automatically selects the best-supported rate from the model's capabilities.
-
-### Custom text preprocessing
-
-Write a subclass of `TextPreprocessor` and register it in the `_TEXT_PREPROCESSOR_BUILDERS` dict in `src/main.py`. Currently `ru_RU` uses `RuTextPreprocessor` (with `razdel` for Russian sentence splitting); all other locales use the base `TextPreprocessor`.
 
 ## Development
 
