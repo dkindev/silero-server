@@ -222,3 +222,6 @@ __marimo__/
 # Project specific
 .dist
 models
+
+# opencode local configuration
+.opencode/opencode.jsonc
