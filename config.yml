@@ -104,6 +104,9 @@ normalization:
 
     # Per-locale LLM prompts for SSML normalization.
     # promts:
+    #   en_US:
+    #     text: Normalize english text for TTS...
+    #     model: qwen3.5:4b
 
 # PyTorch computing engine settings.
 torch:

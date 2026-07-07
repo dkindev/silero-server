@@ -5,7 +5,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock* README.md ./
+COPY pyproject.toml uv.lock* ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
@@ -15,6 +15,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 FROM python:3.14-slim-bookworm
+
+WORKDIR /app
+
+ARG UID=1000
+ARG GID=1000
+
+RUN set -eux; \
+    groupadd -r --gid $GID silero; \
+    useradd -r --gid silero --uid $UID --home-dir /app --shell /bin/bash silero
 
 RUN set -eux; \
     apt-get update; \
@@ -26,19 +35,11 @@ RUN set -eux; \
     # verify that the gosu binary works
 	gosu nobody true
 
-WORKDIR /app
-
-ARG UID=1000
-ARG GID=1000
-
-RUN set -eux; \
-    groupadd -r --gid $GID silero; \
-    useradd -r --gid silero --uid $UID --home-dir /app --shell /bin/bash silero
-
 COPY --from=builder /app/.venv /app/.venv
 COPY data/ ./data
 COPY config.yml .
 COPY src/ ./src
+
 RUN chown -R silero:silero .
 
 ENV PATH="/app/.venv/bin:$PATH" \
