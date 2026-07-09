@@ -60,18 +60,27 @@ def _select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
 
 
 def _resolve_device(target_device_str: str) -> torch.device:
-    target_device = torch.device(target_device_str)
-    if target_device.type == "cuda" and not torch.cuda.is_available():
-        target_device_str = "cpu"
-    elif target_device.type == "mps" and (
+    try:
+        device = torch.device(target_device_str)
+    except RuntimeError:
+        logger.warning(
+            "Invalid device string '{device}'. Falling back to cpu.", device=target_device_str
+        )
+        return torch.device("cpu")
+
+    if device.type == "cuda" and not torch.cuda.is_available():
+        logger.warning("CUDA requested but not available. Falling back to cpu.")
+        return torch.device("cpu")
+    elif device.type == "mps" and (
         not hasattr(torch.backends, "mps") or not torch.backends.mps.is_available()
     ):
-        target_device_str = "cpu"
-    elif target_device.type == "xpu" and (
-        not hasattr(torch, "xpu") or not torch.xpu.is_available()
-    ):
-        target_device_str = "cpu"
-    return torch.device(target_device_str)
+        logger.warning("MPS requested but not available/supported. Falling back to cpu.")
+        return torch.device("cpu")
+    elif device.type == "xpu" and (not hasattr(torch, "xpu") or not torch.xpu.is_available()):
+        logger.warning("XPU requested but not available/supported. Falling back to cpu.")
+        return torch.device("cpu")
+
+    return device
 
 
 def _run_tts_sync(
