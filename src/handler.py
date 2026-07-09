@@ -12,6 +12,7 @@ from wyoming.tts import (
     SynthesizeStart,
     SynthesizeStop,
     SynthesizeStopped,
+    SynthesizeTextFormat,
 )
 
 from src import __metadata__, __project_urls__
@@ -72,12 +73,12 @@ class SileroEventHandler(AsyncEventHandler):
         throw_detailed_errors: bool,
         *args,
         **kwargs,
-    ) -> None:
+    ):
         super().__init__(*args, **kwargs)
-        self.engine = engine
-        self.supports_synthesize_streaming = supports_synthesize_streaming
-        self.throw_detailed_errors = throw_detailed_errors
-        self.is_streaming: bool | None = None
+        self._engine = engine
+        self._supports_synthesize_streaming = supports_synthesize_streaming
+        self._throw_detailed_errors = throw_detailed_errors
+        self._is_streaming: bool = False
         self._synthesize: Synthesize | None = None
 
     async def handle_event(self, event: Event) -> bool:
@@ -89,7 +90,7 @@ class SileroEventHandler(AsyncEventHandler):
                 return await self._handle_describe(event)
 
             if Synthesize.is_type(event.type):
-                if self.is_streaming:
+                if self._is_streaming:
                     # Ignore since this is only sent for compatibility reasons.
                     # For streaming, we expect:
                     # [synthesize-start] -> [synthesize-chunk]+ -> [synthesize]? -> [synthesize-stop]
@@ -98,7 +99,7 @@ class SileroEventHandler(AsyncEventHandler):
                 # Sent outside a stream, so we must process it
                 return await self._handle_synthesize(event)
 
-            if not self.supports_synthesize_streaming:
+            if not self._supports_synthesize_streaming:
                 # Streaming is not enabled
                 return True
 
@@ -113,27 +114,29 @@ class SileroEventHandler(AsyncEventHandler):
         except Exception as err:
             logger.exception(err)
 
+            self._reset_streaming()
+
             error = (
                 Error(text=str(err), code=err.__class__.__name__)
-                if self.throw_detailed_errors
+                if self._throw_detailed_errors
                 else Error(text="Internal Server Error")
             )
 
             await self.write_event(error.event())
 
-            return False
-
         return True
 
     async def _handle_synthesize(self, event: Event) -> bool:
         synthesize = Synthesize.from_event(event)
-        state = await self._synthesize_pcm_chunks(synthesize=synthesize)
+        state = await self._synthesize_pcm_chunks(synthesize)
         return state
 
     async def _handle_synthesize_start(self, event: Event) -> bool:
         stream_start = SynthesizeStart.from_event(event)
-        self.is_streaming = True
-        self._synthesize = Synthesize(text="", voice=stream_start.voice)
+        self._is_streaming = True
+        self._synthesize = Synthesize(
+            text="", voice=stream_start.voice, text_format=stream_start.text_format
+        )
         logger.debug("Text stream started: voice='{voice}'", voice=stream_start.voice)
         return True
 
@@ -148,12 +151,13 @@ class SileroEventHandler(AsyncEventHandler):
     async def _handle_synthesize_stop(self, event: Event) -> bool:
         assert self._synthesize is not None
         await self.write_event(SynthesizeStopped().event())
+        self._reset_streaming()
         logger.debug("Text stream stopped")
         return True
 
     async def _handle_describe(self, event: Event) -> bool:
         wyoming_info_event = _create_wyoming_info(
-            self.engine, self.supports_synthesize_streaming
+            self._engine, self._supports_synthesize_streaming
         ).event()
         await self.write_event(wyoming_info_event)
         return True
@@ -164,38 +168,26 @@ class SileroEventHandler(AsyncEventHandler):
         text = synthesize.text.strip()
         if not text:
             await self.write_event(Error(text="Text is empty or whitespace").event())
-            return False
+            return True
 
         voice_id = synthesize.voice.name if synthesize.voice else None
         if not voice_id:
             await self.write_event(Error(text="No voice specified in Synthesize event").event())
-            return False
+            return True
 
-        if not self.engine.get_storage().get_voice(voice_id):
+        if not self._engine.get_storage().get_voice(voice_id):
             await self.write_event(Error(text=f"Unsupported voice: {voice_id}").event())
-            return False
+            return True
 
-        text_format = TextFormat.TEXT
-
-        # todo: add text_format field in next Wyoming protocol release
-        # see https://github.com/OHF-Voice/wyoming/issues/38
-        if hasattr(synthesize, "text_format"):
-            req_text_format: str = synthesize.text_format
-
-            supported_formats = [
-                supported_format.value
-                for supported_format in self.engine.get_supported_text_formats()
-            ]
-            if req_text_format in supported_formats:
-                text_format = TextFormat(req_text_format)
-            else:
-                await self.write_event(
-                    Error(text=f"Unsupported text format: {req_text_format}").event()
-                )
-                return False
+        text_format = self._parse_text_format(synthesize)
+        if text_format is None:
+            await self.write_event(
+                Error(text=f"Unsupported text format: {synthesize.text_format}").event()
+            )
+            return True
 
         send_start = True
-        async for result in self.engine.synthesize_pcm_chunks(text, voice_id, text_format):
+        async for result in self._engine.synthesize_pcm_chunks(text, voice_id, text_format):
             if send_start:
                 await self.write_event(
                     AudioStart(
@@ -218,3 +210,28 @@ class SileroEventHandler(AsyncEventHandler):
         await self.write_event(AudioStop().event())
 
         return True
+
+    def _reset_streaming(self):
+        self._is_streaming = False
+        self._synthesize = None
+
+    def _parse_text_format(self, synthesize: Synthesize) -> TextFormat | None:
+        text_format = TextFormat.TEXT
+
+        req_text_format: str | None = (
+            synthesize.text_format.value
+            if isinstance(synthesize.text_format, SynthesizeTextFormat)
+            else synthesize.text_format
+        )
+
+        if not req_text_format:
+            return text_format
+
+        supported_formats = [
+            supported_format.value for supported_format in self._engine.get_supported_text_formats()
+        ]
+
+        if req_text_format in supported_formats:
+            return TextFormat(req_text_format)
+
+        return None

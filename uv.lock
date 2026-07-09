@@ -854,7 +854,7 @@ requires-dist = [
     { name = "razdel", specifier = ">=0.5.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "torch", specifier = "==2.12.1", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "wyoming", specifier = ">=1.9.0" },
+    { name = "wyoming", specifier = ">=1.10.0" },
     { name = "zeroconf", specifier = ">=0.149.16" },
 ]
 provides-extras = ["dev"]
@@ -1005,11 +1005,11 @@ wheels = [
 
 [[package]]
 name = "wyoming"
-version = "1.9.0"
+version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/0d/35/cdb33395d434a48995005778660929f8625c05333c143a3aba834b41d582/wyoming-1.9.0.tar.gz", hash = "sha256:4f2a5aa24c221d08af20edbdf8267e4d78bf994e128f3b3cd9a82bb859bc36fb", size = 39186, upload-time = "2026-05-14T15:53:12.352Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/ae/f676bf8c5cda90283978e7569c96df0b96295c68b1e1b65e3249a67996a7/wyoming-1.10.0.tar.gz", hash = "sha256:50f2aa61d95131a379482d096975a822d61a5d7d2bad1b74d05b38fce9ce2d05", size = 41871, upload-time = "2026-07-02T20:59:58.897Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/04/14dec9ad93de23ea1cd4b570b239ac95805e21dd02022a15886a3b3c194b/wyoming-1.9.0-py3-none-any.whl", hash = "sha256:73ad50384d4a3bc7be70cbadfd3ba34902b4a7d94d8b02e59d4ae7a271b93c0b", size = 40520, upload-time = "2026-05-14T15:53:11.1Z" },
+    { url = "https://files.pythonhosted.org/packages/50/c9/0b9b2eca91e240bb3390472306fb8e2aa45d491dd5a2de1bc765e041177c/wyoming-1.10.0-py3-none-any.whl", hash = "sha256:83b23ab9fb7e0a9ad92387e62497728949603b97a25f4e61706c222d2b2c63d1", size = 42277, upload-time = "2026-07-02T20:59:57.6Z" },
 ]
 
 [[package]]
