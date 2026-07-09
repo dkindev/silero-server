@@ -207,17 +207,19 @@ class SsmlSentenizer(TextSentenizer):
                 current_chunk.append(token)
 
                 if token.endswith("/>"):
+                    # skip self-closing tags
                     continue
 
                 if not token.startswith("</"):
+                    # opening tag
                     tag_match = OPENING_TAG_RE.match(token)
                     if tag_match:
                         opened_tags.append(tag_match.group(1))
                 else:
+                    # delete already processed opened tag
                     tag_match = OPENING_TAG_RE.match(token.replace("/", ""))
                     if tag_match and opened_tags and opened_tags[-1] == tag_match.group(1):
                         opened_tags.pop()
-
             else:
                 if text_len + len(token) <= max_chunk_chars:
                     current_chunk.append(token)

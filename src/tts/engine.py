@@ -59,12 +59,19 @@ def _select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
     return max_rate
 
 
-def _resolve_device(device_str: str) -> torch.device:
-    if device_str == "cuda" and not torch.cuda.is_available():
-        device_str = "cpu"
-    elif device_str == "xpu" and (not hasattr(torch, "xpu") or not torch.xpu.is_available()):
-        device_str = "cpu"
-    return torch.device(device_str)
+def _resolve_device(target_device_str: str) -> torch.device:
+    target_device = torch.device(target_device_str)
+    if target_device.type == "cuda" and not torch.cuda.is_available():
+        target_device_str = "cpu"
+    elif target_device.type == "mps" and (
+        not hasattr(torch.backends, "mps") or not torch.backends.mps.is_available()
+    ):
+        target_device_str = "cpu"
+    elif target_device.type == "xpu" and (
+        not hasattr(torch, "xpu") or not torch.xpu.is_available()
+    ):
+        target_device_str = "cpu"
+    return torch.device(target_device_str)
 
 
 def _run_tts_sync(
@@ -89,70 +96,53 @@ def _run_tts_sync(
             )
         )
 
-        # If it's a GPU, we force the computation thread to synchronize
-        # so that the tensor is guaranteed to be formed before exiting the method.
-        device_type = audio.device.type
-        if device_type == "cuda":
-            torch.cuda.synchronize(device=audio.device)
-        elif device_type == "xpu":
-            torch.xpu.synchronize(device=audio.device)
-
-        logger.debug(
-            "TTS synthesized on device '{device}'. Tensor shape: [{shape}]",
-            device=device_type,
-            shape=audio.shape[0],
-        )
+        logger.debug("TTS synthesized on device '{device}'", device=audio.device.type)
 
         return audio
 
 
-async def _synthesize_pcm_chunks(
-    sentences: AsyncIterator[str], cached_model: CachedModel, voice: Voice, text_format: TextFormat
-) -> AsyncIterator[TTSResult]:
-    result_dict = {}
-    tasks = []
-    events = {}
-
-    next_index_to_yield = 0
-    chunk_index = 0
-
-    async def _process_chunk(
-        index: int,
-        chunk: str,
-    ) -> TTSResult:
+async def _process_single_chunk(
+    chunk: str,
+    cached_model: CachedModel,
+    voice: Voice,
+    text_format: TextFormat,
+) -> TTSResult:
+    async with cached_model.semaphore:
+        tensor = await asyncio.to_thread(
+            _run_tts_sync, cached_model, chunk, voice.speaker, text_format
+        )
         try:
-            async with cached_model.semaphore:
-                tensor = await asyncio.to_thread(
-                    _run_tts_sync, cached_model, chunk, voice.speaker, text_format
-                )
+            audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
+        except Exception as e:
+            raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
 
-                try:
-                    audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
-                except Exception as e:
-                    raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
+        return TTSResult(
+            audio=(audio_np * 32767).astype(np.int16).tobytes(),
+            sample_rate=cached_model.sample_rate,
+            model=voice.model,
+            bytes_per_sample=BYTES_PER_SAMPLE,
+            channels=CHANNELS,
+        )
 
-                result_dict[index] = TTSResult(
-                    audio=(audio_np * 32767).astype(np.int16).tobytes(),
-                    sample_rate=cached_model.sample_rate,
-                    model=voice.model,
-                    bytes_per_sample=BYTES_PER_SAMPLE,
-                    channels=CHANNELS,
-                )
-        finally:
-            events[index].set()
 
+async def _queue_chunks(
+    chunks: AsyncIterator[str],
+    cached_model: CachedModel,
+    voice: Voice,
+    text_format: TextFormat,
+    queue: asyncio.Queue,
+) -> None:
     try:
-        async for sentence in sentences:
-            events[chunk_index] = asyncio.Event()
+        chunk_index = 0
 
-            tasks.append(
-                asyncio.create_task(
-                    _process_chunk(
-                        index=chunk_index,
-                        chunk=sentence,
-                    )
+        async for chunk in chunks:
+            task = asyncio.create_task(
+                _process_single_chunk(
+                    chunk=chunk, cached_model=cached_model, voice=voice, text_format=text_format
                 )
             )
+
+            await queue.put(task)
 
             if chunk_index == 0:
                 # Send Chunk #0 with micro-pause
@@ -160,23 +150,54 @@ async def _synthesize_pcm_chunks(
 
             chunk_index += 1
 
-            while next_index_to_yield in events and events[next_index_to_yield].is_set():
-                yield result_dict.pop(next_index_to_yield)
-                events.pop(next_index_to_yield)
-                next_index_to_yield += 1
-
-        total_chunks = chunk_index
-
-        if total_chunks == 0:
-            return
-
-        for i in range(next_index_to_yield, total_chunks):
-            await events[i].wait()
-            yield result_dict.pop(i)
     finally:
-        for task in tasks:
-            if not task.done():
-                task.cancel()
+        # Completion marker
+        await queue.put(None)
+
+
+async def _synthesize_pcm_chunks(
+    chunks: AsyncIterator[str], cached_model: CachedModel, voice: Voice, text_format: TextFormat
+) -> AsyncIterator[TTSResult]:
+    queue = asyncio.Queue(maxsize=10)
+
+    producer_task = asyncio.create_task(
+        _queue_chunks(
+            chunks=chunks,
+            cached_model=cached_model,
+            voice=voice,
+            text_format=text_format,
+            queue=queue,
+        )
+    )
+
+    try:
+        while True:
+            task = await queue.get()
+            if task is None:
+                break
+
+            try:
+                yield await task
+            finally:
+                queue.task_done()
+
+    finally:
+        if not producer_task.done():
+            producer_task.cancel()
+            try:
+                await producer_task
+            except asyncio.CancelledError:
+                pass
+
+        tasks_to_cancel = []
+        while not queue.empty():
+            item = queue.get_nowait()
+            if isinstance(item, asyncio.Task) and not item.done():
+                item.cancel()
+                tasks_to_cancel.append(item)
+
+        if tasks_to_cancel:
+            await asyncio.gather(*tasks_to_cancel, return_exceptions=True)
 
 
 def _clear_cached_model(cached_model: CachedModel):
@@ -189,6 +210,8 @@ def _clear_torch_cache_on_device(device: torch.device):
     # Clearing the PyTorch allocator cache to free up VRAM/RAM
     if device.type == "cuda":
         torch.cuda.empty_cache()
+    elif device.type == "mps":
+        torch.mps.empty_cache()
     elif device.type == "xpu":
         torch.xpu.empty_cache()
 
@@ -327,7 +350,7 @@ class SileroTTSEngine:
         )
 
         async for chunk in _synthesize_pcm_chunks(
-            sentences=sentences, cached_model=cached, voice=voice, text_format=text_format
+            chunks=sentences, cached_model=cached, voice=voice, text_format=text_format
         ):
             yield chunk
 
