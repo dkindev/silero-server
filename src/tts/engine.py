@@ -31,274 +31,6 @@ class CachedModel:
     semaphore: asyncio.Semaphore
 
 
-def _select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
-    if not supported_rates:
-        return config_rate
-    if supported_rates is None:
-        return config_rate
-
-    unique_rates = sorted(set(supported_rates))
-
-    if len(unique_rates) == 1:
-        return unique_rates[0]
-
-    max_rate = unique_rates[-1]
-    if config_rate > max_rate:
-        return max_rate
-    min_rate = unique_rates[0]
-    if config_rate < min_rate:
-        return min_rate
-
-    if config_rate in unique_rates:
-        return config_rate
-
-    candidates = [r for r in unique_rates if r < config_rate]
-    if candidates:
-        return candidates[-1]
-
-    return max_rate
-
-
-def _resolve_device(target_device_str: str) -> torch.device:
-    try:
-        device = torch.device(target_device_str)
-    except RuntimeError:
-        logger.warning(
-            "Invalid device string '{device}'. Falling back to cpu.", device=target_device_str
-        )
-        return torch.device("cpu")
-
-    if device.type == "cuda" and not torch.cuda.is_available():
-        logger.warning("CUDA requested but not available. Falling back to cpu.")
-        return torch.device("cpu")
-    elif device.type == "mps" and (
-        not hasattr(torch.backends, "mps") or not torch.backends.mps.is_available()
-    ):
-        logger.warning("MPS requested but not available/supported. Falling back to cpu.")
-        return torch.device("cpu")
-    elif device.type == "xpu" and (not hasattr(torch, "xpu") or not torch.xpu.is_available()):
-        logger.warning("XPU requested but not available/supported. Falling back to cpu.")
-        return torch.device("cpu")
-
-    return device
-
-
-def _run_tts_sync(
-    cached_model: CachedModel, text: str, speaker: str, text_format: TextFormat = TextFormat.TEXT
-) -> torch.Tensor:
-    with torch.inference_mode():
-        logger.debug(
-            "Synthesizing TTS. Speaker: {speaker}. Sample rate: {sample_rate}. Type: {type}. Text: {text}",
-            speaker=speaker,
-            sample_rate=cached_model.sample_rate,
-            type=text_format.value,
-            text=text,
-        )
-
-        audio = (
-            cached_model.model.apply_tts(
-                ssml_text=text, speaker=speaker, sample_rate=cached_model.sample_rate
-            )
-            if text_format == TextFormat.SSML
-            else cached_model.model.apply_tts(
-                text=text, speaker=speaker, sample_rate=cached_model.sample_rate
-            )
-        )
-
-        logger.debug("TTS synthesized on device '{device}'", device=audio.device.type)
-
-        return audio
-
-
-async def _process_single_chunk(
-    chunk: str,
-    cached_model: CachedModel,
-    voice: Voice,
-    text_format: TextFormat,
-) -> TTSResult:
-    async with cached_model.semaphore:
-        tensor = await asyncio.to_thread(
-            _run_tts_sync, cached_model, chunk, voice.speaker, text_format
-        )
-        try:
-            audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
-        except Exception as e:
-            raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
-
-        return TTSResult(
-            audio=(audio_np * 32767).astype(np.int16).tobytes(),
-            sample_rate=cached_model.sample_rate,
-            model=voice.model,
-            bytes_per_sample=BYTES_PER_SAMPLE,
-            channels=CHANNELS,
-        )
-
-
-async def _queue_chunks(
-    chunks: AsyncIterator[str],
-    cached_model: CachedModel,
-    voice: Voice,
-    text_format: TextFormat,
-    queue: asyncio.Queue,
-) -> None:
-    try:
-        chunk_index = 0
-
-        async for chunk in chunks:
-            task = asyncio.create_task(
-                _process_single_chunk(
-                    chunk=chunk, cached_model=cached_model, voice=voice, text_format=text_format
-                )
-            )
-
-            await queue.put(task)
-
-            if chunk_index == 0:
-                # Send Chunk #0 with micro-pause
-                await asyncio.sleep(0.001)
-
-            chunk_index += 1
-
-    finally:
-        # Completion marker
-        await queue.put(None)
-
-
-async def _synthesize_pcm_chunks(
-    chunks: AsyncIterator[str], cached_model: CachedModel, voice: Voice, text_format: TextFormat
-) -> AsyncIterator[TTSResult]:
-    queue = asyncio.Queue(maxsize=10)
-
-    producer_task = asyncio.create_task(
-        _queue_chunks(
-            chunks=chunks,
-            cached_model=cached_model,
-            voice=voice,
-            text_format=text_format,
-            queue=queue,
-        )
-    )
-
-    try:
-        while True:
-            task = await queue.get()
-            if task is None:
-                break
-
-            try:
-                yield await task
-            finally:
-                queue.task_done()
-
-    finally:
-        if not producer_task.done():
-            producer_task.cancel()
-            try:
-                await producer_task
-            except asyncio.CancelledError:
-                pass
-
-        tasks_to_cancel = []
-        while not queue.empty():
-            item = queue.get_nowait()
-            if isinstance(item, asyncio.Task) and not item.done():
-                item.cancel()
-                tasks_to_cancel.append(item)
-
-        if tasks_to_cancel:
-            await asyncio.gather(*tasks_to_cancel, return_exceptions=True)
-
-
-def _clear_cached_model(cached_model: CachedModel):
-    del cached_model.model
-    del cached_model.semaphore
-    del cached_model
-
-
-def _clear_torch_cache_on_device(device: torch.device):
-    # Clearing the PyTorch allocator cache to free up VRAM/RAM
-    if device.type == "cuda":
-        torch.cuda.empty_cache()
-    elif device.type == "mps":
-        torch.mps.empty_cache()
-    elif device.type == "xpu":
-        torch.xpu.empty_cache()
-
-
-def _get_models_data(yml_path: str, models_yml_url: str, models_yml_hash: str | None) -> dict:
-    def load_yaml() -> dict:
-        try:
-            with open(yml_path, encoding="utf-8") as f:
-                logger.debug("Loading the models configuration file '{path}'", path=yml_path)
-                models_config = yaml.safe_load(f)
-                logger.debug("Models configuration loaded")
-                return models_config
-        except Exception as e:
-            raise TTSEngineError(
-                f"Failed to parse the models configuration file: {e}. Delete '{yml_path}' to force a fresh download"
-            ) from e
-
-    if os.path.exists(yml_path):
-        if models_yml_hash:
-            hasher = hashlib.sha256()
-            with open(yml_path, "rb") as f:
-                for chunk in iter(lambda: f.read(8192), b""):
-                    hasher.update(chunk)
-            local_hash = hasher.hexdigest().lower()
-
-            if local_hash == models_yml_hash:
-                return load_yaml()
-            else:
-                logger.warning(
-                    "Models configuration file '{path}' is corrupted or outdated. Redownloading..."
-                )
-        else:
-            logger.debug(
-                "Models configuration file hash validation skipped (models_yml_hash is None)"
-            )
-            return load_yaml()
-    else:
-        logger.debug(
-            "Models configuration file not found at '{path}'",
-            path=yml_path,
-        )
-
-    logger.debug("Attempting to load model configuration from '{url}'", url=models_yml_url)
-    _download_models_yml(yml_path, models_yml_url, models_yml_hash)
-    logger.debug("Models configuration are saved in the file '{path}'", path=yml_path)
-
-    return load_yaml()
-
-
-def _download_models_yml(file_path: str, models_yml_url: str, models_yml_hash: str | None):
-    try:
-        if not models_yml_hash:
-            urllib.request.urlretrieve(models_yml_url, file_path)
-            return
-
-        hasher = hashlib.sha256()
-        with urllib.request.urlopen(models_yml_url) as response:
-            with open(file_path, "wb") as file:
-                while True:
-                    chunk = response.read(8192)
-                    if not chunk:
-                        break
-                    file.write(chunk)
-                    hasher.update(chunk)
-    except Exception as e:
-        raise TTSEngineError(
-            f"Failed to download the models configuration from '{models_yml_url}'"
-        ) from e
-
-    downloaded_hash = hasher.hexdigest().lower()
-    if downloaded_hash != models_yml_hash:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        raise TTSEngineError(
-            f"Error verifying hash of model configuration file loaded at '{models_yml_url}'"
-        )
-
-
 class SileroTTSEngine:
     """TTS engine wrapping Silero TTS library."""
 
@@ -313,7 +45,7 @@ class SileroTTSEngine:
         self._storage = storage
         # Using OrderedDict instead of regular dict for LRU logic
         self._cached_models: OrderedDict[str, CachedModel] = OrderedDict()
-        self._device = _resolve_device(config.device)
+        self._device = self._resolve_device(config.device)
         self._lock: asyncio.Lock | None = None
         self._text_sentenizer_factory = text_sentenizer_factory
         self._text_normalizer_factory = text_normalizer_factory
@@ -349,7 +81,7 @@ class SileroTTSEngine:
 
         cached = await self._get_tts_model(model)
 
-        sentences = self._text_to_sentences(
+        chunks = self._text_to_sentences(
             text=text,
             voice=voice,
             text_format=text_format,
@@ -358,10 +90,63 @@ class SileroTTSEngine:
             ),
         )
 
-        async for chunk in _synthesize_pcm_chunks(
-            chunks=sentences, cached_model=cached, voice=voice, text_format=text_format
+        async for chunk in self._synthesize_pcm_chunks(
+            chunks=chunks, cached_model=cached, voice=voice, text_format=text_format
         ):
             yield chunk
+
+    async def warmup(self):
+        """Warm up the models."""
+        if self._cached_models:
+            return
+
+        async with self._get_lock():
+            if self._cached_models:
+                return
+
+            logger.info("Warming up engine")
+
+            models = self._storage.get_models()
+            to_warm = [model for model in models if model.warmup][: self._config.max_models]
+
+            logger.debug("Models to warm up: {count}", count=len(to_warm))
+
+            for model in to_warm:
+                await self._warmup_tts_model(model)
+
+            logger.info("Engine has been warmed up")
+
+    def get_storage(self) -> SileroTTSConfigStorage:
+        """Return the config storage."""
+        return self._storage
+
+    def get_supported_text_formats(self) -> tuple[TextFormat, ...]:
+        """Return supported text formats."""
+        return tuple(TextFormat)
+
+    @staticmethod
+    def _resolve_device(target_device_str: str) -> torch.device:
+        try:
+            device = torch.device(target_device_str)
+        except RuntimeError:
+            logger.warning(
+                "Invalid device string '{device}'. Falling back to cpu.", device=target_device_str
+            )
+            return torch.device("cpu")
+
+        if device.type == "cuda" and not torch.cuda.is_available():
+            logger.warning("CUDA requested but not available. Falling back to cpu.")
+            return torch.device("cpu")
+        elif device.type == "mps" and (
+            not hasattr(torch.backends, "mps") or not torch.backends.mps.is_available()
+        ):
+            logger.warning("MPS requested but not available/supported. Falling back to cpu.")
+            return torch.device("cpu")
+        elif device.type == "xpu" and (not hasattr(torch, "xpu") or not torch.xpu.is_available()):
+            logger.warning("XPU requested but not available/supported. Falling back to cpu.")
+            return torch.device("cpu")
+
+        return device
 
     async def _text_to_sentences(
         self,
@@ -410,6 +195,148 @@ class SileroTTSEngine:
             async for chunk in chunks:
                 yield chunk
 
+    async def _synthesize_pcm_chunks(
+        self,
+        chunks: AsyncIterator[str],
+        cached_model: CachedModel,
+        voice: Voice,
+        text_format: TextFormat,
+    ) -> AsyncIterator[TTSResult]:
+        queue = asyncio.Queue(maxsize=self._config.max_concurrent_per_model)
+
+        producer_task = asyncio.create_task(
+            self._queue_chunks(
+                chunks=chunks,
+                cached_model=cached_model,
+                voice=voice,
+                text_format=text_format,
+                queue=queue,
+            )
+        )
+
+        try:
+            while True:
+                task = await queue.get()
+                if task is None:
+                    break
+
+                try:
+                    yield await task
+                finally:
+                    queue.task_done()
+
+        finally:
+            if not producer_task.done():
+                producer_task.cancel()
+                try:
+                    await producer_task
+                except asyncio.CancelledError:
+                    pass
+
+            tasks_to_cancel = []
+            while not queue.empty():
+                item = queue.get_nowait()
+                if isinstance(item, asyncio.Task) and not item.done():
+                    item.cancel()
+                    tasks_to_cancel.append(item)
+
+            if tasks_to_cancel:
+                await asyncio.gather(*tasks_to_cancel, return_exceptions=True)
+
+    @staticmethod
+    async def _queue_chunks(
+        chunks: AsyncIterator[str],
+        cached_model: CachedModel,
+        voice: Voice,
+        text_format: TextFormat,
+        queue: asyncio.Queue,
+    ):
+        active_tasks: list[asyncio.Task] = []
+
+        try:
+            chunk_index = 0
+
+            async for chunk in chunks:
+                if any(task.done() and task.exception() is not None for task in active_tasks):
+                    logger.warning("Stopping producer early: one of the previous tasks failed")
+                    break
+
+                active_tasks = [task for task in active_tasks if not task.done()]
+
+                task = asyncio.create_task(
+                    SileroTTSEngine._process_single_chunk(
+                        chunk=chunk, cached_model=cached_model, voice=voice, text_format=text_format
+                    )
+                )
+
+                active_tasks.append(task)
+
+                await queue.put(task)
+
+                if chunk_index == 0:
+                    # Send Chunk #0 with micro-pause
+                    await asyncio.sleep(0.001)
+
+                chunk_index += 1
+
+        finally:
+            # Completion marker
+            await queue.put(None)
+
+    @staticmethod
+    async def _process_single_chunk(
+        chunk: str,
+        cached_model: CachedModel,
+        voice: Voice,
+        text_format: TextFormat,
+    ) -> TTSResult:
+        async with cached_model.semaphore:
+            tensor = await asyncio.to_thread(
+                SileroTTSEngine._run_tts_sync, cached_model, chunk, voice.speaker, text_format
+            )
+            try:
+                audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
+            except Exception as e:
+                raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
+
+            return TTSResult(
+                audio=(audio_np * 32767).astype(np.int16).tobytes(),
+                sample_rate=cached_model.sample_rate,
+                model=voice.model,
+                bytes_per_sample=BYTES_PER_SAMPLE,
+                channels=CHANNELS,
+            )
+
+    @staticmethod
+    def _run_tts_sync(
+        cached_model: CachedModel,
+        text: str,
+        speaker: str,
+        text_format: TextFormat = TextFormat.TEXT,
+    ) -> torch.Tensor:
+        with torch.inference_mode():
+            logger.debug(
+                "Synthesizing TTS. Speaker: {speaker}. Sample rate: {sample_rate}. Type: {type}. Text: {text}",
+                speaker=speaker,
+                sample_rate=cached_model.sample_rate,
+                type=text_format.value,
+                text=text,
+            )
+
+            audio = (
+                cached_model.model.apply_tts(
+                    ssml_text=text, speaker=speaker, sample_rate=cached_model.sample_rate
+                )
+                if text_format == TextFormat.SSML
+                else cached_model.model.apply_tts(
+                    text=text, speaker=speaker, sample_rate=cached_model.sample_rate
+                )
+            )
+
+            logger.debug("TTS synthesized on device '{device}'", device=audio.device.type)
+
+            return audio
+
     async def shutdown(self):
         """Clears the model cache and forces VRAM to be released."""
         if not self._cached_models:
@@ -426,11 +353,11 @@ class SileroTTSEngine:
 
             while self._cached_models:
                 _, evicted_model = self._cached_models.popitem()
-                _clear_cached_model(evicted_model)
+                self._clear_cached_model(evicted_model)
                 del evicted_model
 
             gc.collect()
-            _clear_torch_cache_on_device(self._device)
+            self._clear_torch_cache_on_device(self._device)
 
             logger.info("Engine resources have been cleared")
 
@@ -466,10 +393,10 @@ class SileroTTSEngine:
 
             logger.debug("Removing model '{model}' from cache", model=model_name)
 
-            _clear_cached_model(evicted_model)
+            self._clear_cached_model(evicted_model)
             del evicted_model
             gc.collect()
-            _clear_torch_cache_on_device(self._device)
+            self._clear_torch_cache_on_device(self._device)
 
             logger.debug("Model '{model}' was removed from cache", model=model_name)
 
@@ -494,7 +421,7 @@ class SileroTTSEngine:
         os.makedirs(lang_dir, exist_ok=True)
 
         yml_path = os.path.join(models_dir, "models.yml")
-        registry = _get_models_data(
+        registry = self._get_models_data(
             yml_path, self._config.models_yml_url, self._config.models_yml_hash
         )
 
@@ -542,6 +469,80 @@ class SileroTTSEngine:
 
         return model_path, sample_rates, example_text, speakers
 
+    @staticmethod
+    def _get_models_data(yml_path: str, models_yml_url: str, models_yml_hash: str | None) -> dict:
+        def load_yaml() -> dict:
+            try:
+                with open(yml_path, encoding="utf-8") as f:
+                    logger.debug("Loading the models configuration file '{path}'", path=yml_path)
+                    models_config = yaml.safe_load(f)
+                    logger.debug("Models configuration loaded")
+                    return models_config
+            except Exception as e:
+                raise TTSEngineError(
+                    f"Failed to parse the models configuration file: {e}. Delete '{yml_path}' to force a fresh download"
+                ) from e
+
+        if os.path.exists(yml_path):
+            if models_yml_hash:
+                hasher = hashlib.sha256()
+                with open(yml_path, "rb") as f:
+                    for chunk in iter(lambda: f.read(8192), b""):
+                        hasher.update(chunk)
+                local_hash = hasher.hexdigest().lower()
+
+                if local_hash == models_yml_hash:
+                    return load_yaml()
+                else:
+                    logger.warning(
+                        "Models configuration file '{path}' is corrupted or outdated. Redownloading..."
+                    )
+            else:
+                logger.debug(
+                    "Models configuration file hash validation skipped (models_yml_hash is None)"
+                )
+                return load_yaml()
+        else:
+            logger.debug(
+                "Models configuration file not found at '{path}'",
+                path=yml_path,
+            )
+
+        logger.debug("Attempting to load model configuration from '{url}'", url=models_yml_url)
+        SileroTTSEngine._download_models_yml(yml_path, models_yml_url, models_yml_hash)
+        logger.debug("Models configuration are saved in the file '{path}'", path=yml_path)
+
+        return load_yaml()
+
+    @staticmethod
+    def _download_models_yml(file_path: str, models_yml_url: str, models_yml_hash: str | None):
+        try:
+            if not models_yml_hash:
+                urllib.request.urlretrieve(models_yml_url, file_path)
+                return
+
+            hasher = hashlib.sha256()
+            with urllib.request.urlopen(models_yml_url) as response:
+                with open(file_path, "wb") as file:
+                    while True:
+                        chunk = response.read(8192)
+                        if not chunk:
+                            break
+                        file.write(chunk)
+                        hasher.update(chunk)
+        except Exception as e:
+            raise TTSEngineError(
+                f"Failed to download the models configuration from '{models_yml_url}'"
+            ) from e
+
+        downloaded_hash = hasher.hexdigest().lower()
+        if downloaded_hash != models_yml_hash:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            raise TTSEngineError(
+                f"Error verifying hash of model configuration file loaded at '{models_yml_url}'"
+            )
+
     async def _load_tts_model_async(self, model: Model) -> tuple[CachedModel, str, dict[str, str]]:
         """Loads the model into the cache and returns the cached model, sample text, and speaker samples."""
 
@@ -575,7 +576,7 @@ class SileroTTSEngine:
 
         tts_model, sample_rates, example_text, speakers = await asyncio.to_thread(_sync_load)
 
-        sample_rate = _select_sample_rate(self._config.sample_rate, sample_rates)
+        sample_rate = self._select_sample_rate(self._config.sample_rate, sample_rates)
         semaphore = asyncio.Semaphore(self._config.max_concurrent_per_model)
         cached = CachedModel(tts_model, sample_rate, semaphore)
         self._cached_models[model.name] = cached
@@ -588,26 +589,33 @@ class SileroTTSEngine:
 
         return cached, example_text, speakers
 
-    async def warmup(self):
-        """Warm up the models."""
-        if self._cached_models:
-            return
+    @staticmethod
+    def _select_sample_rate(config_rate: int, supported_rates: list[int]) -> int:
+        if not supported_rates:
+            return config_rate
+        if supported_rates is None:
+            return config_rate
 
-        async with self._get_lock():
-            if self._cached_models:
-                return
+        unique_rates = sorted(set(supported_rates))
 
-            logger.info("Warming up engine")
+        if len(unique_rates) == 1:
+            return unique_rates[0]
 
-            models = self._storage.get_models()
-            to_warm = [model for model in models if model.warmup][: self._config.max_models]
+        max_rate = unique_rates[-1]
+        if config_rate > max_rate:
+            return max_rate
+        min_rate = unique_rates[0]
+        if config_rate < min_rate:
+            return min_rate
 
-            logger.debug("Models to warm up: {count}", count=len(to_warm))
+        if config_rate in unique_rates:
+            return config_rate
 
-            for model in to_warm:
-                await self._warmup_tts_model(model)
+        candidates = [r for r in unique_rates if r < config_rate]
+        if candidates:
+            return candidates[-1]
 
-            logger.info("Engine has been warmed up")
+        return max_rate
 
     async def _warmup_tts_model(self, model: Model) -> CachedModel:
         cached, example_text, speakers = await self._load_tts_model_async(model)
@@ -627,17 +635,25 @@ class SileroTTSEngine:
         )
 
         try:
-            await asyncio.to_thread(_run_tts_sync, cached, text, speaker)
+            await asyncio.to_thread(SileroTTSEngine._run_tts_sync, cached, text, speaker)
             logger.debug("Model '{model}' has been warmed up.", model=model.name)
         except Exception:
             logger.exception("Failed to warm up the model '{model}'", model=model.name)
 
         return cached
 
-    def get_storage(self) -> SileroTTSConfigStorage:
-        """Return the config storage."""
-        return self._storage
+    @staticmethod
+    def _clear_cached_model(cached_model: CachedModel):
+        del cached_model.model
+        del cached_model.semaphore
+        del cached_model
 
-    def get_supported_text_formats(self) -> tuple[TextFormat, ...]:
-        """Return supported text formats."""
-        return tuple(TextFormat)
+    @staticmethod
+    def _clear_torch_cache_on_device(device: torch.device):
+        # Clearing the PyTorch allocator cache to free up VRAM/RAM
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+        elif device.type == "mps":
+            torch.mps.empty_cache()
+        elif device.type == "xpu":
+            torch.xpu.empty_cache()
