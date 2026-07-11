@@ -8,22 +8,20 @@ from src.tts.preprocessing.text_sentenizer import PlainTextSentenizer
 class RuPlainTextSentenizer(PlainTextSentenizer):
     """Represents a class for generating sentences from Russian text."""
 
-    def text_to_sentences(self, text: str, max_chunk_chars: int) -> Iterator[str]:
+    def text_to_sentences(self, text: str, max_chars: int) -> Iterator[str]:
         """Generate a sentences from an plain text."""
         if not text:
             return
 
-        if max_chunk_chars <= 0:
-            raise ValueError("max_chunk_chars cannot be negative or zero")
+        if max_chars <= 0:
+            raise ValueError("max_chars cannot be negative or zero")
 
-        if len(text) <= max_chunk_chars:
+        if len(text) <= max_chars:
             yield text
             return
 
-        pre_chunks = RuPlainTextSentenizer.sentenize_by_nlp(
-            sentence=text, max_chars=max_chunk_chars
-        )
-        yield from self._assembly_small_chunks(chunks=pre_chunks, max_chunk_chars=max_chunk_chars)
+        pre_chunks = RuPlainTextSentenizer.sentenize_by_nlp(sentence=text, max_chars=max_chars)
+        yield from self._assembly_small_chunks(chunks=pre_chunks, max_chars=max_chars)
 
     @staticmethod
     def sentenize_by_nlp(sentence: str, max_chars: int) -> Iterator[str]:

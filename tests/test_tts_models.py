@@ -177,6 +177,8 @@ class TestTTSConfig:
         """TTSConfig dataclass has max_models field."""
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=5,
             max_concurrent_per_model=2,
@@ -192,6 +194,8 @@ class TestTTSConfig:
         settings = Settings()
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -207,6 +211,8 @@ class TestTTSConfig:
         """TTSConfig.models_yml_hash accepts None (skip validation)."""
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -221,6 +227,8 @@ class TestTTSConfig:
         """TTSConfig dataclass is immutable (frozen)."""
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -245,13 +253,10 @@ class TestExceptions:
 
 class TestTTSResult:
     def test_tts_result_has_all_fields(self):
-        """TTSResult dataclass has audio, sample_rate, model, bytes_per_sample, channels."""
+        """TTSResult dataclass has audio, sample_rate, bytes_per_sample, channels."""
         audio = b"\x00\x00\x00\x00"
-        result = TTSResult(
-            audio=audio, sample_rate=48000, model="v3_en", bytes_per_sample=2, channels=1
-        )
+        result = TTSResult(audio=audio, sample_rate=48000, bytes_per_sample=2, channels=1)
         assert result.audio == audio
         assert result.sample_rate == 48000
-        assert result.model == "v3_en"
         assert result.bytes_per_sample == 2
         assert result.channels == 1

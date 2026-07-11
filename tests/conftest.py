@@ -34,6 +34,8 @@ def default_tts_config():
     """Return a TTSConfig with sensible defaults for testing."""
     return TTSConfig(
         device="cpu",
+        inference_timeout=5,
+        frame_duration_ms=50,
         sample_rate=48000,
         max_models=2,
         max_concurrent_per_model=2,

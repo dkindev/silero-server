@@ -22,20 +22,101 @@ class OpenAiTextNormalizer(TextNormalizer):
         self._options = config
         self._client = client
 
+    async def normalize_text(
+        self, sentences: Iterator[str], options: NormalizationOptions
+    ) -> AsyncIterator[str]:
+        """Return a normalized string from raw text."""
+        queue = asyncio.Queue(maxsize=10)
+        active_tasks = set()
+
+        producer_task = asyncio.create_task(
+            self._queue_sentences(
+                sentences,
+                queue,
+                active_tasks,
+            )
+        )
+
+        active_tasks.add(producer_task)
+        producer_task.add_done_callback(active_tasks.discard)
+
+        try:
+            while True:
+                future = await queue.get()
+                if future is None:
+                    queue.task_done()
+                    break
+
+                try:
+                    yield await future
+                finally:
+                    queue.task_done()
+        finally:
+            tasks_to_cancel = [task for task in active_tasks if not task.done()]
+
+            for task in tasks_to_cancel:
+                task.cancel()
+
+            if tasks_to_cancel:
+                await asyncio.gather(*tasks_to_cancel, return_exceptions=True)
+
+    async def _queue_sentences(
+        self,
+        sentences: Iterator[str],
+        queue: asyncio.Queue,
+        active_tasks: set,
+    ):
+        semaphore = asyncio.Semaphore(self._options.max_concurrent_chunks_per_request)
+
+        loop = asyncio.get_running_loop()
+
+        try:
+            for sentence in sentences:
+                future = loop.create_future()
+
+                await queue.put(future)
+
+                logger.debug("Sentence queued for normalizing. Text: {sentence}", sentence=sentence)
+
+                task = asyncio.create_task(self._process_sentence(sentence, semaphore, future))
+
+                active_tasks.add(task)
+                task.add_done_callback(active_tasks.discard)
+
+        finally:
+            # Completion marker
+            await queue.put(None)
+
+    async def _process_sentence(
+        self,
+        sentence: str,
+        semaphore: asyncio.Semaphore,
+        future: asyncio.Future,
+    ) -> str:
+        try:
+            async with semaphore:
+                normalized_sentence = await asyncio.wait_for(
+                    self._normalize_text(sentence),
+                    timeout=self._options.timeout,
+                )
+
+                if not future.cancelled():
+                    future.set_result(normalized_sentence)
+        except Exception as e:
+            if not future.cancelled():
+                future.set_exception(e)
+
     async def _normalize_text(self, text: str) -> str:
         try:
-            response = await asyncio.wait_for(
-                self._client.chat.completions.create(
-                    model=self._options.default_model,
-                    messages=[
-                        {"role": "system", "content": self._options.default_promt},
-                        {"role": "user", "content": text},
-                    ],
-                    temperature=0.0,
-                    reasoning_effort="none",
-                    extra_body={"think": False},
-                ),
-                timeout=self._options.timeout,
+            response = await self._client.chat.completions.create(
+                model=self._options.default_model,
+                messages=[
+                    {"role": "system", "content": self._options.default_promt},
+                    {"role": "user", "content": text},
+                ],
+                temperature=0.0,
+                reasoning_effort="none",
+                extra_body={"think": False},
             )
 
             clean_text = response.choices[0].message.content.strip()
@@ -54,77 +135,3 @@ class OpenAiTextNormalizer(TextNormalizer):
             )
 
         return text
-
-    async def _normalize_chunk(
-        self,
-        index: int,
-        text: str,
-        result_dict: dict,
-        event: asyncio.Event,
-    ):
-        logger.debug(
-            "Send chunk {index} to {model_name}. Text: {text}",
-            model_name=self._options.default_model,
-            index=index,
-            text=text,
-        )
-        try:
-            result_dict[index] = await self._normalize_text(text)
-        finally:
-            event.set()
-
-    async def normalize_text(
-        self, chunks: Iterator[str], options: NormalizationOptions
-    ) -> AsyncIterator[str]:
-        """Return a normalized string from raw text."""
-        result_dict = {}
-        tasks = []
-        events = {}
-
-        semaphore = asyncio.Semaphore(self._options.max_concurrent_chunks_per_request)
-
-        async def normalize_chunk_concurrently(index: int, text: str):
-            async with semaphore:
-                await self._normalize_chunk(index, text, result_dict, events[index])
-
-        next_index_to_yield = 0
-        chunk_index = 0
-
-        try:
-            for chunk in chunks:
-                events[chunk_index] = asyncio.Event()
-
-                if chunk_index == 0:
-                    # Instantly send Chunk #0 without semaphore restrictions
-                    tasks.append(
-                        asyncio.create_task(self._normalize_chunk(0, chunk, result_dict, events[0]))
-                    )
-                    # Micro-pause to ensure Chunk #0 request reaches the network first
-                    await asyncio.sleep(0.001)
-                else:
-                    # All other chunks are sent to background competitive processing
-                    tasks.append(
-                        asyncio.create_task(normalize_chunk_concurrently(chunk_index, chunk))
-                    )
-
-                chunk_index += 1
-
-                while next_index_to_yield in events and events[next_index_to_yield].is_set():
-                    logger.debug("Chunk {index} processed", index=chunk_index)
-                    yield result_dict.pop(next_index_to_yield)
-                    events.pop(next_index_to_yield)
-                    next_index_to_yield += 1
-
-            total_chunks = chunk_index
-
-            if total_chunks == 0:
-                return
-
-            for i in range(next_index_to_yield, total_chunks):
-                await events[i].wait()
-                logger.debug("Chunk {index} processed", index=i)
-                yield result_dict.pop(i)
-        finally:
-            for task in tasks:
-                if not task.done():
-                    task.cancel()

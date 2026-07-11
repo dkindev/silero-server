@@ -31,6 +31,8 @@ class TestSileroTTSEngineInit:
 
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -251,6 +253,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -279,7 +283,6 @@ class TestSynthesizeValidation:
         assert isinstance(r, TTSResult)
         assert isinstance(r.audio, bytes)
         assert r.sample_rate == 48000
-        assert r.model == "v5_5_ru"
         assert r.bytes_per_sample == BYTES_PER_SAMPLE
         assert r.channels == CHANNELS
 
@@ -291,6 +294,8 @@ class TestSynthesizeValidation:
         models_dir = make_models_dir(tmp_path)
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -342,6 +347,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -386,6 +393,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=8000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -416,6 +425,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=24000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -459,6 +470,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=44100,
             max_models=2,
             max_concurrent_per_model=2,
@@ -516,6 +529,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -546,6 +561,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -596,6 +613,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(str(models_dir), "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -637,6 +656,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -684,6 +705,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -715,6 +738,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="cuda",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -753,7 +778,6 @@ class TestSynthesizeValidation:
         r = results[0]
         assert isinstance(r.audio, bytes)
         assert r.sample_rate == 48000
-        assert r.model == "v5_5_ru"
         assert r.bytes_per_sample == BYTES_PER_SAMPLE
         assert r.channels == CHANNELS
 
@@ -766,6 +790,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(models_dir, "models.yml"))
         config = TTSConfig(
             device="xpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -804,7 +830,6 @@ class TestSynthesizeValidation:
         r = results[0]
         assert isinstance(r.audio, bytes)
         assert r.sample_rate == 48000
-        assert r.model == "v5_5_ru"
         assert r.bytes_per_sample == BYTES_PER_SAMPLE
         assert r.channels == CHANNELS
 
@@ -822,6 +847,8 @@ class TestSynthesizeValidation:
 
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,
@@ -863,6 +890,8 @@ class TestSynthesizeValidation:
         yml_hash = hash_models_yml(os.path.join(str(models_dir), "models.yml"))
         config = TTSConfig(
             device="cpu",
+            inference_timeout=5,
+            frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
             max_concurrent_per_model=2,

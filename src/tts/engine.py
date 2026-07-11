@@ -4,7 +4,7 @@ import hashlib
 import os
 import urllib.request
 from collections import OrderedDict
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass
 from typing import Any
 
@@ -81,7 +81,7 @@ class SileroTTSEngine:
 
         cached = await self._get_tts_model(model)
 
-        chunks = self._text_to_sentences(
+        sentences = self._text_to_sentences(
             text=text,
             voice=voice,
             text_format=text_format,
@@ -91,7 +91,7 @@ class SileroTTSEngine:
         )
 
         async for chunk in self._synthesize_pcm_chunks(
-            chunks=chunks, cached_model=cached, voice=voice, text_format=text_format
+            sentences=sentences, cached_model=cached, voice=voice, text_format=text_format
         ):
             yield chunk
 
@@ -169,7 +169,7 @@ class SileroTTSEngine:
         )
 
         sentences = text_sentenizer.text_to_sentences(
-            text=text, max_chunk_chars=self._config.max_chunk_chars
+            text=text, max_chars=self._config.max_chunk_chars
         )
 
         text_normalizer = (
@@ -187,122 +187,152 @@ class SileroTTSEngine:
                 text_normalizer=text_normalizer.__class__.__name__,
             )
 
-            chunks = text_normalizer.normalize_text(
-                chunks=sentences,
+            normalized_sentences = text_normalizer.normalize_text(
+                sentences=sentences,
                 options=normalization_options,
             )
 
-            async for chunk in chunks:
-                yield chunk
+            async for sentence in normalized_sentences:
+                yield sentence
 
     async def _synthesize_pcm_chunks(
         self,
-        chunks: AsyncIterator[str],
+        sentences: AsyncIterator[str],
         cached_model: CachedModel,
         voice: Voice,
         text_format: TextFormat,
     ) -> AsyncIterator[TTSResult]:
-        queue = asyncio.Queue(maxsize=self._config.max_concurrent_per_model)
+        queue = asyncio.Queue(maxsize=10)
+        active_tasks = set()
 
         producer_task = asyncio.create_task(
-            self._queue_chunks(
-                chunks=chunks,
+            self._queue_sentences(
+                sentences=sentences,
                 cached_model=cached_model,
                 voice=voice,
                 text_format=text_format,
                 queue=queue,
+                active_tasks=active_tasks,
             )
         )
 
+        active_tasks.add(producer_task)
+        producer_task.add_done_callback(active_tasks.discard)
+
         try:
             while True:
-                task = await queue.get()
-                if task is None:
+                future = await queue.get()
+                if future is None:
+                    queue.task_done()
                     break
 
                 try:
-                    yield await task
+                    buffer = await future
+
+                    for result in self._generate_frames(
+                        buffer=buffer,
+                        sample_rate=cached_model.sample_rate,
+                    ):
+                        yield result
+
+                    logger.debug("Audio frames has been sent.")
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    raise TTSEngineError("Sentence inference error") from e
                 finally:
                     queue.task_done()
-
         finally:
-            if not producer_task.done():
-                producer_task.cancel()
-                try:
-                    await producer_task
-                except asyncio.CancelledError:
-                    pass
+            tasks_to_cancel = [task for task in active_tasks if not task.done()]
 
-            tasks_to_cancel = []
-            while not queue.empty():
-                item = queue.get_nowait()
-                if isinstance(item, asyncio.Task) and not item.done():
-                    item.cancel()
-                    tasks_to_cancel.append(item)
+            for task in tasks_to_cancel:
+                task.cancel()
 
             if tasks_to_cancel:
                 await asyncio.gather(*tasks_to_cancel, return_exceptions=True)
 
-    @staticmethod
-    async def _queue_chunks(
-        chunks: AsyncIterator[str],
+    async def _queue_sentences(
+        self,
+        sentences: AsyncIterator[str],
         cached_model: CachedModel,
         voice: Voice,
         text_format: TextFormat,
         queue: asyncio.Queue,
+        active_tasks: set,
     ):
-        active_tasks: list[asyncio.Task] = []
+        loop = asyncio.get_running_loop()
 
         try:
-            chunk_index = 0
+            async for sentence in sentences:
+                future = loop.create_future()
 
-            async for chunk in chunks:
-                if any(task.done() and task.exception() is not None for task in active_tasks):
-                    logger.warning("Stopping producer early: one of the previous tasks failed")
-                    break
+                await queue.put(future)
 
-                active_tasks = [task for task in active_tasks if not task.done()]
+                logger.debug("Sentence queued for inferencing. Text: {sentence}", sentence=sentence)
 
                 task = asyncio.create_task(
-                    SileroTTSEngine._process_single_chunk(
-                        chunk=chunk, cached_model=cached_model, voice=voice, text_format=text_format
-                    )
+                    self._process_sentence(sentence, cached_model, voice, text_format, future)
                 )
 
-                active_tasks.append(task)
-
-                await queue.put(task)
-
-                if chunk_index == 0:
-                    # Send Chunk #0 with micro-pause
-                    await asyncio.sleep(0.001)
-
-                chunk_index += 1
+                active_tasks.add(task)
+                task.add_done_callback(active_tasks.discard)
 
         finally:
             # Completion marker
             await queue.put(None)
 
-    @staticmethod
-    async def _process_single_chunk(
-        chunk: str,
+    async def _process_sentence(
+        self,
+        sentence: str,
         cached_model: CachedModel,
         voice: Voice,
         text_format: TextFormat,
-    ) -> TTSResult:
-        async with cached_model.semaphore:
-            tensor = await asyncio.to_thread(
-                SileroTTSEngine._run_tts_sync, cached_model, chunk, voice.speaker, text_format
-            )
-            try:
-                audio_np = tensor.detach().squeeze().clamp(-1.0, 1.0).cpu().numpy()
-            except Exception as e:
-                raise TTSEngineError("Failed to clipping and transfer to 'cpu'") from e
+        future: asyncio.Future,
+    ) -> np.ndarray:
+        try:
+            async with cached_model.semaphore:
+                tensor = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        SileroTTSEngine._run_tts_sync,
+                        cached_model,
+                        sentence,
+                        voice.speaker,
+                        text_format,
+                    ),
+                    timeout=self._config.inference_timeout,
+                )
 
-            return TTSResult(
-                audio=(audio_np * 32767).astype(np.int16).tobytes(),
-                sample_rate=cached_model.sample_rate,
-                model=voice.model,
+                if not future.cancelled():
+                    audio_tensor = (
+                        tensor.detach()
+                        .squeeze()
+                        .clamp(-1.0, 1.0)
+                        .mul(32767)
+                        .to(dtype=torch.int16, device="cpu")
+                    )
+
+                    future.set_result(audio_tensor.numpy())
+        except Exception as e:
+            if not future.cancelled():
+                future.set_exception(e)
+
+    def _generate_frames(
+        self,
+        buffer: np.ndarray,
+        sample_rate: int,
+    ) -> Iterator[TTSResult]:
+        duration_sec = self._config.frame_duration_ms / 1000.0
+        chunk_size = int(sample_rate * BYTES_PER_SAMPLE * CHANNELS * duration_sec)
+
+        sample_frame_size = BYTES_PER_SAMPLE * CHANNELS
+        chunk_size = (chunk_size // sample_frame_size) * sample_frame_size
+        chunk_size = max(chunk_size, sample_frame_size)
+        total_samples = buffer.shape[0]
+
+        for i in range(0, total_samples, chunk_size):
+            yield TTSResult(
+                audio=buffer[i : i + chunk_size].tobytes(),
+                sample_rate=sample_rate,
                 bytes_per_sample=BYTES_PER_SAMPLE,
                 channels=CHANNELS,
             )

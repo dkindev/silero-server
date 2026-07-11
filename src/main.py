@@ -49,6 +49,8 @@ def create_engine(
 
     config = TTSConfig(
         device=settings.torch.device,
+        inference_timeout=settings.inference_timeout,
+        frame_duration_ms=settings.frame_duration_ms,
         sample_rate=settings.sample_rate,
         max_models=settings.max_models,
         max_concurrent_per_model=settings.max_concurrent_per_model,

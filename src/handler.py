@@ -114,8 +114,6 @@ class SileroEventHandler(AsyncEventHandler):
         except Exception as err:
             logger.exception(err)
 
-            self._reset_streaming()
-
             error = (
                 Error(text=str(err), code=err.__class__.__name__)
                 if self._throw_detailed_errors
@@ -151,7 +149,8 @@ class SileroEventHandler(AsyncEventHandler):
     async def _handle_synthesize_stop(self, event: Event) -> bool:
         assert self._synthesize is not None
         await self.write_event(SynthesizeStopped().event())
-        self._reset_streaming()
+        self._is_streaming = False
+        self._synthesize = None
         logger.debug("Text stream stopped")
         return True
 
@@ -163,8 +162,6 @@ class SileroEventHandler(AsyncEventHandler):
         return True
 
     async def _synthesize_pcm_chunks(self, synthesize: Synthesize) -> bool:
-        logger.debug(synthesize)
-
         text = synthesize.text.strip()
         if not text:
             await self.write_event(Error(text="Text is empty or whitespace").event())
@@ -187,33 +184,29 @@ class SileroEventHandler(AsyncEventHandler):
             return True
 
         send_start = True
-        async for result in self._engine.synthesize_pcm_chunks(text, voice_id, text_format):
+        async for chunk in self._engine.synthesize_pcm_chunks(text, voice_id, text_format):
             if send_start:
                 await self.write_event(
                     AudioStart(
-                        rate=result.sample_rate,
-                        width=result.bytes_per_sample,
-                        channels=result.channels,
+                        rate=chunk.sample_rate,
+                        width=chunk.bytes_per_sample,
+                        channels=chunk.channels,
                     ).event()
                 )
                 send_start = False
 
             await self.write_event(
                 AudioChunk(
-                    rate=result.sample_rate,
-                    width=result.bytes_per_sample,
-                    channels=result.channels,
-                    audio=result.audio,
+                    rate=chunk.sample_rate,
+                    width=chunk.bytes_per_sample,
+                    channels=chunk.channels,
+                    audio=chunk.audio,
                 ).event()
             )
 
         await self.write_event(AudioStop().event())
 
         return True
-
-    def _reset_streaming(self):
-        self._is_streaming = False
-        self._synthesize = None
 
     def _parse_text_format(self, synthesize: Synthesize) -> TextFormat | None:
         text_format = TextFormat.TEXT

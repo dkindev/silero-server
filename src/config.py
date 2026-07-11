@@ -172,6 +172,20 @@ class Settings(BaseSettings):
     )
     """Enable audio streaming."""
 
+    inference_timeout: float = Field(
+        default=5,
+        ge=1,
+        description="Timeout for inference of one sentence",
+    )
+    """Timeout for inference of one sentence"""
+
+    frame_duration_ms: float = Field(
+        default=50,
+        ge=1,
+        description="Frame duration in milliseconds",
+    )
+    """Frame duration in milliseconds"""
+
     sample_rate: Literal[8000, 16000, 24000, 48000] = Field(
         default=48000,
         description="Audio sample rate in Hz for TTS output.",

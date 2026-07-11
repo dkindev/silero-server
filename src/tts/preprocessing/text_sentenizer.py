@@ -14,30 +14,30 @@ class TextSentenizer(ABC):
     """Represents a class for generating sentences from source text."""
 
     @abstractmethod
-    def text_to_sentences(self, text: str, max_chunk_chars: int) -> Iterator[str]:
+    def text_to_sentences(self, text: str, max_chars: int) -> Iterator[str]:
         ...
 
 
 class PlainTextSentenizer(TextSentenizer):
     """Represents a class for generating sentences from plain text."""
 
-    def text_to_sentences(self, text: str, max_chunk_chars: int) -> Iterator[str]:
+    def text_to_sentences(self, text: str, max_chars: int) -> Iterator[str]:
         """Generate a sentences from an plain text."""
         if not text:
             return
 
-        if max_chunk_chars <= 0:
-            raise ValueError("max_chunk_chars cannot be negative or zero")
+        if max_chars <= 0:
+            raise ValueError("max_chars cannot be negative or zero")
 
-        if len(text) <= max_chunk_chars:
+        if len(text) <= max_chars:
             yield text
             return
 
-        pre_chunks = PlainTextSentenizer.sentenize_by_punctuations(text, max_chunk_chars)
-        yield from self._assembly_small_chunks(chunks=pre_chunks, max_chunk_chars=max_chunk_chars)
+        pre_chunks = PlainTextSentenizer.sentenize_by_punctuations(text, max_chars)
+        yield from self._assembly_small_chunks(chunks=pre_chunks, max_chars=max_chars)
 
-    def _assembly_small_chunks(self, chunks: Iterator[str], max_chunk_chars: int) -> Iterator[str]:
-        """Assembly of small pieces into optimal chunks up to max_chunk_chars"""
+    def _assembly_small_chunks(self, chunks: Iterator[str], max_chars: int) -> Iterator[str]:
+        """Assembly of small pieces into optimal chunks up to max_chars"""
         current_chunk = []
         current_length = 0
         item_length = 0
@@ -49,7 +49,7 @@ class PlainTextSentenizer(TextSentenizer):
 
             item_length = len(item)
 
-            if current_length + item_length > max_chunk_chars:
+            if current_length + item_length > max_chars:
                 if current_chunk:
                     yield " ".join(current_chunk)
                 current_chunk = [item]
@@ -154,13 +154,13 @@ class SsmlSentenizer(TextSentenizer):
     def __init__(self, text_sentenizer_in_tags: TextSentenizer):
         self._text_sentenizer_in_tags = text_sentenizer_in_tags
 
-    def text_to_sentences(self, text: str, max_chunk_chars: int) -> Iterator[str]:
+    def text_to_sentences(self, text: str, max_chars: int) -> Iterator[str]:
         """Generate a sentences from an SSML."""
         if not text:
             return
 
-        if max_chunk_chars <= 0:
-            raise ValueError("max_chunk_chars cannot be negative or zero")
+        if max_chars <= 0:
+            raise ValueError("max_chars cannot be negative or zero")
 
         ssml_text = text.strip()
         if not ssml_text.startswith("<speak>"):
@@ -175,20 +175,18 @@ class SsmlSentenizer(TextSentenizer):
             )
 
             clean_text = TAGS_RE.sub("", ssml_text)
-            for chunk in self._text_sentenizer_in_tags.text_to_sentences(
-                clean_text, max_chunk_chars
-            ):
+            for chunk in self._text_sentenizer_in_tags.text_to_sentences(clean_text, max_chars):
                 yield f"<speak>{chunk}</speak>"
 
             return
 
-        if len(ssml_text) <= max_chunk_chars:
+        if len(ssml_text) <= max_chars:
             yield ssml_text
             return
 
-        yield from self._sentenize_ssml_into_chunks(ssml_text, max_chunk_chars)
+        yield from self._sentenize_ssml_into_chunks(ssml_text, max_chars)
 
-    def _sentenize_ssml_into_chunks(self, ssml_text: str, max_chunk_chars: int) -> Iterator[str]:  # noqa: C901
+    def _sentenize_ssml_into_chunks(self, ssml_text: str, max_chars: int) -> Iterator[str]:  # noqa: C901
         current_chunk = []
         text_len = 0
         opened_tags = []
@@ -221,7 +219,7 @@ class SsmlSentenizer(TextSentenizer):
                     if tag_match and opened_tags and opened_tags[-1] == tag_match.group(1):
                         opened_tags.pop()
             else:
-                if text_len + len(token) <= max_chunk_chars:
+                if text_len + len(token) <= max_chars:
                     current_chunk.append(token)
                     text_len += len(token)
                 else:
@@ -232,12 +230,12 @@ class SsmlSentenizer(TextSentenizer):
                         current_chunk = []
                         text_len = 0
 
-                    if len(token) <= max_chunk_chars:
+                    if len(token) <= max_chars:
                         current_chunk = prefix_tokens + [token]
                         text_len = len(token)
                     else:
                         for sub_sentence in self._text_sentenizer_in_tags.text_to_sentences(
-                            token, max_chunk_chars
+                            token, max_chars
                         ):
                             yield self._build_valid_chunk(
                                 prefix_tokens + [sub_sentence], opened_tags

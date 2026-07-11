@@ -18,6 +18,16 @@ zeroconf: silero-tts
 # Env: TTS_STREAMING
 streaming: true
 
+# Timeout for inference of one sentence
+# CLI: --inference_timeout
+# Env: TTS_INFERENCE_TIMEOUT
+inference_timeout: 5
+
+# Frame duration in milliseconds
+# CLI: --frame_duration_ms
+# Env: TTS_FRAME_DURATION_MS
+frame_duration_ms: 50
+
 # Audio sample rate in Hz (8000, 16000, 24000, 48000).
 # CLI: --sample_rate
 # Env: TTS_SAMPLE_RATE
@@ -72,11 +82,11 @@ normalization:
   # Plain text normalization settings.
   text:
     # Enable plain text normalization.
-    # Env: TTS_NORMALIZATION__TEXT_ENABLED
+    # Env: TTS_NORMALIZATION__TEXT__ENABLED
     enabled: true
 
     # Normalizer type (simple, llm).
-    # Env: TTS_NORMALIZATION__TEXT_TYPE
+    # Env: TTS_NORMALIZATION__TEXT__TYPE
     type: simple
 
     # Per-locale LLM prompts for text normalization (config.yml only).
@@ -95,11 +105,11 @@ normalization:
   # SSML normalization settings.
   ssml:
     # Enable SSML markup normalization.
-    # Env: TTS_NORMALIZATION__SSML_ENABLED
+    # Env: TTS_NORMALIZATION__SSML__ENABLED
     enabled: false
 
     # Normalizer type (simple, llm).
-    # Env: TTS_NORMALIZATION__SSML_TYPE
+    # Env: TTS_NORMALIZATION__SSML__TYPE
     type: simple
 
     # Per-locale LLM prompts for SSML normalization.
@@ -109,6 +119,7 @@ normalization:
     #     model: qwen3.5:4b
 
 # PyTorch computing engine settings.
+# Note: num_threads x num_interop_threads <= physical cores
 torch:
   # Device to run TTS model on (cpu, cuda, xpu).
   # CLI: --torch_device

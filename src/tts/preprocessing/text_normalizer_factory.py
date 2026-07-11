@@ -38,8 +38,11 @@ class TextNormalizerFactory:
             if self._openai_client is None:
                 return None
 
-            if voice_normalization is not None:
-                promt = self._storage.get_promt(promt_id=voice_normalization.promt_id)
+            promt = (
+                self._storage.get_promt(promt_id=voice_normalization.promt_id)
+                if voice_normalization is not None
+                else None
+            )
 
             if promt is not None:
                 promt_text = promt.text

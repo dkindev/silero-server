@@ -60,6 +60,8 @@ class TTSConfigModel:
 @dataclass(frozen=True)
 class TTSConfig:
     device: str
+    inference_timeout: float
+    frame_duration_ms: int
     sample_rate: int
     max_models: int
     max_concurrent_per_model: int
@@ -89,6 +91,5 @@ class OpenAiNormalizationConfig:
 class TTSResult:
     audio: bytes
     sample_rate: int
-    model: str
     bytes_per_sample: int
     channels: int
