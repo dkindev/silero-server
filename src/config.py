@@ -91,12 +91,12 @@ class NormalizationSettings(BaseModel):
     )
     """Timeout for input text normalization"""
 
-    max_concurrent_chunks_per_request: int = Field(
+    max_concurrent_sentences_per_request: int = Field(
         default=2,
         ge=1,
-        description="Maximum concurrent chunks per request for normalization.",
+        description="Maximum concurrent sentences per request for normalization.",
     )
-    """Maximum concurrent chunks per request for normalization."""
+    """Maximum concurrent sentences per request for normalization."""
 
     text: TextNormalizationSettings = Field(default_factory=TextNormalizationSettings)
     ssml: SsmlNormalizationSettings = Field(default_factory=SsmlNormalizationSettings)

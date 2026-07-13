@@ -16,8 +16,8 @@ class OpenAiTextNormalizer(TextNormalizer):
         if config.timeout < 0:
             raise ValueError("timeout cannot be negative")
 
-        if config.max_concurrent_chunks_per_request <= 0:
-            raise ValueError("max_concurrent_chunks_per_request cannot be negative or zero")
+        if config.max_concurrent_sentences_per_request <= 0:
+            raise ValueError("max_concurrent_sentences_per_request cannot be negative or zero")
 
         self._options = config
         self._client = client
@@ -66,7 +66,7 @@ class OpenAiTextNormalizer(TextNormalizer):
         queue: asyncio.Queue,
         active_tasks: set,
     ):
-        semaphore = asyncio.Semaphore(self._options.max_concurrent_chunks_per_request)
+        semaphore = asyncio.Semaphore(self._options.max_concurrent_sentences_per_request)
 
         loop = asyncio.get_running_loop()
 

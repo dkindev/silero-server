@@ -82,7 +82,7 @@ class NormalizationOptions:
 @dataclass(frozen=True)
 class OpenAiNormalizationConfig:
     timeout: float
-    max_concurrent_chunks_per_request: int
+    max_concurrent_sentences_per_request: int
     default_model: str
     default_promt: str
 

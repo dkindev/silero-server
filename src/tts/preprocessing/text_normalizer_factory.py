@@ -62,7 +62,7 @@ class TextNormalizerFactory:
                 client=self._openai_client,
                 config=OpenAiNormalizationConfig(
                     timeout=self._settings.timeout,
-                    max_concurrent_chunks_per_request=self._settings.max_concurrent_chunks_per_request,
+                    max_concurrent_sentences_per_request=self._settings.max_concurrent_sentences_per_request,
                     default_model=promt_model,
                     default_promt=promt_text,
                 ),
