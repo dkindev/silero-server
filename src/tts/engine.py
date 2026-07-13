@@ -169,7 +169,7 @@ class SileroTTSEngine:
         )
 
         sentences = text_sentenizer.text_to_sentences(
-            text=text, max_chars=self._config.max_sentence_chars
+            text=text, max_sentence_chars=self._config.max_sentence_chars
         )
 
         text_normalizer = (

@@ -4,26 +4,25 @@ from src.tts.preprocessing import RuPlainTextSentenizer
 class TestRuSimpleTextSentenizer:
     """Tests for RuSimpleTextSentenizer.text_to_sentences behavior."""
 
-    def test_short_text_returns_single_chunk(self):
+    def test_short_text_returns_single_sentence(self):
         text = "привет мир"
-        chunks = list(RuPlainTextSentenizer().text_to_sentences(text, 100))
-        assert chunks == ["привет мир"]
+        sentences = list(RuPlainTextSentenizer().text_to_sentences(text, 100))
+        assert sentences == ["привет мир"]
 
     def test_splits_on_sentence_boundary(self):
         text = "Иди сюда. Подожди минутку. Хорошо"
-        chunks = list(RuPlainTextSentenizer().text_to_sentences(text, 20))
-        assert chunks == ["Иди сюда.", "Подожди минутку.", "Хорошо"]
+        sentences = list(RuPlainTextSentenizer().text_to_sentences(text, 20))
+        assert sentences == ["Иди сюда.", "Подожди минутку.", "Хорошо"]
 
     def test_razdel_handles_abbreviations(self):
         text = "Он т.е. пришёл. Да"
-        chunks = list(RuPlainTextSentenizer().text_to_sentences(text, 17))
-        # "т.е." should not trigger a sentence split
-        assert chunks == ["Он т.е. пришёл.", "Да"]
+        sentences = list(RuPlainTextSentenizer().text_to_sentences(text, 17))
+        assert sentences == ["Он т.е. пришёл.", "Да"]
 
     def test_long_sentence_splits_on_comma(self):
         text = "это очень длинное предложение, разбитое запятой, и законченное"
-        chunks = list(RuPlainTextSentenizer().text_to_sentences(text, 20))
-        assert chunks == [
+        sentences = list(RuPlainTextSentenizer().text_to_sentences(text, 20))
+        assert sentences == [
             "это очень длинное",
             "предложение,",
             "разбитое запятой,",
@@ -32,5 +31,5 @@ class TestRuSimpleTextSentenizer:
 
     def test_hard_splits_giant_word(self):
         text = "супердлинноеслово"
-        chunks = list(RuPlainTextSentenizer().text_to_sentences(text, 5))
-        assert chunks == ["супер", "длинн", "оесло", "во"]
+        sentences = list(RuPlainTextSentenizer().text_to_sentences(text, 5))
+        assert sentences == ["супер", "длинн", "оесло", "во"]

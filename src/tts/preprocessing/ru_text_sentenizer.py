@@ -8,32 +8,35 @@ from src.tts.preprocessing.text_sentenizer import PlainTextSentenizer
 class RuPlainTextSentenizer(PlainTextSentenizer):
     """Represents a class for generating sentences from Russian text."""
 
-    def text_to_sentences(self, text: str, max_chars: int) -> Iterator[str]:
+    def text_to_sentences(self, text: str, max_sentence_chars: int) -> Iterator[str]:
         """Generate a sentences from an plain text."""
         if not text:
             return
 
-        if max_chars <= 0:
-            raise ValueError("max_chars cannot be negative or zero")
+        if max_sentence_chars <= 0:
+            raise ValueError("max_sentence_chars cannot be negative or zero")
 
-        if len(text) <= max_chars:
+        if len(text) <= max_sentence_chars:
             yield text
             return
 
-        pre_chunks = RuPlainTextSentenizer.sentenize_by_nlp(sentence=text, max_chars=max_chars)
-        yield from self._assembly_small_chunks(chunks=pre_chunks, max_chars=max_chars)
+        pre_sentences = RuPlainTextSentenizer.sentenize_by_nlp(
+            sentence=text, max_sentence_chars=max_sentence_chars
+        )
+        yield from self._assembly_small_sentences(
+            sentences=pre_sentences, max_sentence_chars=max_sentence_chars
+        )
 
     @staticmethod
-    def sentenize_by_nlp(sentence: str, max_chars: int) -> Iterator[str]:
-        for chunk in sentenize(sentence):
-            chunk_text = chunk.text.strip()
-            if not chunk_text:
+    def sentenize_by_nlp(sentence: str, max_sentence_chars: int) -> Iterator[str]:
+        for sentence_obj in sentenize(sentence):
+            sentence_text = sentence_obj.text.strip()
+            if not sentence_text:
                 continue
 
-            if len(chunk_text) <= max_chars:
-                yield chunk_text
+            if len(sentence_text) <= max_sentence_chars:
+                yield sentence_text
             else:
-                # If the sentence is long, try to cut it into minor characters.
                 yield from PlainTextSentenizer.sentenize_by_minor_characters(
-                    sentence=chunk_text, max_chars=max_chars
+                    sentence=sentence_text, max_sentence_chars=max_sentence_chars
                 )

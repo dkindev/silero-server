@@ -10,7 +10,7 @@ from src.tts.exceptions import TTSEngineError
 from src.tts.models import TextFormat, TTSConfig, TTSConfigModel, TTSResult
 from src.tts.preprocessing import TextSentenizerFactory
 from tests.helpers import (
-    collect_chunks,
+    collect_sentences,
     hash_models_yml,
     make_config_file,
     make_model,
@@ -57,7 +57,7 @@ class TestSileroTTSEngineInit:
                 text_sentenizer_factory=TextSentenizerFactory(),
                 text_normalizer_factory=None,
             )
-            results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+            results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert len(results) > 0
         for r in results:
@@ -204,7 +204,7 @@ class TestSynthesizeValidation:
         )
 
         with pytest.raises(TTSEngineError) as exc_info:
-            await collect_chunks(engine, "hello", "invalid_voice_id")
+            await collect_sentences(engine, "hello", "invalid_voice_id")
 
         assert "Unsupported voice: invalid_voice_id" in str(exc_info.value)
 
@@ -276,7 +276,7 @@ class TestSynthesizeValidation:
             text_normalizer_factory=None,
         )
 
-        results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+        results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert len(results) > 0
         r = results[0]
@@ -320,7 +320,7 @@ class TestSynthesizeValidation:
                 text_sentenizer_factory=TextSentenizerFactory(),
                 text_normalizer_factory=None,
             )
-            results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+            results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert len(results) > 0
 
@@ -365,7 +365,7 @@ class TestSynthesizeValidation:
             text_sentenizer_factory=TextSentenizerFactory(),
             text_normalizer_factory=None,
         )
-        results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+        results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert calls[0] == 24000
         assert results[0].sample_rate == 24000
@@ -411,7 +411,7 @@ class TestSynthesizeValidation:
             text_sentenizer_factory=TextSentenizerFactory(),
             text_normalizer_factory=None,
         )
-        results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+        results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert calls[0] == 24000
         assert results[0].sample_rate == 24000
@@ -456,7 +456,7 @@ class TestSynthesizeValidation:
             text_sentenizer_factory=TextSentenizerFactory(),
             text_normalizer_factory=None,
         )
-        results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+        results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert calls[0] == 24000
         assert results[0].sample_rate == 24000
@@ -501,7 +501,7 @@ class TestSynthesizeValidation:
             text_sentenizer_factory=TextSentenizerFactory(),
             text_normalizer_factory=None,
         )
-        results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+        results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert calls[0] == 24000
         assert results[0].sample_rate == 24000
@@ -547,7 +547,7 @@ class TestSynthesizeValidation:
             text_sentenizer_factory=TextSentenizerFactory(),
             text_normalizer_factory=None,
         )
-        results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+        results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert calls[0] == 24000
         assert results[0].sample_rate == 24000
@@ -592,7 +592,7 @@ class TestSynthesizeValidation:
             text_sentenizer_factory=TextSentenizerFactory(),
             text_normalizer_factory=None,
         )
-        results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+        results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert calls[0] == 48000
         assert results[0].sample_rate == 48000
@@ -644,7 +644,7 @@ class TestSynthesizeValidation:
             text_sentenizer_factory=TextSentenizerFactory(),
             text_normalizer_factory=None,
         )
-        results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+        results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert calls[0] == 48000
         assert results[0].sample_rate == 48000
@@ -691,8 +691,8 @@ class TestSynthesizeValidation:
                 text_sentenizer_factory=TextSentenizerFactory(),
                 text_normalizer_factory=None,
             )
-            await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
-            await collect_chunks(engine, "world", "ru_RU-v5_5_ru-aidar")
+            await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
+            await collect_sentences(engine, "world", "ru_RU-v5_5_ru-aidar")
 
         assert load_counter[0] == 1
 
@@ -727,7 +727,7 @@ class TestSynthesizeValidation:
             text_sentenizer_factory=TextSentenizerFactory(),
             text_normalizer_factory=None,
         )
-        await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+        await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
     @pytest.mark.asyncio
     async def test_synthesize_cuda_unavailable_falls_back_to_cpu(
@@ -772,7 +772,7 @@ class TestSynthesizeValidation:
                 text_sentenizer_factory=TextSentenizerFactory(),
                 text_normalizer_factory=None,
             )
-            results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+            results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert len(results) > 0
         r = results[0]
@@ -824,7 +824,7 @@ class TestSynthesizeValidation:
                 text_sentenizer_factory=TextSentenizerFactory(),
                 text_normalizer_factory=None,
             )
-            results = await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+            results = await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert len(results) > 0
         r = results[0]
@@ -871,7 +871,7 @@ class TestSynthesizeValidation:
         )
 
         with pytest.raises(TTSEngineError) as exc_info:
-            await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+            await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert "Failed to parse the models configuration file" in str(exc_info.value)
 
@@ -914,6 +914,6 @@ class TestSynthesizeValidation:
         )
 
         with pytest.raises(TTSEngineError) as exc_info:
-            await collect_chunks(engine, "hello", "ru_RU-v5_5_ru-aidar")
+            await collect_sentences(engine, "hello", "ru_RU-v5_5_ru-aidar")
 
         assert "Failed to load model" in str(exc_info.value)

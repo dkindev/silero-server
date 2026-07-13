@@ -14,131 +14,138 @@ class TextSentenizer(ABC):
     """Represents a class for generating sentences from source text."""
 
     @abstractmethod
-    def text_to_sentences(self, text: str, max_chars: int) -> Iterator[str]:
+    def text_to_sentences(self, text: str, max_sentence_chars: int) -> Iterator[str]:
         ...
 
 
 class PlainTextSentenizer(TextSentenizer):
     """Represents a class for generating sentences from plain text."""
 
-    def text_to_sentences(self, text: str, max_chars: int) -> Iterator[str]:
+    def text_to_sentences(self, text: str, max_sentence_chars: int) -> Iterator[str]:
         """Generate a sentences from an plain text."""
         if not text:
             return
 
-        if max_chars <= 0:
-            raise ValueError("max_chars cannot be negative or zero")
+        if max_sentence_chars <= 0:
+            raise ValueError("max_sentence_chars cannot be negative or zero")
 
-        if len(text) <= max_chars:
+        if len(text) <= max_sentence_chars:
             yield text
             return
 
-        pre_chunks = PlainTextSentenizer.sentenize_by_punctuations(text, max_chars)
-        yield from self._assembly_small_chunks(chunks=pre_chunks, max_chars=max_chars)
+        pre_sentences = PlainTextSentenizer.sentenize_by_punctuations(text, max_sentence_chars)
+        yield from self._assembly_small_sentences(
+            sentences=pre_sentences, max_sentence_chars=max_sentence_chars
+        )
 
-    def _assembly_small_chunks(self, chunks: Iterator[str], max_chars: int) -> Iterator[str]:
-        """Assembly of small pieces into optimal chunks up to max_chars"""
-        current_chunk = []
+    def _assembly_small_sentences(
+        self, sentences: Iterator[str], max_sentence_chars: int
+    ) -> Iterator[str]:
+        """Assembly of small pieces into optimal sentences up to max_sentence_chars"""
+        current_sentence = []
         current_length = 0
         item_length = 0
 
-        for item in chunks:
+        for item in sentences:
             item = item.strip()
             if not item:
                 continue
 
             item_length = len(item)
 
-            if current_length + item_length > max_chars:
-                if current_chunk:
-                    yield " ".join(current_chunk)
-                current_chunk = [item]
+            if current_length + item_length > max_sentence_chars:
+                if current_sentence:
+                    yield " ".join(current_sentence)
+                current_sentence = [item]
                 current_length = item_length
             else:
-                current_chunk.append(item)
+                current_sentence.append(item)
                 current_length += item_length + 1
 
-        if current_chunk:
-            yield " ".join(current_chunk)
+        if current_sentence:
+            yield " ".join(current_sentence)
 
     @staticmethod
-    def sentenize_by_punctuations(sentence: str, max_chars: int) -> Iterator[str]:
+    def sentenize_by_punctuations(sentence: str, max_sentence_chars: int) -> Iterator[str]:
         last_idx = 0
 
         for match in PUNCTUATIONS_RE.finditer(sentence):
-            chunk = sentence[last_idx : match.start()].strip()
+            segment = sentence[last_idx : match.start()].strip()
             last_idx = match.end()
 
-            if chunk:
-                if len(chunk) <= max_chars:
-                    yield chunk
+            if segment:
+                if len(segment) <= max_sentence_chars:
+                    yield segment
                 else:
-                    yield from PlainTextSentenizer.sentenize_by_minor_characters(chunk, max_chars)
+                    yield from PlainTextSentenizer.sentenize_by_minor_characters(
+                        segment, max_sentence_chars
+                    )
 
-        last_chunk = sentence[last_idx:].strip()
-        if last_chunk:
-            if len(last_chunk) <= max_chars:
-                yield last_chunk
+        last_segment = sentence[last_idx:].strip()
+        if last_segment:
+            if len(last_segment) <= max_sentence_chars:
+                yield last_segment
             else:
-                yield from PlainTextSentenizer.sentenize_by_minor_characters(last_chunk, max_chars)
+                yield from PlainTextSentenizer.sentenize_by_minor_characters(
+                    last_segment, max_sentence_chars
+                )
 
     @staticmethod
-    def sentenize_by_minor_characters(sentence: str, max_chars: int) -> Iterator[str]:
+    def sentenize_by_minor_characters(sentence: str, max_sentence_chars: int) -> Iterator[str]:
         last_idx = 0
 
         for match in MINOR_CHARACTERS_RE.finditer(sentence):
-            chunk = sentence[last_idx : match.start()].strip()
+            segment = sentence[last_idx : match.start()].strip()
             last_idx = match.end()
 
-            if chunk:
-                if len(chunk) <= max_chars:
-                    yield chunk
+            if segment:
+                if len(segment) <= max_sentence_chars:
+                    yield segment
                 else:
-                    # if the sentence is still longer than the limit (for example, 500 characters without spaces)
-                    yield from PlainTextSentenizer.sentenize_by_words(chunk, max_chars)
+                    yield from PlainTextSentenizer.sentenize_by_words(segment, max_sentence_chars)
 
-        last_chunk = sentence[last_idx:].strip()
-        if last_chunk:
-            if len(last_chunk) <= max_chars:
-                yield last_chunk
+        last_segment = sentence[last_idx:].strip()
+        if last_segment:
+            if len(last_segment) <= max_sentence_chars:
+                yield last_segment
             else:
-                yield from PlainTextSentenizer.sentenize_by_words(last_chunk, max_chars)
+                yield from PlainTextSentenizer.sentenize_by_words(last_segment, max_sentence_chars)
 
     @staticmethod
-    def sentenize_by_words(sentence: str, max_chars: int) -> Iterator[str]:
-        chunk_start = -1
-        chunk_end = -1
+    def sentenize_by_words(sentence: str, max_sentence_chars: int) -> Iterator[str]:
+        sentence_start = -1
+        sentence_end = -1
 
         for match in WORD_RE.finditer(sentence):
             w_start, w_end = match.start(), match.end()
             w_len = w_end - w_start
 
             # If ONE word is longer than the limit (link, token, long hash)
-            if w_len > max_chars:
-                if chunk_start != -1:
-                    yield sentence[chunk_start:chunk_end]
-                    chunk_start, chunk_end = -1, -1
+            if w_len > max_sentence_chars:
+                if sentence_start != -1:
+                    yield sentence[sentence_start:sentence_end]
+                    sentence_start, sentence_end = -1, -1
 
                 # Let's cut this giant word character by character right here.
                 word = match.group()
-                for i in range(0, w_len, max_chars):
-                    yield word[i : i + max_chars]
+                for i in range(0, w_len, max_sentence_chars):
+                    yield word[i : i + max_sentence_chars]
                 continue
 
-            if chunk_start == -1:
-                chunk_start, chunk_end = w_start, w_end
+            if sentence_start == -1:
+                sentence_start, sentence_end = w_start, w_end
                 continue
 
-            potential_len = w_end - chunk_start
+            potential_len = w_end - sentence_start
 
-            if potential_len > max_chars:
-                yield sentence[chunk_start:chunk_end]
-                chunk_start, chunk_end = w_start, w_end
+            if potential_len > max_sentence_chars:
+                yield sentence[sentence_start:sentence_end]
+                sentence_start, sentence_end = w_start, w_end
             else:
-                chunk_end = w_end
+                sentence_end = w_end
 
-        if chunk_start != -1:
-            yield sentence[chunk_start:chunk_end]
+        if sentence_start != -1:
+            yield sentence[sentence_start:sentence_end]
 
 
 TAGS_RE = re.compile(r"<[^>]+>")
@@ -154,20 +161,19 @@ class SsmlSentenizer(TextSentenizer):
     def __init__(self, text_sentenizer_in_tags: TextSentenizer):
         self._text_sentenizer_in_tags = text_sentenizer_in_tags
 
-    def text_to_sentences(self, text: str, max_chars: int) -> Iterator[str]:
+    def text_to_sentences(self, text: str, max_sentence_chars: int) -> Iterator[str]:
         """Generate a sentences from an SSML."""
         if not text:
             return
 
-        if max_chars <= 0:
-            raise ValueError("max_chars cannot be negative or zero")
+        if max_sentence_chars <= 0:
+            raise ValueError("max_sentence_chars cannot be negative or zero")
 
         ssml_text = text.strip()
         if not ssml_text.startswith("<speak>"):
             ssml_text = f"<speak>{ssml_text}</speak>"
 
         try:
-            # Check the source document for overall validity
             ET.fromstring(ssml_text)
         except ET.ParseError as e:
             logger.warning(
@@ -175,19 +181,23 @@ class SsmlSentenizer(TextSentenizer):
             )
 
             clean_text = TAGS_RE.sub("", ssml_text)
-            for chunk in self._text_sentenizer_in_tags.text_to_sentences(clean_text, max_chars):
-                yield f"<speak>{chunk}</speak>"
+            for sentence in self._text_sentenizer_in_tags.text_to_sentences(
+                clean_text, max_sentence_chars
+            ):
+                yield f"<speak>{sentence}</speak>"
 
             return
 
-        if len(ssml_text) <= max_chars:
+        if len(ssml_text) <= max_sentence_chars:
             yield ssml_text
             return
 
-        yield from self._sentenize_ssml_into_chunks(ssml_text, max_chars)
+        yield from self._sentenize_ssml_into_sentences(ssml_text, max_sentence_chars)
 
-    def _sentenize_ssml_into_chunks(self, ssml_text: str, max_chars: int) -> Iterator[str]:  # noqa: C901
-        current_chunk = []
+    def _sentenize_ssml_into_sentences(  # noqa: C901
+        self, ssml_text: str, max_sentence_chars: int
+    ) -> Iterator[str]:
+        current_sentence = []
         text_len = 0
         opened_tags = []
 
@@ -202,61 +212,58 @@ class SsmlSentenizer(TextSentenizer):
                 continue
 
             if token.startswith("<"):
-                current_chunk.append(token)
+                current_sentence.append(token)
 
                 if token.endswith("/>"):
-                    # skip self-closing tags
                     continue
 
                 if not token.startswith("</"):
-                    # opening tag
                     tag_match = OPENING_TAG_RE.match(token)
                     if tag_match:
                         opened_tags.append(tag_match.group(1))
                 else:
-                    # delete already processed opened tag
                     tag_match = OPENING_TAG_RE.match(token.replace("/", ""))
                     if tag_match and opened_tags and opened_tags[-1] == tag_match.group(1):
                         opened_tags.pop()
             else:
-                if text_len + len(token) <= max_chars:
-                    current_chunk.append(token)
+                if text_len + len(token) <= max_sentence_chars:
+                    current_sentence.append(token)
                     text_len += len(token)
                 else:
                     prefix_tokens = [f"<{tag}>" for tag in opened_tags]
 
                     if text_len > 0:
-                        yield self._build_valid_chunk(current_chunk, opened_tags)
-                        current_chunk = []
+                        yield self._build_valid_sentence(current_sentence, opened_tags)
+                        current_sentence = []
                         text_len = 0
 
-                    if len(token) <= max_chars:
-                        current_chunk = prefix_tokens + [token]
+                    if len(token) <= max_sentence_chars:
+                        current_sentence = prefix_tokens + [token]
                         text_len = len(token)
                     else:
                         for sub_sentence in self._text_sentenizer_in_tags.text_to_sentences(
-                            token, max_chars
+                            token, max_sentence_chars
                         ):
-                            yield self._build_valid_chunk(
+                            yield self._build_valid_sentence(
                                 prefix_tokens + [sub_sentence], opened_tags
                             )
 
                         opened_tags.clear()
-                        current_chunk = prefix_tokens
+                        current_sentence = prefix_tokens
 
-        if current_chunk and text_len > 0:
-            yield self._build_valid_chunk(current_chunk, opened_tags)
+        if current_sentence and text_len > 0:
+            yield self._build_valid_sentence(current_sentence, opened_tags)
 
     @staticmethod
-    def _build_valid_chunk(tokens: list[str], opened_tags: list[str]) -> str:
-        """Assembles, cleans up, and wraps a chunk in valid SSML structure."""
-        raw_chunk = "".join(tokens)
+    def _build_valid_sentence(tokens: list[str], opened_tags: list[str]) -> str:
+        """Assembles, cleans up, and wraps a sentence in valid SSML structure."""
+        raw_sentence = "".join(tokens)
 
         if opened_tags:
             closing_str = "".join(f"</{tag}>" for tag in reversed(opened_tags))
-            raw_chunk += closing_str
+            raw_sentence += closing_str
 
-        cleaned = TAG_TRAILING_WHITESPACE_RE.sub("", raw_chunk)
+        cleaned = TAG_TRAILING_WHITESPACE_RE.sub("", raw_sentence)
         cleaned = EMPTY_XML_NODES_RE.sub("", cleaned)
         cleaned = cleaned.strip()
 
