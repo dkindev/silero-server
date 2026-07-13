@@ -65,7 +65,7 @@ class TTSConfig:
     sample_rate: int
     max_models: int
     max_concurrent_per_model: int
-    max_chunk_chars: int
+    max_sentence_chars: int
     models_dir: str
     models_yml_url: str
     models_yml_hash: str | None = None

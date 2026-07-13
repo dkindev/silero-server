@@ -43,10 +43,10 @@ max_models: 2
 # Env: TTS_MAX_CONCURRENT_PER_MODEL
 max_concurrent_per_model: 2
 
-# Maximum character count per text chunk for TTS processing.
-# CLI: --max_chunk_chars
-# Env: TTS_MAX_CHUNK_CHARS
-max_chunk_chars: 140
+# Maximum character count per text sentence for TTS processing.
+# CLI: --max_sentence_chars
+# Env: TTS_MAX_SENTENCE_CHARS
+max_sentence_chars: 140
 
 # Directory for downloaded Silero .pt model files.
 # CLI: --models_dir

@@ -169,7 +169,7 @@ class SileroTTSEngine:
         )
 
         sentences = text_sentenizer.text_to_sentences(
-            text=text, max_chars=self._config.max_chunk_chars
+            text=text, max_chars=self._config.max_sentence_chars
         )
 
         text_normalizer = (
@@ -229,11 +229,11 @@ class SileroTTSEngine:
                 try:
                     buffer = await future
 
-                    for result in self._generate_frames(
+                    for chunk in self._generate_chunks(
                         buffer=buffer,
                         sample_rate=cached_model.sample_rate,
                     ):
-                        yield result
+                        yield chunk
 
                     logger.debug("Audio frames has been sent.")
                 except asyncio.CancelledError:
@@ -316,7 +316,7 @@ class SileroTTSEngine:
             if not future.cancelled():
                 future.set_exception(e)
 
-    def _generate_frames(
+    def _generate_chunks(
         self,
         buffer: np.ndarray,
         sample_rate: int,

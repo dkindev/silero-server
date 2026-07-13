@@ -213,12 +213,12 @@ class Settings(BaseSettings):
     )
     """Maximum concurrent TTS requests per model."""
 
-    max_chunk_chars: int = Field(
+    max_sentence_chars: int = Field(
         default=140,
         ge=10,
-        description="Maximum character count per text chunk for TTS processing.",
+        description="Maximum character count per text sentence for TTS processing.",
     )
-    """Maximum character count per text chunk for TTS processing."""
+    """Maximum character count per text sentence for TTS processing."""
 
     data_yml_path: str = Field(
         default="data/data.yml",

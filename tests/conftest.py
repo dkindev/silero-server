@@ -39,7 +39,7 @@ def default_tts_config():
         sample_rate=48000,
         max_models=2,
         max_concurrent_per_model=2,
-        max_chunk_chars=48000,
+        max_sentence_chars=48000,
         models_dir=".models/silero",
         models_yml_url="https://example.com/models.yml",
         models_yml_hash="",
