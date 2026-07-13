@@ -33,11 +33,16 @@ A named, locale-specific voice backed by a model speaker. Each voice has a
 unique ID, belongs to exactly one locale and references one model.
 _Avoid_: Speaker (when meaning a named voice)
 
-**Chunk**:
+**Sentence**:
 A segment of text split from the input to stay within model length limits.
-Multiple chunks are synthesized separately and streamed as a single audio
+Multiple Sentences are synthesized separately and streamed as a single audio
 response.
 _Avoid_: Segment, fragment
+
+**Chunk**:
+Raw PCM audio bytes produced by the **TTS Engine** for streaming over the
+Wyoming protocol.
+_Avoid_: Audio packet, byte fragment, PCM segment
 
 **Text normalization**:
 The preprocessing step applied to text before TTS synthesis that ensures clean input by stripping whitespace and removing characters unavailable in the active model.
@@ -59,7 +64,9 @@ _Avoid_: Prompt (in code context), LLM instruction
 - A **Voice** belongs to exactly one **Locale**, references exactly one
   **Model**, and maps to exactly one **Speaker**
 - The **TTS Engine** loads a **Model**, selects a **Speaker**, splits text into
-  **Chunks**, applies **Text normalization** to each chunk, and outputs PCM audio
+  **Sentences**, applies **Text normalization** to each **Sentence**, synthesizes
+  each **Sentence** into one or more **Chunks**, and streams the **Chunks** over
+  the Wyoming protocol
 - The server advertises supported **Voices** over the **Wyoming**
   protocol
 - A **Voice** has zero or more **VoiceNormalizations** (per text format overrides)
@@ -71,11 +78,11 @@ _Avoid_: Prompt (in code context), LLM instruction
 > model `v3_en`, does the **TTS Engine** load the model immediately?"
 > **Domain expert:** "No — the **Model** is only loaded when the first synthesis
 > request arrives, unless its `warmup` is set to `true`."
-> **Dev:** "And if the text exceeds the **Chunk** limit, does each chunk produce
-> separate audio?"
-> **Domain expert:** "Each **Chunk** produces PCM audio. The **Wyoming** handler
-> streams them as a single AudioStart/AudioChunk/AudioStop sequence to the
-> client."
+> **Dev:** "And if the text exceeds the **Sentence** limit, does each sentence
+> produce separate audio?"
+> **Domain expert:** "Each **Sentence** is synthesized into **Chunks** of PCM
+> audio. The server streams all the **Chunks** back as one continuous audio
+> response over the Wyoming protocol."
 > **Dev:** "How does LLM-based **Text normalization** work for a specific voice?"
 > **Domain expert:** "You create a **VoiceNormalization** linking the voice to
 > `NormalizationType.LLM`, and optionally attach a **Promt** that tells the LLM
