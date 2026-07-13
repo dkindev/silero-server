@@ -53,7 +53,7 @@ def create_engine(
         frame_duration_ms=settings.frame_duration_ms,
         sample_rate=settings.sample_rate,
         max_models=settings.max_models,
-        max_concurrent_per_model=settings.max_concurrent_per_model,
+        max_concurrent_sentences_per_model=settings.max_concurrent_sentences_per_model,
         max_sentence_chars=settings.max_sentence_chars,
         models_dir=settings.models_dir,
         models_yml_url=settings.models_yml_url,

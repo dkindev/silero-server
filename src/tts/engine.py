@@ -607,7 +607,7 @@ class SileroTTSEngine:
         tts_model, sample_rates, example_text, speakers = await asyncio.to_thread(_sync_load)
 
         sample_rate = self._select_sample_rate(self._config.sample_rate, sample_rates)
-        semaphore = asyncio.Semaphore(self._config.max_concurrent_per_model)
+        semaphore = asyncio.Semaphore(self._config.max_concurrent_sentences_per_model)
         cached = CachedModel(tts_model, sample_rate, semaphore)
         self._cached_models[model.name] = cached
 

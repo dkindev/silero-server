@@ -38,10 +38,10 @@ sample_rate: 48000
 # Env: TTS_MAX_MODELS
 max_models: 2
 
-# Maximum concurrent TTS requests per model.
-# CLI: --max_concurrent_per_model
-# Env: TTS_MAX_CONCURRENT_PER_MODEL
-max_concurrent_per_model: 2
+# Maximum concurrent sentences per model.
+# CLI: --max_concurrent_sentences_per_model
+# Env: TTS_MAX_CONCURRENT_SENTENCES_PER_MODEL
+max_concurrent_sentences_per_model: 2
 
 # Maximum character count per text sentence for TTS processing.
 # CLI: --max_sentence_chars
@@ -75,9 +75,9 @@ normalization:
   # Env: TTS_NORMALIZATION__TIMEOUT
   timeout: 5
 
-  # Maximum concurrent chunks per request for normalization.
-  # Env: TTS_NORMALIZATION__MAX_CONCURRENT_CHUNKS_PER_REQUEST
-  max_concurrent_chunks_per_request: 2
+  # Maximum concurrent sentences per request for normalization.
+  # Env: TTS_NORMALIZATION__MAX_CONCURRENT_SENTENCES_PER_REQUEST
+  max_concurrent_sentences_per_request: 2
 
   # Plain text normalization settings.
   text:

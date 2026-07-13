@@ -64,7 +64,7 @@ class TTSConfig:
     frame_duration_ms: int
     sample_rate: int
     max_models: int
-    max_concurrent_per_model: int
+    max_concurrent_sentences_per_model: int
     max_sentence_chars: int
     models_dir: str
     models_yml_url: str

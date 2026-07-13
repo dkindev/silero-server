@@ -206,12 +206,12 @@ class Settings(BaseSettings):
     )
     """Maximum number of models to cache in memory. Oldest evicted when limit reached."""
 
-    max_concurrent_per_model: int = Field(
+    max_concurrent_sentences_per_model: int = Field(
         default=2,
         ge=1,
-        description="Maximum concurrent TTS requests per model.",
+        description="Maximum concurrent sentences per model.",
     )
-    """Maximum concurrent TTS requests per model."""
+    """Maximum concurrent sentences per model."""
 
     max_sentence_chars: int = Field(
         default=140,
