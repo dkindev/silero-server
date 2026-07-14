@@ -52,9 +52,9 @@ _Avoid_: Preprocessing, text cleaning, normalization (alone)
 A per-voice, per-text-format override of normalization settings. Links a voice to a specific normalization type (simple or LLM), optionally referencing a reusable prompt. When present, it overrides the server-wide default for that voice and text format combination.
 _Avoid_: Normalization override, voice normalisation config
 
-**Promt**:
-A reusable LLM prompt definition that specifies the instruction text and which LLM model to use for LLM-based text normalization. Note: "promt" is an intentional misspelling carried over from the original codebase — do not "correct" it to "prompt" in code or domain language.
-_Avoid_: Prompt (in code context), LLM instruction
+**Prompt**:
+A reusable LLM prompt definition that specifies the instruction text and which LLM model to use for LLM-based text normalization.
+_Avoid_: LLM instruction
 
 ## Relationships
 
@@ -70,7 +70,7 @@ _Avoid_: Prompt (in code context), LLM instruction
 - The server advertises supported **Voices** over the **Wyoming**
   protocol
 - A **Voice** has zero or more **VoiceNormalizations** (per text format overrides)
-- A **Promt** is referenced by zero or more **VoiceNormalizations** (shared LLM prompt definitions)
+- A **Prompt** is referenced by zero or more **VoiceNormalizations** (shared LLM prompt definitions)
 
 ## Example dialogue
 
@@ -85,7 +85,7 @@ _Avoid_: Prompt (in code context), LLM instruction
 > response over the Wyoming protocol."
 > **Dev:** "How does LLM-based **Text normalization** work for a specific voice?"
 > **Domain expert:** "You create a **VoiceNormalization** linking the voice to
-> `NormalizationType.LLM`, and optionally attach a **Promt** that tells the LLM
+> `NormalizationType.LLM`, and optionally attach a **Prompt** that tells the LLM
 > which model and instruction to use. If no **VoiceNormalization** exists for
 > that voice and text format, the server-wide default applies."
 
@@ -93,5 +93,3 @@ _Avoid_: Prompt (in code context), LLM instruction
 
 - "Model" was used to mean both a config entry and the loaded neural network —
   resolved: **Model** is a configuration concept
-- "Promt" is a misspelling of "prompt" — this is intentional, carried over from
-  the original codebase. Do not correct it in code or domain language.

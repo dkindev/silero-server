@@ -66,7 +66,7 @@ See `config.yml` for full configuration reference with all fields, CLI argument 
 
 ## Voice and Model Configuration
 
-Voice and model mappings are defined in `data/data.yml`. The file has two top-level sections: `models` and `promts`.
+Voice and model mappings are defined in `data/data.yml`. The file has two top-level sections: `models` and `prompts`.
 
 ### Models
 
@@ -125,10 +125,10 @@ Each voice entry has the following fields:
 | `model` | No | parent model | Explicit model reference (usually inherited from parent) |
 | `normalization.text.enabled` | No | `true` | Override text normalization enabled state |
 | `normalization.text.type` | No | `simple` | Override normalization type (`simple`, `llm`) |
-| `normalization.text.promt_id` | No | — | Reference a custom LLM prompt from `promts` |
+| `normalization.text.prompt_id` | No | — | Reference a custom LLM prompt from `prompts` |
 | `normalization.ssml.enabled` | No | `false` | Override SSML normalization enabled state |
 | `normalization.ssml.type` | No | `simple` | Override SSML normalization type |
-| `normalization.ssml.promt_id` | No | — | Reference a custom LLM prompt for SSML |
+| `normalization.ssml.prompt_id` | No | — | Reference a custom LLM prompt for SSML |
 
 Voices are identified by their computed ID: `{locale}-{model}-{name}` (e.g., `ru_RU-v5_5_ru-aidar`).
 
@@ -151,9 +151,9 @@ models:
               text:
                 enabled: true
                 type: llm
-                promt_id: ru_text
+                prompt_id: ru_text
 
-promts:
+prompts:
   - id: ru_text
     text: "Normalize Russian text for TTS..."
     model: qwen3.5:4b
@@ -161,13 +161,13 @@ promts:
 
 Without a `normalization` block on a voice, the server-wide defaults from `config.yml` apply.
 
-### Promts
+### Prompts
 
-Reusable LLM prompt definitions referenced by `promt_id` in voice normalization.
+Reusable LLM prompt definitions referenced by `prompt_id` in voice normalization.
 
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `id` | Yes | — | Unique identifier referenced by `promt_id` |
+| `id` | Yes | — | Unique identifier referenced by `prompt_id` |
 | `text` | Yes | — | LLM prompt instruction text |
 | `model` | Yes | — | LLM model name (e.g., `qwen3.5:4b`) |
 

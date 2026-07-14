@@ -90,7 +90,7 @@ normalization:
     type: simple
 
     # Per-locale LLM prompts for text normalization (config.yml only).
-    promts:
+    prompts:
       ru_RU:
         text: |
           Ты — инструмент подготовки текста для русского TTS.
@@ -113,7 +113,7 @@ normalization:
     type: simple
 
     # Per-locale LLM prompts for SSML normalization.
-    # promts:
+    # prompts:
     #   en_US:
     #     text: Normalize english text for TTS...
     #     model: qwen3.5:4b
