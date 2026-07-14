@@ -7,7 +7,7 @@ from src.tts.exceptions import TTSEngineError
 from src.tts.models import (
     Model,
     NormalizationType,
-    Promt,
+    Prompt,
     TextFormat,
     TTSConfig,
     TTSConfigModel,
@@ -95,46 +95,46 @@ class TestVoice:
             voice.speaker = "en_1"
 
 
-class TestPromt:
-    def test_promt_has_id_text_and_model_fields(self):
-        """Promt dataclass has id, text, and model fields."""
-        promt = Promt(id="p1", text="Say hello nicely", model="gpt-4")
-        assert promt.id == "p1"
-        assert promt.text == "Say hello nicely"
-        assert promt.model == "gpt-4"
+class TestPrompt:
+    def test_prompt_has_id_text_and_model_fields(self):
+        """Prompt dataclass has id, text, and model fields."""
+        prompt = Prompt(id="p1", text="Say hello nicely", model="gpt-4")
+        assert prompt.id == "p1"
+        assert prompt.text == "Say hello nicely"
+        assert prompt.model == "gpt-4"
 
-    def test_promt_is_frozen(self):
-        """Promt dataclass is immutable (frozen)."""
-        promt = Promt(id="p1", text="Say hello nicely", model="gpt-4")
+    def test_prompt_is_frozen(self):
+        """Prompt dataclass is immutable (frozen)."""
+        prompt = Prompt(id="p1", text="Say hello nicely", model="gpt-4")
         with pytest.raises(FrozenInstanceError):
-            promt.text = "Changed"
+            prompt.text = "Changed"
 
 
 class TestVoiceNormalization:
     def test_voice_normalization_has_all_fields(self):
-        """VoiceNormalization dataclass has voice_id, text_format, type, enabled, promt_id."""
+        """VoiceNormalization dataclass has voice_id, text_format, type, enabled, prompt_id."""
         vn = VoiceNormalization(
             voice_id="v1",
             text_format=TextFormat.TEXT,
             type=NormalizationType.LLM,
             enabled=True,
-            promt_id="p1",
+            prompt_id="p1",
         )
         assert vn.voice_id == "v1"
         assert vn.text_format == TextFormat.TEXT
         assert vn.type == NormalizationType.LLM
         assert vn.enabled is True
-        assert vn.promt_id == "p1"
+        assert vn.prompt_id == "p1"
 
-    def test_voice_normalization_promt_id_defaults_to_none(self):
-        """VoiceNormalization.promt_id defaults to None."""
+    def test_voice_normalization_prompt_id_defaults_to_none(self):
+        """VoiceNormalization.prompt_id defaults to None."""
         vn = VoiceNormalization(
             voice_id="v1",
             text_format=TextFormat.TEXT,
             type=NormalizationType.SIMPLE,
             enabled=False,
         )
-        assert vn.promt_id is None
+        assert vn.prompt_id is None
 
     def test_voice_normalization_is_frozen(self):
         """VoiceNormalization dataclass is immutable (frozen)."""

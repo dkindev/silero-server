@@ -4,7 +4,7 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class Promt:
+class Prompt:
     id: str
     text: str
     model: str
@@ -28,7 +28,7 @@ class VoiceNormalization:
     text_format: TextFormat
     type: NormalizationType
     enabled: bool
-    promt_id: str | None = None
+    prompt_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -53,7 +53,7 @@ class Voice:
 class TTSConfigModel:
     models: list[Model]
     voices: list[Voice]
-    promts: list[Promt] | None = None
+    prompts: list[Prompt] | None = None
     voice_normalizations: list[VoiceNormalization] | None = None
 
 
@@ -84,7 +84,7 @@ class OpenAiNormalizationConfig:
     timeout: float
     max_concurrent_sentences_per_request: int
     default_model: str
-    default_promt: str
+    default_prompt: str
 
 
 @dataclass(frozen=True)
