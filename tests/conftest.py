@@ -93,5 +93,5 @@ def mock_storage():
     """Mock SileroTTSConfigStorage returning None for all lookups."""
     storage = unittest.mock.MagicMock()
     storage.get_voice_normalization.return_value = None
-    storage.get_promt.return_value = None
+    storage.get_prompt.return_value = None
     return storage

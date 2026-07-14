@@ -44,7 +44,7 @@ class TorchSettings(BaseModel):
     """Flush denormal floats for performance (torch.set_flush_denormal)."""
 
 
-class NormalizationPromt(BaseModel):
+class NormalizationPrompt(BaseModel):
     text: str = Field(default="", description="System prompt for normalization")
     """System prompt for normalization"""
 
@@ -61,7 +61,7 @@ class BaseNormalizationSettings(BaseModel):
     )
     """Normalizer type (simple, llm)"""
 
-    promts: dict[str, NormalizationPromt] | None = Field(
+    prompts: dict[str, NormalizationPrompt] | None = Field(
         default_factory=dict, description="A dictionary of prompts indexed by locale"
     )
     """A dictionary of prompts indexed by locale"""

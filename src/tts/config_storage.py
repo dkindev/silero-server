@@ -8,7 +8,7 @@ from loguru import logger
 from src.tts.models import (
     Model,
     NormalizationType,
-    Promt,
+    Prompt,
     TextFormat,
     TTSConfigModel,
     Voice,
@@ -34,7 +34,7 @@ class SileroTTSConfigStorage(ABC):
         ...
 
     @abstractmethod
-    def get_promt(self, promt_id: str) -> Promt | None:
+    def get_prompt(self, prompt_id: str) -> Prompt | None:
         ...
 
     @abstractmethod
@@ -55,8 +55,8 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
 
         self._models: dict[str, Model] = {m.name: m for m in config_model.models}
         self._voices_by_id: dict[str, Voice] = {v.id: v for v in config_model.voices}
-        self._promts: dict[str, Promt] = (
-            {p.id: p for p in config_model.promts} if config_model.promts else {}
+        self._prompts: dict[str, Prompt] = (
+            {p.id: p for p in config_model.prompts} if config_model.prompts else {}
         )
         self._voice_normalizations: dict[str, VoiceNormalization] = (
             {
@@ -113,13 +113,13 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
                         voice_entry, voice_id, voice_normalizations_list
                     )
 
-        promts_list = self._parse_promts(data)
+        prompts_list = self._parse_prompts(data)
 
         logger.debug("Configuration loaded.")
         return TTSConfigModel(
             models=models_list,
             voices=voices_list,
-            promts=promts_list if promts_list else None,
+            prompts=prompts_list if prompts_list else None,
             voice_normalizations=voice_normalizations_list if voice_normalizations_list else None,
         )
 
@@ -143,27 +143,27 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
                 norm_type = NormalizationType(type_str)
             except ValueError:
                 norm_type = NormalizationType.SIMPLE
-            promt_id = norm_data.get("promt_id")
+            prompt_id = norm_data.get("prompt_id")
             vn = VoiceNormalization(
                 voice_id=voice_id,
                 text_format=text_format,
                 type=norm_type,
                 enabled=enabled,
-                promt_id=promt_id,
+                prompt_id=prompt_id,
             )
             voice_normalizations_list.append(vn)
 
     @staticmethod
-    def _parse_promts(data: dict) -> list[Promt]:
-        promts_list: list[Promt] = []
-        for promt_entry in data.get("promts", []):
-            promt = Promt(
-                id=promt_entry["id"],
-                text=promt_entry["text"],
-                model=promt_entry["model"],
+    def _parse_prompts(data: dict) -> list[Prompt]:
+        prompts_list: list[Prompt] = []
+        for prompt_entry in data.get("prompts", []):
+            prompt = Prompt(
+                id=prompt_entry["id"],
+                text=prompt_entry["text"],
+                model=prompt_entry["model"],
             )
-            promts_list.append(promt)
-        return promts_list
+            prompts_list.append(prompt)
+        return prompts_list
 
     @staticmethod
     def _filter_enabled(config: TTSConfigModel) -> TTSConfigModel:
@@ -175,7 +175,7 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
         return TTSConfigModel(
             models=enabled_models,
             voices=filtered_voices,
-            promts=config.promts,
+            prompts=config.prompts,
             voice_normalizations=config.voice_normalizations,
         )
 
@@ -191,8 +191,8 @@ class SileroTTSYamlConfigStorage(SileroTTSConfigStorage):
     def get_models(self) -> list[Model]:
         return list(self._models.values())
 
-    def get_promt(self, promt_id: str) -> Promt | None:
-        return self._promts.get(promt_id)
+    def get_prompt(self, prompt_id: str) -> Prompt | None:
+        return self._prompts.get(prompt_id)
 
     def get_voice_normalization(
         self, voice_id: str, text_format: TextFormat

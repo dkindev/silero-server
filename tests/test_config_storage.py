@@ -588,15 +588,15 @@ class TestDisabledModel:
         assert storage.get_model("v5_5_ru") is None
 
 
-class TestGetPromt:
-    """Tests for get_promt() method."""
+class TestGetPrompt:
+    """Tests for get_prompt() method."""
 
-    def test_get_promt_returns_promt(self, tmp_path):
-        """get_promt should return Promt for the given promt_id."""
+    def test_get_prompt_returns_prompt(self, tmp_path):
+        """get_prompt should return Prompt for the given prompt_id."""
         config_yml = tmp_path / "config.yml"
         config_yml.write_text(
             """
-promts:
+prompts:
   - id: p1
     text: "Say hello nicely"
     model: gpt-4
@@ -605,18 +605,18 @@ voices: []
 """
         )
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        promt = storage.get_promt("p1")
-        assert promt is not None
-        assert promt.id == "p1"
-        assert promt.text == "Say hello nicely"
-        assert promt.model == "gpt-4"
+        prompt = storage.get_prompt("p1")
+        assert prompt is not None
+        assert prompt.id == "p1"
+        assert prompt.text == "Say hello nicely"
+        assert prompt.model == "gpt-4"
 
-    def test_get_promt_returns_none_for_missing_id(self, tmp_path):
-        """get_promt should return None for unknown promt_id."""
+    def test_get_prompt_returns_none_for_missing_id(self, tmp_path):
+        """get_prompt should return None for unknown prompt_id."""
         config_yml = tmp_path / "config.yml"
         config_yml.write_text(
             """
-promts:
+prompts:
   - id: p1
     text: "Say hello nicely"
     model: gpt-4
@@ -625,23 +625,23 @@ voices: []
 """
         )
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        assert storage.get_promt("unknown") is None
+        assert storage.get_prompt("unknown") is None
 
-    def test_get_promt_from_empty_promts(self, tmp_path):
-        """get_promt should return None when promts list is empty."""
+    def test_get_prompt_from_empty_prompts(self, tmp_path):
+        """get_prompt should return None when prompts list is empty."""
         config_yml = tmp_path / "config.yml"
         config_yml.write_text(
             """
-promts: []
+prompts: []
 models: {}
 voices: []
 """
         )
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        assert storage.get_promt("p1") is None
+        assert storage.get_prompt("p1") is None
 
-    def test_get_promt_from_missing_promts_key(self, tmp_path):
-        """get_promt should return None when promts key is absent."""
+    def test_get_prompt_from_missing_prompts_key(self, tmp_path):
+        """get_prompt should return None when prompts key is absent."""
         config_yml = tmp_path / "config.yml"
         config_yml.write_text(
             """
@@ -650,7 +650,7 @@ voices: []
 """
         )
         storage = SileroTTSYamlConfigStorage(str(config_yml))
-        assert storage.get_promt("p1") is None
+        assert storage.get_prompt("p1") is None
 
 
 class TestGetVoiceNormalization:
@@ -672,7 +672,7 @@ models:
               text:
                 enabled: true
                 type: llm
-                promt_id: p1
+                prompt_id: p1
 """
         )
         storage = SileroTTSYamlConfigStorage(str(config_yml))
@@ -682,7 +682,7 @@ models:
         assert vn.text_format == TextFormat.TEXT
         assert vn.type == NormalizationType.LLM
         assert vn.enabled is True
-        assert vn.promt_id == "p1"
+        assert vn.prompt_id == "p1"
 
     def test_get_voice_normalization_returns_none_for_unknown_voice(self, tmp_path):
         """get_voice_normalization returns None for unknown voice_id."""
