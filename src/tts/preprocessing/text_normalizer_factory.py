@@ -38,33 +38,33 @@ class TextNormalizerFactory:
             if self._openai_client is None:
                 return None
 
-            promt = (
-                self._storage.get_promt(promt_id=voice_normalization.promt_id)
+            prompt = (
+                self._storage.get_prompt(prompt_id=voice_normalization.prompt_id)
                 if voice_normalization is not None
                 else None
             )
 
-            if promt is not None:
-                promt_text = promt.text
-                promt_model = promt.model
+            if prompt is not None:
+                prompt_text = prompt.text
+                prompt_model = prompt.model
             else:
-                if settings.promts is None:
+                if settings.prompts is None:
                     return None
 
-                default_promt = settings.promts.get(voice.locale)
-                if default_promt is None:
+                default_prompt = settings.prompts.get(voice.locale)
+                if default_prompt is None:
                     return None
 
-                promt_text = default_promt.text
-                promt_model = default_promt.model
+                prompt_text = default_prompt.text
+                prompt_model = default_prompt.model
 
             return OpenAiTextNormalizer(
                 client=self._openai_client,
                 config=OpenAiNormalizationConfig(
                     timeout=self._settings.timeout,
                     max_concurrent_sentences_per_request=self._settings.max_concurrent_sentences_per_request,
-                    default_model=promt_model,
-                    default_promt=promt_text,
+                    default_model=prompt_model,
+                    default_prompt=prompt_text,
                 ),
             )
 

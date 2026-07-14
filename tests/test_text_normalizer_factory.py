@@ -7,7 +7,7 @@ from src.config import (
     SsmlNormalizationSettings,
     TextNormalizationSettings,
 )
-from src.tts.models import NormalizationType, Promt, TextFormat, VoiceNormalization
+from src.tts.models import NormalizationType, Prompt, TextFormat, VoiceNormalization
 from src.tts.preprocessing import (
     OpenAiTextNormalizer,
     PlainTextNormalizer,
@@ -49,11 +49,11 @@ class TestTextNormalizerFactory:
             text_format=TextFormat.TEXT,
             type=NormalizationType.LLM,
             enabled=True,
-            promt_id="promt1",
+            prompt_id="prompt1",
         )
         mock_storage.get_voice_normalization.return_value = vn
-        promt = Promt(id="promt1", text="normalize", model="gpt-4o-mini")
-        mock_storage.get_promt.return_value = promt
+        prompt = Prompt(id="prompt1", text="normalize", model="gpt-4o-mini")
+        mock_storage.get_prompt.return_value = prompt
 
         factory = TextNormalizerFactory(
             openai_client=mock_openai_client,
@@ -70,13 +70,13 @@ class TestTextNormalizerFactory:
             text_format=TextFormat.TEXT,
             type=NormalizationType.LLM,
             enabled=True,
-            promt_id="missing",
+            prompt_id="missing",
         )
         mock_storage.get_voice_normalization.return_value = vn
-        mock_storage.get_promt.return_value = None
+        mock_storage.get_prompt.return_value = None
 
         settings = NormalizationSettings(
-            text=TextNormalizationSettings(promts={}),
+            text=TextNormalizationSettings(prompts={}),
         )
         factory = TextNormalizerFactory(
             openai_client=mock_openai_client, settings=settings, storage=mock_storage
@@ -92,7 +92,7 @@ class TestTextNormalizerFactory:
             text_format=TextFormat.TEXT,
             type=NormalizationType.LLM,
             enabled=True,
-            promt_id="promt1",
+            prompt_id="prompt1",
         )
         mock_storage.get_voice_normalization.return_value = vn
         factory = TextNormalizerFactory(
@@ -137,11 +137,11 @@ class TestTextNormalizerFactory:
         result = factory.create_text_normalizer(voice=voice, format=TextFormat.SSML)
         assert result is None
 
-    def test_llm_with_none_promts_returns_none(self, mock_storage):
+    def test_llm_with_none_prompts_returns_none(self, mock_storage):
         settings = NormalizationSettings(
             text=TextNormalizationSettings(
                 type=NormalizationType.LLM,
-                promts=None,
+                prompts=None,
             ),
         )
         factory = TextNormalizerFactory(openai_client=None, settings=settings, storage=mock_storage)
@@ -222,11 +222,11 @@ class TestTextNormalizerFactoryVoiceNormalization:
             text_format=TextFormat.TEXT,
             type=NormalizationType.LLM,
             enabled=True,
-            promt_id="promt1",
+            prompt_id="prompt1",
         )
         mock_storage.get_voice_normalization.return_value = vn
-        promt = Promt(id="promt1", text="normalize", model="gpt-4o-mini")
-        mock_storage.get_promt.return_value = promt
+        prompt = Prompt(id="prompt1", text="normalize", model="gpt-4o-mini")
+        mock_storage.get_prompt.return_value = prompt
         factory = TextNormalizerFactory(
             openai_client=mock_openai_client,
             settings=default_normalization_settings,

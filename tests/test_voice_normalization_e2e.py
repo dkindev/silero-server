@@ -20,9 +20,9 @@ models:
               text:
                 enabled: true
                 type: llm
-                promt_id: ru_text
+                prompt_id: ru_text
 
-promts:
+prompts:
   - id: ru_text
     text: "Normalize Russian text"
     model: qwen3.5:4b
@@ -40,9 +40,9 @@ models:
               text:
                 enabled: false
                 type: llm
-                promt_id: ru_text
+                prompt_id: ru_text
 
-promts:
+prompts:
   - id: ru_text
     text: "Normalize Russian text"
     model: qwen3.5:4b

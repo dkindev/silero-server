@@ -17,7 +17,7 @@ class TestOpenAiTextNormalizer:
             timeout=10.0,
             max_concurrent_sentences_per_request=4,
             default_model="gpt-4o-mini",
-            default_promt="Normalize text",
+            default_prompt="Normalize text",
         )
         normalizer = OpenAiTextNormalizer(client=mock_openai_client, config=config)
 
@@ -38,7 +38,7 @@ class TestOpenAiTextNormalizer:
             timeout=10.0,
             max_concurrent_sentences_per_request=4,
             default_model="gpt-4o-mini",
-            default_promt="Normalize text",
+            default_prompt="Normalize text",
         )
         normalizer = OpenAiTextNormalizer(client=mock_openai_client, config=config)
 
@@ -75,7 +75,7 @@ class TestOpenAiTextNormalizer:
             timeout=10.0,
             max_concurrent_sentences_per_request=4,
             default_model="gpt-4o-mini",
-            default_promt="Normalize text",
+            default_prompt="Normalize text",
         )
         normalizer = OpenAiTextNormalizer(client=mock_openai_client, config=config)
 
@@ -99,7 +99,7 @@ class TestOpenAiTextNormalizer:
             timeout=10.0,
             max_concurrent_sentences_per_request=4,
             default_model="gpt-4o-mini",
-            default_promt="Normalize text",
+            default_prompt="Normalize text",
         )
         normalizer = OpenAiTextNormalizer(client=mock_openai_client, config=config)
 
@@ -121,7 +121,7 @@ class TestOpenAiTextNormalizer:
             timeout=-1,
             max_concurrent_sentences_per_request=4,
             default_model="gpt-4o-mini",
-            default_promt="Normalize text",
+            default_prompt="Normalize text",
         )
         with pytest.raises(ValueError, match="timeout cannot be negative"):
             OpenAiTextNormalizer(client=mock_openai_client, config=config)
@@ -131,7 +131,7 @@ class TestOpenAiTextNormalizer:
             timeout=10.0,
             max_concurrent_sentences_per_request=0,
             default_model="gpt-4o-mini",
-            default_promt="Normalize text",
+            default_prompt="Normalize text",
         )
         with pytest.raises(
             ValueError, match="max_concurrent_sentences_per_request cannot be negative or zero"
@@ -145,7 +145,7 @@ class TestOpenAiTextNormalizer:
             timeout=10.0,
             max_concurrent_sentences_per_request=4,
             default_model="gpt-4o-mini",
-            default_promt="Normalize text",
+            default_prompt="Normalize text",
         )
         normalizer = OpenAiTextNormalizer(client=mock_openai_client, config=config)
 
@@ -164,7 +164,7 @@ class TestOpenAiTextNormalizer:
             timeout=10.0,
             max_concurrent_sentences_per_request=max_concurrent,
             default_model="gpt-4o-mini",
-            default_promt="Normalize text",
+            default_prompt="Normalize text",
         )
         normalizer = OpenAiTextNormalizer(client=mock_openai_client, config=config)
 
@@ -203,7 +203,7 @@ class TestOpenAiTextNormalizer:
             timeout=10.0,
             max_concurrent_sentences_per_request=4,
             default_model="gpt-4o-mini",
-            default_promt="Normalize text",
+            default_prompt="Normalize text",
         )
         normalizer = OpenAiTextNormalizer(client=mock_openai_client, config=config)
 

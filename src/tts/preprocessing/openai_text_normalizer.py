@@ -111,7 +111,7 @@ class OpenAiTextNormalizer(TextNormalizer):
             response = await self._client.chat.completions.create(
                 model=self._options.default_model,
                 messages=[
-                    {"role": "system", "content": self._options.default_promt},
+                    {"role": "system", "content": self._options.default_prompt},
                     {"role": "user", "content": text},
                 ],
                 temperature=0.0,
