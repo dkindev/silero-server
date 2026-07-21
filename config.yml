@@ -18,12 +18,12 @@ zeroconf: silero-tts
 # Env: TTS_STREAMING
 streaming: true
 
-# Timeout for inference of one sentence
+# Timeout for inference of one sentence in seconds.
 # CLI: --inference_timeout
 # Env: TTS_INFERENCE_TIMEOUT
 inference_timeout: 5
 
-# Frame duration in milliseconds
+# Frame duration in milliseconds.
 # CLI: --frame_duration_ms
 # Env: TTS_FRAME_DURATION_MS
 frame_duration_ms: 50
@@ -63,7 +63,7 @@ data_yml_path: data/data.yml
 # Env: TTS_MODELS_YML_URL
 models_yml_url: https://raw.githubusercontent.com/snakers4/silero-models/refs/heads/master/models.yml
 
-# SHA-256 hash of the Silero models.yml file for integrity verification.
+# SHA-256 hash of the Silero models.yml file for integrity verification. Set empty to skip validation.
 # CLI: --models_yml_hash
 # Env: TTS_MODELS_YML_HASH
 models_yml_hash: ""
@@ -71,7 +71,7 @@ models_yml_hash: ""
 # Text normalization settings.
 # Env only (not available via CLI).
 normalization:
-  # Timeout for input text normalization.
+  # Timeout for input text normalization in seconds.
   # Env: TTS_NORMALIZATION__TIMEOUT
   timeout: 5
 
@@ -119,7 +119,7 @@ normalization:
     #     model: qwen3.5:4b
 
 # PyTorch computing engine settings.
-# Note: num_threads x num_interop_threads <= physical cores
+# Note: num_threads x num_interop_threads <= physical cores.
 torch:
   # Device to run TTS model on (cpu, cuda, xpu).
   # CLI: --torch_device

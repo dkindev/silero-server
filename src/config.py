@@ -45,51 +45,51 @@ class TorchSettings(BaseModel):
 
 
 class NormalizationPrompt(BaseModel):
-    text: str = Field(default="", description="System prompt for normalization")
-    """System prompt for normalization"""
+    text: str = Field(default="", description="System prompt for normalization.")
+    """System prompt for normalization."""
 
     model: str = Field(
         default="",
-        description="System LLM model name for normalization",
+        description="System LLM model name for normalization.",
     )
-    """System LLM model name for normalization"""
+    """System LLM model name for normalization."""
 
 
 class BaseNormalizationSettings(BaseModel):
     type: NormalizationType = Field(
-        default=NormalizationType.SIMPLE, description="Normalizer type (simple, llm)"
+        default=NormalizationType.SIMPLE, description="Normalizer type (simple, llm)."
     )
-    """Normalizer type (simple, llm)"""
+    """Normalizer type (simple, llm)."""
 
     prompts: dict[str, NormalizationPrompt] | None = Field(
-        default_factory=dict, description="A dictionary of prompts indexed by locale"
+        default_factory=dict, description="A dictionary of prompts indexed by locale."
     )
-    """A dictionary of prompts indexed by locale"""
+    """A dictionary of prompts indexed by locale."""
 
 
 class TextNormalizationSettings(BaseNormalizationSettings):
     enabled: bool = Field(
         default=True,
-        description="Enable plain text normalization",
+        description="Enable plain text normalization.",
     )
-    """Enable plain text normalization"""
+    """Enable plain text normalization."""
 
 
 class SsmlNormalizationSettings(BaseNormalizationSettings):
     enabled: bool = Field(
         default=False,
-        description="Enable SSML markup normalization",
+        description="Enable SSML markup normalization.",
     )
-    """Enable SSML markup normalization"""
+    """Enable SSML markup normalization."""
 
 
 class NormalizationSettings(BaseModel):
     timeout: float = Field(
         default=5,
         ge=1,
-        description="Timeout for input text normalization",
+        description="Timeout for input text normalization in seconds.",
     )
-    """Timeout for input text normalization"""
+    """Timeout for input text normalization in seconds."""
 
     max_concurrent_sentences_per_request: int = Field(
         default=2,
@@ -105,15 +105,15 @@ class NormalizationSettings(BaseModel):
 class OpenAiSettings(BaseModel):
     base_url: str = Field(
         default="",
-        description="Base URL for OpenAI-compatible API",
+        description="Base URL for OpenAI-compatible API.",
     )
-    """Base URL for OpenAI-compatible API"""
+    """Base URL for OpenAI-compatible API."""
 
     api_key: str = Field(
         default="",
-        description="API key for OpenAI-compatible API",
+        description="API key for OpenAI-compatible API.",
     )
-    """API key for OpenAI-compatible API"""
+    """API key for OpenAI-compatible API."""
 
     @model_validator(mode="after")
     def fallback_to_standard_openai_envs(self) -> "OpenAiSettings":
@@ -175,9 +175,9 @@ class Settings(BaseSettings):
     inference_timeout: float = Field(
         default=5,
         ge=1,
-        description="Timeout for inference of one sentence",
+        description="Timeout for inference of one sentence in seconds.",
     )
-    """Timeout for inference of one sentence"""
+    """Timeout for inference of one sentence in seconds."""
 
     frame_duration_ms: float = Field(
         default=50,
