@@ -38,6 +38,7 @@ def default_tts_config():
         frame_duration_ms=50,
         sample_rate=48000,
         max_models=2,
+        cache_half_life=60,
         max_concurrent_sentences_per_model=2,
         max_sentence_chars=48000,
         models_dir=".models/silero",

@@ -202,9 +202,16 @@ class Settings(BaseSettings):
     max_models: int = Field(
         default=2,
         ge=1,
-        description="Maximum number of models to cache in memory. Oldest evicted when limit reached.",
+        description="Maximum number of models to cache in memory. Model with the lowest RPS rating is evicted when limit reached.",
     )
-    """Maximum number of models to cache in memory. Oldest evicted when limit reached."""
+    """Maximum number of models to cache in memory. Model with the lowest RPS rating is evicted when limit reached."""
+
+    cache_half_life: int = Field(
+        default=60,
+        ge=1,
+        description="Period of downtime in seconds during which the model's RPS will be halved.",
+    )
+    """Period of downtime in seconds during which the model's RPS will be halved."""
 
     max_concurrent_sentences_per_model: int = Field(
         default=2,

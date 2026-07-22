@@ -35,6 +35,7 @@ class TestSileroTTSEngineInit:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -66,7 +67,8 @@ class TestSileroTTSEngineInit:
             assert r.bytes_per_sample == BYTES_PER_SAMPLE
             assert r.channels == CHANNELS
 
-    def test_init_accepts_config_path_and_loads_config(self, tmp_path, default_tts_config):
+    @pytest.mark.asyncio
+    async def test_init_accepts_config_path_and_loads_config(self, tmp_path, default_tts_config):
         """Engine should accept config_path string and load config internally."""
         config_yml = tmp_path / "config.yml"
         config_yml.write_text(
@@ -94,7 +96,8 @@ models:
         assert engine is not None
         assert engine.get_storage().get_voice("ru_RU-v5_5_ru-aidar") is not None
 
-    def test_init_caches_locales(self, tmp_path, default_tts_config):
+    @pytest.mark.asyncio
+    async def test_init_caches_locales(self, tmp_path, default_tts_config):
         """Engine should cache voices at init time."""
         config_path = make_config_file(
             tmp_path,
@@ -135,7 +138,8 @@ models:
 class TestGetInputTypes:
     """Tests for get_input_types() method."""
 
-    def test_get_input_types_returns_tuple(self, tmp_path, default_tts_config):
+    @pytest.mark.asyncio
+    async def test_get_input_types_returns_tuple(self, tmp_path, default_tts_config):
         """get_input_types should return a tuple."""
         config_path = make_config_file(tmp_path, models={})
         storage = SileroTTSYamlConfigStorage(config_path)
@@ -149,7 +153,8 @@ class TestGetInputTypes:
         result = engine.get_supported_text_formats()
         assert isinstance(result, tuple)
 
-    def test_get_input_types_includes_text_and_ssml(self, tmp_path, default_tts_config):
+    @pytest.mark.asyncio
+    async def test_get_input_types_includes_text_and_ssml(self, tmp_path, default_tts_config):
         """get_input_types should include TEXT and SSML."""
         config_path = make_config_file(tmp_path, models={})
         storage = SileroTTSYamlConfigStorage(config_path)
@@ -257,6 +262,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -298,6 +304,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -351,6 +358,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -397,6 +405,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=8000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -429,6 +438,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=24000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -474,6 +484,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=44100,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -533,6 +544,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -565,6 +577,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -617,6 +630,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=str(models_dir),
@@ -660,6 +674,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -709,6 +724,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -742,6 +758,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -794,6 +811,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=models_dir,
@@ -851,6 +869,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=str(models_dir),
@@ -894,6 +913,7 @@ class TestSynthesizeValidation:
             frame_duration_ms=50,
             sample_rate=48000,
             max_models=2,
+            cache_half_life=60,
             max_concurrent_sentences_per_model=2,
             max_sentence_chars=48000,
             models_dir=str(models_dir),

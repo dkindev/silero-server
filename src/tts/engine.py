@@ -3,7 +3,6 @@ import gc
 import hashlib
 import os
 import urllib.request
-from collections import OrderedDict
 from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass
 from typing import Any
@@ -13,6 +12,7 @@ import torch
 import yaml
 from loguru import logger
 
+from src.tts.cache import ExponentialDecayCache
 from src.tts.config_storage import SileroTTSConfigStorage
 from src.tts.exceptions import TTSEngineError
 from src.tts.models import Model, NormalizationOptions, TextFormat, TTSConfig, TTSResult, Voice
@@ -43,8 +43,11 @@ class SileroTTSEngine:
     ):
         self._config = config
         self._storage = storage
-        # Using OrderedDict instead of regular dict for LRU logic
-        self._cached_models: OrderedDict[str, CachedModel] = OrderedDict()
+        self._cache = ExponentialDecayCache(
+            capacity=self._config.max_models,
+            half_life_seconds=self._config.cache_half_life,
+            on_evict=self._clear_cached_models,
+        )
         self._device = self._resolve_device(config.device)
         self._lock: asyncio.Lock | None = None
         self._text_sentenizer_factory = text_sentenizer_factory
@@ -97,11 +100,11 @@ class SileroTTSEngine:
 
     async def warmup(self):
         """Warm up the models."""
-        if self._cached_models:
+        if self._cache:
             return
 
         async with self._get_lock():
-            if self._cached_models:
+            if self._cache:
                 return
 
             logger.info("Warming up engine")
@@ -369,44 +372,30 @@ class SileroTTSEngine:
 
     async def shutdown(self):
         """Clears the model cache and forces VRAM to be released."""
-        if not self._cached_models:
+        if not self._cache:
             return
 
         async with self._get_lock():
-            if not self._cached_models:
+            if not self._cache:
                 return
 
             logger.info(
                 "Cleaning engine resources. Models count: {count}",
-                count=len(self._cached_models),
+                count=len(self._cache),
             )
 
-            while self._cached_models:
-                _, evicted_model = self._cached_models.popitem()
-                self._clear_cached_model(evicted_model)
-                del evicted_model
-
-            gc.collect()
-            self._clear_torch_cache_on_device(self._device)
+            await self._cache.clear()
 
             logger.info("Engine resources have been cleared")
 
     async def _get_tts_model(self, model: Model) -> CachedModel:
         async with self._get_lock():
-            if model.name in self._cached_models:
-                logger.debug("Model '{name}' found in cache", name=model.name)
-
-                # The model is in the cache: move it to the end (it is now the most recent)
-                self._cached_models.move_to_end(model.name)
-                cached = self._cached_models[model.name]
-            else:
+            cached = self._cache.get(model.name)
+            if cached is None:
                 logger.debug("Model '{name}' not found in cache", name=model.name)
-
-                # The model is not in the cache: check the limit and download the old one if necessary
-                self._evict_oldest_model()
-
-                # Load and warm up the model
                 cached = await self._warmup_tts_model(model)
+            else:
+                logger.debug("Model '{name}' found in cache", name=model.name)
 
         return cached
 
@@ -415,20 +404,28 @@ class SileroTTSEngine:
             self._lock = asyncio.Lock()
         return self._lock
 
-    def _evict_oldest_model(self):
-        """Internal method for removing the least used model from memory."""
-        if len(self._cached_models) >= self._config.max_models:
-            # delete the first model (the oldest)
-            model_name, evicted_model = self._cached_models.popitem(last=False)
+    def _clear_cached_models(self, items: list[tuple[str, CachedModel]]):
+        for item in items:
+            model_name = item[0]
+            cached_model = item[1]
 
-            logger.debug("Removing model '{model}' from cache", model=model_name)
+            logger.debug("Freeing up model '{model}' resources", model=model_name)
 
-            self._clear_cached_model(evicted_model)
-            del evicted_model
-            gc.collect()
-            self._clear_torch_cache_on_device(self._device)
+            del cached_model.model
+            del cached_model.semaphore
+            del cached_model
+            del item
 
-            logger.debug("Model '{model}' was removed from cache", model=model_name)
+            logger.debug("Model '{model}' resources was removed", model=model_name)
+
+        gc.collect()
+
+        if self._device.type == "cuda":
+            torch.cuda.empty_cache()
+        elif self._device.type == "mps":
+            torch.mps.empty_cache()
+        elif self._device.type == "xpu":
+            torch.xpu.empty_cache()
 
     def _resolve_tts_model(self, model: Model) -> tuple[str, list[int], str, dict[str, str]]:
         """Return the local path, sample rates, example text and speaker examples.
@@ -573,7 +570,7 @@ class SileroTTSEngine:
                 f"Error verifying hash of model configuration file loaded at '{models_yml_url}'"
             )
 
-    async def _load_tts_model_async(self, model: Model) -> tuple[CachedModel, str, dict[str, str]]:
+    async def _load_tts_model(self, model: Model) -> tuple[CachedModel, str, dict[str, str]]:
         """Loads the model into the cache and returns the cached model, sample text, and speaker samples."""
 
         # Move blocking disk reading and heavy PyTorch initialization to a separate thread
@@ -609,7 +606,8 @@ class SileroTTSEngine:
         sample_rate = self._select_sample_rate(self._config.sample_rate, sample_rates)
         semaphore = asyncio.Semaphore(self._config.max_concurrent_sentences_per_model)
         cached = CachedModel(tts_model, sample_rate, semaphore)
-        self._cached_models[model.name] = cached
+
+        self._cache.put(model.name, cached)
 
         logger.debug(
             "Model '{model}' was cached. Sample rate: '{sample_rate}'",
@@ -648,7 +646,7 @@ class SileroTTSEngine:
         return max_rate
 
     async def _warmup_tts_model(self, model: Model) -> CachedModel:
-        cached, example_text, speakers = await self._load_tts_model_async(model)
+        cached, example_text, speakers = await self._load_tts_model(model)
 
         if speakers:
             speaker = next(iter(speakers))
@@ -665,25 +663,9 @@ class SileroTTSEngine:
         )
 
         try:
-            await asyncio.to_thread(SileroTTSEngine._run_tts_sync, cached, text, speaker)
+            await asyncio.to_thread(self._run_tts_sync, cached, text, speaker)
             logger.debug("Model '{model}' has been warmed up.", model=model.name)
         except Exception:
             logger.exception("Failed to warm up the model '{model}'", model=model.name)
 
         return cached
-
-    @staticmethod
-    def _clear_cached_model(cached_model: CachedModel):
-        del cached_model.model
-        del cached_model.semaphore
-        del cached_model
-
-    @staticmethod
-    def _clear_torch_cache_on_device(device: torch.device):
-        # Clearing the PyTorch allocator cache to free up VRAM/RAM
-        if device.type == "cuda":
-            torch.cuda.empty_cache()
-        elif device.type == "mps":
-            torch.mps.empty_cache()
-        elif device.type == "xpu":
-            torch.xpu.empty_cache()

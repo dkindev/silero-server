@@ -34,6 +34,7 @@ frame_duration_ms: 50
 sample_rate: 48000
 
 # Maximum number of models to cache in memory.
+# Model with the lowest RPS rating is evicted when limit reached.
 # CLI: --max_models
 # Env: TTS_MAX_MODELS
 max_models: 2
