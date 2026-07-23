@@ -46,6 +46,7 @@ class SileroTTSEngine:
         self._cache = ExponentialDecayCache(
             capacity=self._config.max_models,
             half_life_seconds=self._config.cache_half_life,
+            eviction_interval=5.0,
             on_evict=self._clear_cached_models,
         )
         self._device = self._resolve_device(config.device)
@@ -379,12 +380,9 @@ class SileroTTSEngine:
             if not self._cache:
                 return
 
-            logger.info(
-                "Cleaning engine resources. Models count: {count}",
-                count=len(self._cache),
-            )
+            logger.info("Cleaning engine resources.")
 
-            await self._cache.clear()
+            await self._cache.close()
 
             logger.info("Engine resources have been cleared")
 
@@ -405,6 +403,8 @@ class SileroTTSEngine:
         return self._lock
 
     def _clear_cached_models(self, items: list[tuple[str, CachedModel]]):
+        logger.debug("Freeing up models resources. Models count: {count}", count=len(items))
+
         for item in items:
             model_name = item[0]
             cached_model = item[1]
@@ -426,6 +426,8 @@ class SileroTTSEngine:
             torch.mps.empty_cache()
         elif self._device.type == "xpu":
             torch.xpu.empty_cache()
+
+        logger.debug("Models resources was removed")
 
     def _resolve_tts_model(self, model: Model) -> tuple[str, list[int], str, dict[str, str]]:
         """Return the local path, sample rates, example text and speaker examples.
