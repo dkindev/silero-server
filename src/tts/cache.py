@@ -12,7 +12,7 @@ class ExponentialDecayCache:
         capacity: int,
         half_life_seconds: float = 5.0,
         eviction_interval: float | None = None,
-        on_evict: Callable[[tuple[Any, Any]], None] | None = None,
+        on_evict: Callable[[list[tuple[Any, Any]]], None] | None = None,
     ):
         self._closed = False
         self._capacity = capacity
